@@ -387,26 +387,6 @@ model UserSetting {
   @@map("user_settings")
 }
 
-// user subscription
-model Subscription {
-  id         String   @id @default(cuid())
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-  status     Int?     @default(1)
-
-  service_id String
-  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
-
-  start_at DateTime
-  end_at   DateTime
-
-  user               User?                @relation(fields: [user_id], references: [id])
-  user_id            String?
-  PaymentTransaction PaymentTransaction[]
-
-  @@map("subscriptions")
-}
-
 // this table stores service category
 model Category {
   id         String    @id @default(cuid())
@@ -424,33 +404,6 @@ model Category {
   @@map("categories")
 }
 
-// this table stores service
-model Service {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
-
-  name        String?
-  description String?
-
-  // price per month
-  price Decimal?
-
-  // seller id
-  user_id String?
-  user    User?   @relation(fields: [user_id], references: [id])
-
-  category_id String?
-  category    Category? @relation(fields: [category_id], references: [id])
-
-  service_categories ServiceCategory[]
-  Subscription       Subscription[]
-
-  @@map("services")
-}
-
 // this table stores service category relation
 model ServiceCategory {
   created_at DateTime @default(now())
@@ -464,6 +417,78 @@ model ServiceCategory {
 
   @@id([service_id, category_id])
   @@map("service_categories")
+}
+
+// this table stores service
+model Service {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name        String?
+  description String?
+
+  // seller id
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  category_id String?
+  category    Category? @relation(fields: [category_id], references: [id])
+
+  service_categories ServiceCategory[]
+  subscriptions      Subscription[]
+  service_tiers      ServiceTier[]
+
+  @@map("services")
+}
+
+// this table stores service tier
+model ServiceTier {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  // price per month
+  price Decimal?
+
+  max_post Int?
+
+  subscriptions Subscription[]
+
+  @@map("service_tiers")
+}
+
+// user subscription
+model Subscription {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  status     Int?     @default(1)
+
+  service_tier_id String
+  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  start_at DateTime
+  end_at   DateTime
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  posts_used Int? @default(0) // track usage
+
+  payment_transactions PaymentTransaction[]
+
+  @@map("subscriptions")
 }
 
 // this table stores example
