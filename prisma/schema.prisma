@@ -92,11 +92,12 @@ model Ucode {
   updated_at DateTime @default(now())
   status     Int?     @default(1) @db.SmallInt
 
-  user_id    String?
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
   token      String?
   email      String?
   expired_at DateTime?
-  user       User?     @relation(fields: [user_id], references: [id])
 
   @@map("ucodes")
 }
@@ -107,13 +108,15 @@ model Role {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  status           Int?             @default(1) @db.SmallInt
-  title            String?
-  name             String?
-  user_id          String?
+  status Int?    @default(1) @db.SmallInt
+  title  String?
+  name   String?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   permission_roles PermissionRole[]
   role_users       RoleUser[]
-  user             User?            @relation(fields: [user_id], references: [id], onDelete: Cascade)
   permissions      Permission[]     @relation("PermissionToRole")
 
   @@map("roles")
@@ -125,12 +128,14 @@ model Permission {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  status           Int?             @default(1) @db.SmallInt
-  title            String?
-  action           String?
-  subject          String?
-  conditions       String?
-  fields           String?
+  status Int? @default(1) @db.SmallInt
+
+  title      String?
+  action     String?
+  subject    String?
+  conditions String?
+  fields     String?
+
   permission_roles PermissionRole[]
   roles            Role[]           @relation("PermissionToRole")
 
@@ -142,9 +147,10 @@ model PermissionRole {
   updated_at DateTime @default(now())
 
   permission_id String
-  role_id       String
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-  role          Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  role_id String
+  role    Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
 
   @@id([permission_id, role_id])
   @@map("permission_roles")
@@ -155,8 +161,9 @@ model RoleUser {
   updated_at DateTime @default(now())
 
   role_id String
-  user_id String
   role    Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  user_id String
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, user_id])
@@ -169,9 +176,10 @@ model NotificationEvent {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  status        Int?           @default(1) @db.SmallInt
-  type          String?
-  text          String?
+  status Int?    @default(1) @db.SmallInt
+  type   String?
+  text   String?
+
   notifications Notification[]
 
   @@map("notification_events")
@@ -183,28 +191,34 @@ model Notification {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  status                Int?               @default(1) @db.SmallInt
-  sender_id             String?
-  receiver_id           String?
+  status Int? @default(1) @db.SmallInt
+
+  sender_id String?
+  sender    User?   @relation("sender", fields: [sender_id], references: [id])
+
+  receiver_id String?
+  receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
+
   notification_event_id String?
-  entity_id             String?
-  read_at               DateTime?
   notification_event    NotificationEvent? @relation(fields: [notification_event_id], references: [id])
-  receiver              User?              @relation("receiver", fields: [receiver_id], references: [id])
-  sender                User?              @relation("sender", fields: [sender_id], references: [id])
+
+  entity_id String?
+  read_at   DateTime?
 
   @@map("notifications")
 }
 
 model UserPaymentMethod {
-  id                String    @id @default(cuid())
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @default(now())
-  deleted_at        DateTime?
-  user_id           String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
   payment_method_id String?
   checkout_id       String?
-  user              User?     @relation(fields: [user_id], references: [id])
 
   @@map("user_payment_methods")
 }
@@ -245,20 +259,26 @@ enum MessageStatus {
 }
 
 model Message {
-  id              String         @id @default(cuid())
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @default(now())
-  deleted_at      DateTime?
-  status          MessageStatus? @default(PENDING)
-  sender_id       String?
-  receiver_id     String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status MessageStatus? @default(PENDING)
+
+  sender_id String?
+  sender    User?   @relation("sender", fields: [sender_id], references: [id])
+
+  receiver_id String?
+  receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
+
   conversation_id String?
-  attachment_id   String?
-  message         String?
-  attachment      Attachment?    @relation(fields: [attachment_id], references: [id])
-  conversation    Conversation?  @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
-  receiver        User?          @relation("receiver", fields: [receiver_id], references: [id])
-  sender          User?          @relation("sender", fields: [sender_id], references: [id])
+  conversation    Conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  attachment_id String?
+  attachment    Attachment? @relation(fields: [attachment_id], references: [id])
+
+  message String?
 
   @@map("messages")
 }
@@ -268,26 +288,32 @@ model Attachment {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  name       String?
-  type       String?
-  size       Int?
-  file       String?
-  file_alt   String?
-  messages   Message[]
+
+  name String?
+  type String?
+
+  size     Int?
+  file     String?
+  file_alt String?
+
+  messages Message[]
 
   @@map("attachments")
 }
 
 model Conversation {
-  id             String    @id @default(cuid())
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @default(now())
-  deleted_at     DateTime?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
   creator_id     String?
   participant_id String?
-  creator        User?     @relation("creator", fields: [creator_id], references: [id])
-  participant    User?     @relation("participant", fields: [participant_id], references: [id])
-  messages       Message[]
+
+  creator     User? @relation("creator", fields: [creator_id], references: [id])
+  participant User? @relation("participant", fields: [participant_id], references: [id])
+
+  messages Message[]
 
   @@map("conversations")
 }
@@ -342,10 +368,11 @@ model WebsiteInfo {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  name                String?
-  phone_number        String?
-  email               String?
-  address             String?
+  name         String?
+  phone_number String?
+  email        String?
+  address      String?
+
   logo                String?
   favicon             String?
   copyright           String?
@@ -360,11 +387,13 @@ model Setting {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  category      String?
-  label         String?
-  description   String?
-  key           String?       @unique
+  category    String?
+  label       String?
+  description String?
+
+  key           String? @unique
   default_value String?
+
   user_settings UserSetting[]
 
   @@map("settings")
@@ -440,8 +469,8 @@ model Service {
   service_categories ServiceCategory[]
   subscriptions      Subscription[]
   service_tiers      ServiceTier[]
-  ServiceFeature     ServiceFeature[]
-  Addon              Addon[]
+  service_features   ServiceFeature[]
+  addons             Addon[]
 
   @@map("services")
 }
@@ -529,8 +558,8 @@ model Channel {
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
 
-  name                String?               @unique // e.g., "Instagram", "Facebook", "TikTok"
-  SubscriptionChannel SubscriptionChannel[]
+  name                  String?               @unique // e.g., "Instagram", "Facebook", "TikTok"
+  subscription_channels SubscriptionChannel[]
 
   @@map("channels")
 }
@@ -556,9 +585,9 @@ model Subscription {
 
   posts_used Int? @default(0) // track usage
 
-  payment_transactions PaymentTransaction[]
-  subscription_addons  SubscriptionAddon[]
-  SubscriptionChannel  SubscriptionChannel[]
+  payment_transactions  PaymentTransaction[]
+  subscription_addons   SubscriptionAddon[]
+  subscription_channels SubscriptionChannel[]
 
   @@map("subscriptions")
 }
