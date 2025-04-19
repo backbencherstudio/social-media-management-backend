@@ -440,8 +440,40 @@ model Service {
   service_categories ServiceCategory[]
   subscriptions      Subscription[]
   service_tiers      ServiceTier[]
+  ServiceFeature     ServiceFeature[]
+  Addon              Addon[]
 
   @@map("services")
+}
+
+// this table stores features
+model Feature {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String?
+
+  service_features ServiceFeature[]
+
+  @@map("features")
+}
+
+// this table stores service feature relation
+model ServiceFeature {
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id])
+
+  feature_id String
+  feature    Feature? @relation(fields: [feature_id], references: [id])
+
+  @@id([service_id, feature_id])
+  @@map("service_features")
 }
 
 // this table stores service tier
@@ -452,17 +484,41 @@ model ServiceTier {
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
 
+  name String? // "Basic", "Pro" or just Post count: "10", "15", "20"
+
   service_id String
   service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
 
   // price per month
-  price Decimal?
+  price Float?
 
   max_post Int?
 
   subscriptions Subscription[]
 
   @@map("service_tiers")
+}
+
+// this table stores example
+model Addon {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name        String? // e.g., "Instagram Story", "Carousel Post"
+  description String?
+  // e.g. $10 per month
+  price       Float?
+  max_count   Int? // how many can be used in a month (optional)
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  subscription_addons SubscriptionAddon[]
+
+  @@map("addons")
 }
 
 // user subscription
@@ -487,8 +543,26 @@ model Subscription {
   posts_used Int? @default(0) // track usage
 
   payment_transactions PaymentTransaction[]
+  subscription_addons  SubscriptionAddon[]
 
   @@map("subscriptions")
+}
+
+// this table stores Subscription and Addon relation
+model SubscriptionAddon {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  subscription_id String
+  subscription    Subscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  addon_id String
+  addon    Addon? @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  usedCount Int @default(0)
+
+  @@map("subscription_addons")
 }
 
 // this table stores example
