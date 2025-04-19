@@ -509,7 +509,7 @@ model Addon {
 
   name        String? // e.g., "Instagram Story", "Carousel Post"
   description String?
-  // e.g. $10 per month
+  // e.g. $10 per unit per month
   price       Float?
   max_count   Int? // how many can be used in a month (optional)
 
@@ -560,7 +560,8 @@ model SubscriptionAddon {
   addon_id String
   addon    Addon? @relation(fields: [addon_id], references: [id], onDelete: Cascade)
 
-  usedCount Int @default(0)
+  quantity   Int @default(1) // number of units purchased (e.g. 5 stories)
+  used_count Int @default(0)
 
   @@map("subscription_addons")
 }
