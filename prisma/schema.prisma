@@ -499,7 +499,7 @@ model ServiceTier {
   @@map("service_tiers")
 }
 
-// this table stores example
+// this table stores Addon
 model Addon {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -519,6 +519,20 @@ model Addon {
   subscription_addons SubscriptionAddon[]
 
   @@map("addons")
+}
+
+// this table stores Channel
+model Channel {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name                String?               @unique // e.g., "Instagram", "Facebook", "TikTok"
+  SubscriptionChannel SubscriptionChannel[]
+
+  @@map("channels")
 }
 
 // user subscription
@@ -544,6 +558,7 @@ model Subscription {
 
   payment_transactions PaymentTransaction[]
   subscription_addons  SubscriptionAddon[]
+  SubscriptionChannel  SubscriptionChannel[]
 
   @@map("subscriptions")
 }
@@ -564,6 +579,24 @@ model SubscriptionAddon {
   used_count Int @default(0)
 
   @@map("subscription_addons")
+}
+
+// this table stores Subscription and channel relation
+model SubscriptionChannel {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  subscription_id String
+  subscription    Subscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  channel_id String
+  channel    Channel? @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+
+  is_free Int?   @default(1) //  1 if included in base tier, 0 if paid
+  price   Float? // only applies if is_free = 0
+
+  @@map("subscription_channel")
 }
 
 // this table stores example
