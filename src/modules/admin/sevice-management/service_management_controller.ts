@@ -20,8 +20,8 @@ export class ServiceManagementController {
 
   @Post()
   async create(@Body() dto: CreateServiceDto, @Req() req: any) {
-    const userId = req.user?.id; // adjust to your auth logic
-    return await this.serviceManagementService.createService(dto, userId);
+    const user_id = req.user?.id; // adjust to your auth logic
+    return await this.serviceManagementService.createService(dto, user_id);
   }
 
   @Get('allServices')

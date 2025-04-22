@@ -43,13 +43,13 @@ export class CreateServiceDto {
 
   @IsDefined()
   @IsString()
-  primaryPlatform: string;
+  primary_platform: string;
 
   features: string[];
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  extraPlatforms: string[] = [];
-  extraPlatformPrice: number;
+  extra_platforms: string[] = [];
+  extra_platformPrice: number;
 }

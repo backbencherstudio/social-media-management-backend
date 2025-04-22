@@ -59,22 +59,22 @@ export class ServiceManagementService {
       );
 
       // 4. Set primary platform (upsert channel)
-      if (dto.primaryPlatform) {
+      if (dto.primary_platform) {
         await this.prisma.channel.upsert({
-          where: { name: dto.primaryPlatform },
+          where: { name: dto.primary_platform },
           update: {},
-          create: { name: dto.primaryPlatform },
+          create: { name: dto.primary_platform },
         });
       }
 
       // 5. Create addons for extra platforms
       await Promise.all(
-        dto.extraPlatforms.map((platform) =>
+        dto.extra_platforms.map((platform) =>
           this.prisma.addon.create({
             data: {
               service_id: service.id,
               name: `Extra ${platform}`,
-              price: dto.extraPlatformPrice ?? 0,
+              price: dto.extra_platformPrice ?? 0,
             },
           }),
         ),
@@ -83,7 +83,9 @@ export class ServiceManagementService {
       return {
         success: true,
         message: 'Service created successfully',
-        service_id: service.id,
+        data: {
+          service_id: service.id,
+        },
       };
     } catch (error) {
       return {
@@ -182,12 +184,12 @@ export class ServiceManagementService {
 
       // 4. Recreate addons
       await Promise.all(
-        dto.extraPlatforms.map((platform) =>
+        dto.extra_platforms.map((platform) =>
           this.prisma.addon.create({
             data: {
               service_id: id,
               name: `Extra ${platform}`,
-              price: dto.extraPlatformPrice ?? 10,
+              price: dto.extra_platformPrice ?? 10,
             },
           }),
         ),
