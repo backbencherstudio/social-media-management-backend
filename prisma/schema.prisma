@@ -558,8 +558,10 @@ model Channel {
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
 
-  name                  String?               @unique // e.g., "Instagram", "Facebook", "TikTok"
+  name String? @unique // e.g., "Instagram", "Facebook", "TikTok"
+
   subscription_channels SubscriptionChannel[]
+  post_channels         PostChannel[]
 
   @@map("channels")
 }
@@ -626,6 +628,66 @@ model SubscriptionChannel {
   price   Float? // only applies if is_free = 0
 
   @@map("subscription_channel")
+}
+
+// social media schedule post
+model Post {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  schedule_at DateTime?
+
+  content String? @db.Text
+
+  hashtags String[]
+
+  post_files    PostFile[]
+  post_channels PostChannel[]
+
+  @@map("posts")
+}
+
+// this table stores schedule post channel
+model PostChannel {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  post_id String
+  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  channel_id String
+  channel    Channel? @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+
+  @@map("post_channels")
+}
+
+// this table stores post media
+model PostFile {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+  sort_order Int?      @default(0)
+
+  post_id String?
+  post    Post?   @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  // metadata
+  name String?
+  type String? // e.g. image, video
+
+  size      Int?
+  file_path String?
+  file_alt  String?
+
+  @@map("post_files")
 }
 
 // this table stores example
