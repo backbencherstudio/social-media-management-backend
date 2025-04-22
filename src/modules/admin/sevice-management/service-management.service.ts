@@ -9,7 +9,7 @@ export class ServiceManagementService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ✅ Create a new service with tiers, features, addons, and primary platform
+  // Create a new service with tiers, features, addons, and primary platform
   async createService(dto: CreateServiceDto, userId: string) {
     try {
       // 1. Create the service
@@ -95,7 +95,7 @@ export class ServiceManagementService {
     }
   }
 
-  // ✅ Get all non-deleted services with related data
+  // Get all services with related data
   async getAllServices() {
     try {
       const services = await this.prisma.service.findMany({

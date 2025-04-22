@@ -1,18 +1,14 @@
-// external imports
 import { MiddlewareConsumer, Module } from '@nestjs/common';
-// import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-// import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-// import { BullModule } from '@nestjs/bullmq';
 
-// internal imports
+
+
 import appConfig from './config/app.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-// import { ThrottlerBehindProxyGuard } from './common/guard/throttler-behind-proxy.guard';
 import { AbilityModule } from './ability/ability.module';
 import { MailModule } from './mail/mail.module';
 import { ApplicationModule } from './modules/application/application.module';
@@ -21,7 +17,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
-// ▶ NEW: Import your user module without changing other parts of AppModule
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
 
@@ -48,7 +43,6 @@ import { FeatureModule } from './modules/admin/features/featuers_module';
     PaymentModule,
     ServiceManagementModule,
     FeatureModule,
-    // ▶ NEW: Register UserModule here
     UserModule,
   ],
   controllers: [AppController],
