@@ -20,6 +20,10 @@ import { AdminModule } from './modules/admin/admin.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
+// ▶ NEW: Import your user module without changing other parts of AppModule
+import { UserModule } from './modules/chat/user/user.module';
+import { FeatureModule } from './modules/admin/features/featuers_module';
 
 @Module({
   imports: [
@@ -33,31 +37,7 @@ import { PaymentModule } from './modules/payment/payment.module';
         password: appConfig().redis.password,
         port: +appConfig().redis.port,
       },
-      // redis: {
-      //   host: appConfig().redis.host,
-      //   password: appConfig().redis.password,
-      //   port: +appConfig().redis.port,
-      // },
     }),
-    // disabling throttling for dev
-    // ThrottlerModule.forRoot([
-    //   {
-    //     name: 'short',
-    //     ttl: 1000,
-    //     limit: 3,
-    //   },
-    //   {
-    //     name: 'medium',
-    //     ttl: 10000,
-    //     limit: 20,
-    //   },
-    //   {
-    //     name: 'long',
-    //     ttl: 60000,
-    //     limit: 100,
-    //   },
-    // ]),
-    // General modules
     PrismaModule,
     AuthModule,
     AbilityModule,
@@ -66,20 +46,13 @@ import { PaymentModule } from './modules/payment/payment.module';
     AdminModule,
     ChatModule,
     PaymentModule,
+    ServiceManagementModule,
+    FeatureModule,
+    // ▶ NEW: Register UserModule here
+    UserModule,
   ],
   controllers: [AppController],
-  providers: [
-    // disabling throttling for dev
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // },
-    // disbling throttling for dev {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerBehindProxyGuard,
-    // },
-    AppService,
-  ],
+  providers: [AppService],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
