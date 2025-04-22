@@ -690,6 +690,72 @@ model PostFile {
   @@map("post_files")
 }
 
+// this table stores blog
+model Blog {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  title    String?
+  hashtags String[]
+
+  @@map("blogs")
+}
+
+// this table stores blo content
+model BlogContent {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  content_type String? // text, media
+  content      String? @db.Text
+
+  blog_files BlogFile[]
+
+  @@map("blog_contents")
+}
+
+model BlogCategory {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String? // values: Post, Videos, Email, Blogs
+  slug String? @unique
+
+  @@map("blog_categories")
+}
+
+// this table stores post media
+model BlogFile {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+  sort_order Int?      @default(0)
+
+  blog_content_id String?
+  blog_content    BlogContent? @relation(fields: [blog_content_id], references: [id], onDelete: Cascade)
+
+  // metadata
+  name String?
+  type String? // e.g. image, video
+
+  size      Int?
+  file_path String?
+  file_alt  String?
+
+  @@map("blog_files")
+}
+
 // this table stores example
 // model Note {
 //   id                String  @id @default(cuid())
