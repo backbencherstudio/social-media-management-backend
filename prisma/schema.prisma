@@ -701,10 +701,12 @@ model Blog {
   title    String?
   hashtags String[]
 
+  blog_blog_categories BlogBlogCategory[]
+
   @@map("blogs")
 }
 
-// this table stores blo content
+// this table stores blog content
 model BlogContent {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -720,6 +722,7 @@ model BlogContent {
   @@map("blog_contents")
 }
 
+// this table stores blog category
 model BlogCategory {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -730,7 +733,24 @@ model BlogCategory {
   name String? // values: Post, Videos, Email, Blogs
   slug String? @unique
 
+  blog_blog_categories BlogBlogCategory[]
+
   @@map("blog_categories")
+}
+
+// this table stores blog and blog category
+model BlogBlogCategory {
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  blog_id String
+  blog    Blog?  @relation(fields: [blog_id], references: [id])
+
+  blog_category_id String
+  blog_category    BlogCategory? @relation(fields: [blog_category_id], references: [id])
+
+  @@id([blog_id, blog_category_id])
+  @@map("blog_blog_categories")
 }
 
 // this table stores post media
