@@ -17,7 +17,9 @@ export class FeatureServices {
       return {
         success: true,
         message: 'Feature created successfully',
-        feature_id: feature.id,
+        data: { 
+              feature_id: feature.id,
+            }
       };
     } catch (error) {
       return {

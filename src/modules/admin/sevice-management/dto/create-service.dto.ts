@@ -51,5 +51,5 @@ export class CreateServiceDto {
   @IsArray()
   @IsString({ each: true })
   extra_platforms: string[] = [];
-  extra_platformPrice: number;
+  extra_platform_price: number;
 }
