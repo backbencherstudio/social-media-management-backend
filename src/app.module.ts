@@ -1,8 +1,8 @@
+// external imports
 import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-
-
-
+import { BullModule } from '@nestjs/bullmq';
+// internal imports
 import appConfig from './config/app.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -13,10 +13,9 @@ import { AbilityModule } from './ability/ability.module';
 import { MailModule } from './mail/mail.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
-import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
-import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
+import { ServiceManagementModule } from './modules/admin/sevice-management/service-management.module';
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
 
