@@ -1,22 +1,42 @@
-// external imports
+
 import {
-  // INestApplication,
   Logger,
   Injectable,
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
-// internal imports
 import { SoftdeleteMiddleware } from './middleware/softdelete.middleware';
 
 @Injectable()
-// export class PrismaService extends PrismaClient implements OnModuleInit {
 export class PrismaService
   extends PrismaClient<Prisma.PrismaClientOptions, 'query'>
   implements OnModuleInit, OnModuleDestroy
+
+  
 {
+    
+  hastags: any;
+  blogTag: any;
+  blogBlock: any;
+
   private readonly logger = new Logger(PrismaService.name);
+    private _chatLog: any;
+    private _blogCategory: any;
+  hashtags: any;
+  
+  public get blogCategory(): any {
+    return this._blogCategory;
+  }
+  public set blogCategory(value: any) {
+    this._blogCategory = value;
+  }
+  public get chatLog(): any {
+    return this._chatLog;
+  }
+  public set chatLog(value: any) {
+    this._chatLog = value;
+  }
 
   constructor() {
     super({ log: [{ emit: 'event', level: 'query' }] });
@@ -29,7 +49,7 @@ export class PrismaService
     if (process.env.PRISMA_ENV == '1') {
       console.log('Prisma Middleware not called', process.env.PRISMA_ENV);
     } else {
-      // use middleware here
+      //Middlewares
       this.$use(SoftdeleteMiddleware);
     }
   }
