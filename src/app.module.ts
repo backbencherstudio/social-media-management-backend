@@ -1,7 +1,10 @@
 // external imports
 import { MiddlewareConsumer, Module } from '@nestjs/common';
+// import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+// import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { BullModule } from '@nestjs/bullmq';
+// import { BullModule } from '@nestjs/bullmq';
+
 // internal imports
 import appConfig from './config/app.config';
 import { AppController } from './app.controller';
@@ -13,14 +16,11 @@ import { AbilityModule } from './ability/ability.module';
 import { MailModule } from './mail/mail.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
-<<<<<<< HEAD
-import { ServiceManagementModule } from './modules/admin/sevice-management/service-management.module';
-=======
 import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
 import {BlogModule} from './modules/admin/blog/blog.moudle'
->>>>>>> topu_SM_ADMIN
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
 import { CategoryModule } from './modules/admin/sevice-management/category/category.module';
@@ -50,10 +50,7 @@ import { BlogCategoryModule } from './modules/admin/blog/blog_category/blog_cate
     ServiceManagementModule,
     BlogModule,
     FeatureModule,
-<<<<<<< HEAD
-=======
     CategoryModule,
->>>>>>> topu_SM_ADMIN
     UserModule,
     BlogCategoryModule,
   ],
