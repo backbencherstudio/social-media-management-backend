@@ -15,9 +15,16 @@ import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
+<<<<<<< HEAD
 import { ServiceManagementModule } from './modules/admin/sevice-management/service-management.module';
+=======
+import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
+import {BlogModule} from './modules/admin/blog/blog.moudle'
+>>>>>>> topu_SM_ADMIN
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
+import { CategoryModule } from './modules/admin/sevice-management/category/category.module';
+import { BlogCategoryModule } from './modules/admin/blog/blog_category/blog_category.module';
 
 @Module({
   imports: [
@@ -41,8 +48,14 @@ import { FeatureModule } from './modules/admin/features/featuers_module';
     ChatModule,
     PaymentModule,
     ServiceManagementModule,
+    BlogModule,
     FeatureModule,
+<<<<<<< HEAD
+=======
+    CategoryModule,
+>>>>>>> topu_SM_ADMIN
     UserModule,
+    BlogCategoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
