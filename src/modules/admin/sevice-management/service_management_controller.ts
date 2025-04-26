@@ -19,22 +19,6 @@ export class ServiceManagementController {
     private readonly serviceManagementService: ServiceManagementService,
   ) {}
 
-<<<<<<< HEAD
-  @Post() // create service route
-  async create(@Body() dto: CreateServiceDto, @Req() req: any) {
-    const user_id = req.user?.id; 
-    return await this.serviceManagementService.createService(dto, user_id);
-  }
-
-  @Get('allServices')  // Get all services route
-  async getAllActiveServices() {
-    return await this.serviceManagementService.getAllServices();
-  }
-
-  @Patch(':id/toggle-status') // Status active/deactive
-  async toggleServiceStatus(@Param('id') id: string) {
-    return await this.serviceManagementService.toggleServiceStatus(id);
-=======
 @Post()
 @ApiOperation({ summary: 'Create a new service' })
 @ApiResponse({
@@ -106,7 +90,6 @@ async getAllActiveServices() {
         status: 0 // or 1 depending on toggle
       }
     }
->>>>>>> topu_SM_ADMIN
   }
 })
 @ApiResponse({
@@ -127,30 +110,6 @@ async toggleServiceStatus(@Param('id') id: string) {
     return await this.serviceManagementService.toggleServiceStatus(id);
 }
 
-<<<<<<< HEAD
-  @Get('inactive') // get all inactive services 
-  async getInactiveServices() {
-    return await this.serviceManagementService.getServicesByStatus(0); // 0 = inactive
-  }
-
-  @Get('active') // get all active services 
-  async getActiveServices() {
-    return await this.serviceManagementService.getServicesByStatus(1); // 1 = active
-  }
-
-  @Get(':id') // fet a particular service by id 
-  async getServiceById(@Param('id') id: string) {
-    return await this.serviceManagementService.getServiceById(id);
-  }
-
-  @Put(':id') // edit / update a service 
-  async updateServices(@Param('id') id: string, @Body() dto: CreateServiceDto) {
-    return await this.serviceManagementService.updateServices(id, dto);
-  }
-
-  @Delete(':id') // Delete a service 
-  async softDeleteService(@Param('id') id: string) {
-=======
 
 @Get('inactive')
 @ApiOperation({ summary: 'Get all inactive services (short overview)' })
@@ -337,7 +296,6 @@ async updateServices(@Param('id') id: string, @Body() dto: CreateServiceDto) {
   }
 })
 async softDeleteService(@Param('id') id: string) {
->>>>>>> topu_SM_ADMIN
     return await this.serviceManagementService.softDeleteService(id);
   }
 }
