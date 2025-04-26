@@ -13,7 +13,7 @@ export class PostService {
   ) { }
 
   async create(createPostDto: CreatePostDto) {
-    console.log(createPostDto);
+    console.log("post_channels", createPostDto);
     try {
       // Create the post
       const post = await this.prisma.post.create({
