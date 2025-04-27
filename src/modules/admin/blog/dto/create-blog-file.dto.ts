@@ -1,4 +1,4 @@
-// src/modules/admin/blog/dto/create-blog-file.dto.ts
+
 import { IsString, IsOptional, IsInt } from 'class-validator';
 
 export class CreateBlogFileDto {

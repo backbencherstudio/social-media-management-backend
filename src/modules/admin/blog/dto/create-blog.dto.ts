@@ -18,13 +18,13 @@ export class CreateBlogDto {
   @IsOptional()
   hashtags?: string[];
 
-  // attach to existing categories
+
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
   categoryIds?: string[];
 
-  // dynamic list of text/media blocks
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateBlogContentDto)
