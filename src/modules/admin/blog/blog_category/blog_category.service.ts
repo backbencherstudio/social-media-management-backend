@@ -54,7 +54,7 @@ export class BlogCategoryService {
   // Soft Delete
   async remove(id: string) {
     try {
-      await this.findOne(id); // Will throw NotFoundException if not exists
+      await this.findOne(id); 
       const deleted =  await this.prisma.blogCategory.update({
         where: { id },
         data: {
