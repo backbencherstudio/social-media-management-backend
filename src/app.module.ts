@@ -20,7 +20,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
-import {BlogModule} from './modules/admin/blog/blog.moudle'
+import {BlogModule} from './modules/admin/blog/blog.module'
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
 import { CategoryModule } from './modules/admin/sevice-management/category/category.module';
