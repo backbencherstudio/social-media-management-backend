@@ -7,7 +7,7 @@ import { UpdateFeatureDto } from './dto/update-feature-dto';
 export class FeatureServices {
   constructor(private readonly Prisma: PrismaService) {}
 
-  // ✅ Create a new feature
+  //  Creating a new feature here
   async create(createFeatureDto: CreateFeatureDto) {
     try {
       const feature = await this.Prisma.feature.create({
@@ -17,7 +17,9 @@ export class FeatureServices {
       return {
         success: true,
         message: 'Feature created successfully',
-        feature_id: feature.id,
+        data: { 
+              feature_id: feature.id,
+            }
       };
     } catch (error) {
       return {
@@ -27,7 +29,7 @@ export class FeatureServices {
     }
   }
 
-  // ✅ Get all features
+  //  Getting all features by this 
   async findAll() {
     try {
       const features = await this.Prisma.feature.findMany();
@@ -40,7 +42,7 @@ export class FeatureServices {
     }
   }
 
-  // ✅ Get a specific feature by ID
+  // Getting one feature by ID
   async findOne(id: string) {
     try {
       const feature = await this.Prisma.feature.findUnique({ where: { id } });
@@ -53,7 +55,7 @@ export class FeatureServices {
     }
   }
 
-  // ✅ Remove (fetch?) feature by ID — looks like this should be a delete, fixed it.
+  //  Delete one feature by ID.
   async remove(id: string) {
     try {
       const deleted = await this.Prisma.feature.delete({ where: { id } });
@@ -70,7 +72,7 @@ export class FeatureServices {
     }
   }
 
-  // ✅ Update a feature by ID
+  // Edit /  Update a feature by ID
   async update(id: string, updateFeatureDto: UpdateFeatureDto) {
     try {
       const updatedFeature = await this.Prisma.feature.update({

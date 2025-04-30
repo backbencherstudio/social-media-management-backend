@@ -702,6 +702,7 @@ model Blog {
   hashtags String[]
 
   blog_blog_categories BlogBlogCategory[]
+  blog_contents        BlogContent[]
 
   @@map("blogs")
 }
@@ -713,6 +714,9 @@ model BlogContent {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
+
+  blog_id String?
+  blog    Blog?   @relation(fields: [blog_id], references: [id], onDelete: Cascade)
 
   content_type String? // text, media
   content      String? @db.Text
