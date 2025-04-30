@@ -77,7 +77,11 @@ export class PostService {
     try {
       return this.prisma.post.findMany({
         include: {
-          post_channels: true,
+          post_channels: {
+            include: {
+              channel: true
+            }
+          },
           post_files: true,
         },
       });
