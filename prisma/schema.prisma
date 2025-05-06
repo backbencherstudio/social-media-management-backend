@@ -83,6 +83,8 @@ model User {
   services             Service[]
   subscriptions        Subscription[]
 
+  email_history_recipients EmailHistoryRecipient[]
+
   @@map("users")
 }
 
@@ -778,6 +780,40 @@ model BlogFile {
   file_alt  String?
 
   @@map("blog_files")
+}
+
+// this table stores Email history
+model EmailHistory {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+  sort_order Int?      @default(0)
+
+  type    String? // Password Reset, Email Verification, etc.
+  subject String?
+  body    String? @db.Text
+
+  email_history_recipients EmailHistoryRecipient[]
+
+  @@map("email_histories")
+}
+
+// this table stores Email history recipient
+model EmailHistoryRecipient {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  email_history_id String
+  email_history    EmailHistory? @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
+
+  recipient_id String
+  recipient    User?  @relation(fields: [recipient_id], references: [id])
+
+  @@map("email_history_recipients")
 }
 
 // this table stores example
