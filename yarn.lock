@@ -1343,10 +1343,10 @@
     path-to-regexp "8.2.0"
     tslib "2.8.1"
 
-"@nestjs/platform-socket.io@11.0.17":
-  version "11.0.17"
-  resolved "https://registry.yarnpkg.com/@nestjs/platform-socket.io/-/platform-socket.io-11.0.17.tgz#17839e56bfbdfb4f448c9bf43413c58699a7996c"
-  integrity sha512-l9b8VNb7N7rB9IUwKeln2bMQDltsR9mpenzHOaYYqDkz5BtuQSiyT8NpLR2vWhxDjppxMY3DkW8fQAvXh54pMg==
+"@nestjs/platform-socket.io@^11.1.0":
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/@nestjs/platform-socket.io/-/platform-socket.io-11.1.0.tgz#6ba0ed34a64b8442327f8ffa487c01831812f385"
+  integrity sha512-aCNuHln9RmT/qHkCr0/bcHxUP4rNU9hXK8O1Rd6EpDhJ9UcgMhatjkYDE95Tc7QgSgjLVscQ47pI2J8ik9b0VQ==
   dependencies:
     socket.io "4.8.1"
     tslib "2.8.1"
@@ -1386,10 +1386,10 @@
   resolved "https://registry.yarnpkg.com/@nestjs/throttler/-/throttler-6.4.0.tgz#5060e2157f4e8b0cb7886eef367751700549de5e"
   integrity sha512-osL67i0PUuwU5nqSuJjtUJZMkxAnYB4VldgYUMGzvYRJDCqGRFMWbsbzm/CkUtPLRL30I8T74Xgt/OQxnYokiA==
 
-"@nestjs/websockets@11.0.17":
-  version "11.0.17"
-  resolved "https://registry.yarnpkg.com/@nestjs/websockets/-/websockets-11.0.17.tgz#8a0afdd256e6b536f989efbb2bcbb82c0c490de9"
-  integrity sha512-2LSjxA/lUKs5hv/g5lPk555CoRNTCt/XywHFteKMSrxo09Cq3yfOQOAPwEWG929EnqAjAAsQaDVbfUHUFisFCg==
+"@nestjs/websockets@^11.1.0":
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/@nestjs/websockets/-/websockets-11.1.0.tgz#30ab7e0809aa1cff16c6fee1a3d346a8a2092f94"
+  integrity sha512-nb96cbmk7u6XIj4yIieezX9qqDshauyQJ4SLtdg2BaxOrkeQSx2j34CQWn/DZHHoYIQimfnAj2ry3RYWET4+zw==
   dependencies:
     iterare "1.2.1"
     object-hash "3.0.0"
@@ -2801,7 +2801,7 @@ basic-ftp@^5.0.2:
   resolved "https://registry.yarnpkg.com/basic-ftp/-/basic-ftp-5.0.5.tgz#14a474f5fffecca1f4f406f1c26b18f800225ac0"
   integrity sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==
 
-bcrypt@5.1.1:
+bcrypt@^5.1.1:
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/bcrypt/-/bcrypt-5.1.1.tgz#0f732c6dcb4e12e5b70a25e326a72965879ba6e2"
   integrity sha512-AGBHOG5hPYZ5Xl9KXzU5iKq9516yEmvCKDg3ecP5kX2aB6UqTeXZxk2ELnDgDm6BQSMlLt9rDB4LoSMx0rYwww==
@@ -3148,13 +3148,13 @@ class-transformer@0.5.1:
   resolved "https://registry.yarnpkg.com/class-transformer/-/class-transformer-0.5.1.tgz#24147d5dffd2a6cea930a3250a677addf96ab336"
   integrity sha512-SQa1Ws6hUbfC98vKGxZH3KFY0Y1lm5Zm0SY8XX9zbK7FJCyVEac3ATW0RIpwzW+oOfmHE5PMPufDG9hCfoEOMw==
 
-class-validator@0.14.1:
-  version "0.14.1"
-  resolved "https://registry.yarnpkg.com/class-validator/-/class-validator-0.14.1.tgz#ff2411ed8134e9d76acfeb14872884448be98110"
-  integrity sha512-2VEG9JICxIqTpoK1eMzZqaV+u/EiwEJkMGzTrZf6sU/fwsnOITVgYJ8yojSy6CaXtO9V0Cc6ZQZ8h8m4UBuLwQ==
+class-validator@^0.14.2:
+  version "0.14.2"
+  resolved "https://registry.yarnpkg.com/class-validator/-/class-validator-0.14.2.tgz#a3de95edd26b703e89c151a2023d3c115030340d"
+  integrity sha512-3kMVRF2io8N8pY1IFIXlho9r8IPUUIfHe2hYVtiebvAzU2XeQFXTv+XI4WX+TnXmtwXMDcjngcpkiPM0O9PvLw==
   dependencies:
     "@types/validator" "^13.11.8"
-    libphonenumber-js "^1.10.53"
+    libphonenumber-js "^1.11.1"
     validator "^13.9.0"
 
 clean-css@^4.2.1:
@@ -5868,10 +5868,10 @@ libmime@5.3.6:
     libbase64 "1.3.0"
     libqp "2.1.1"
 
-libphonenumber-js@^1.10.53:
-  version "1.11.19"
-  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.11.19.tgz#de6437b15d23d9e3b16e5b14c6f2d6d65f58c9b7"
-  integrity sha512-bW/Yp/9dod6fmyR+XqSUL1N5JE7QRxQ3KrBIbYS1FTv32e5i3SEtQVX+71CYNv8maWNSOgnlCoNp9X78f/cKiA==
+libphonenumber-js@^1.11.1:
+  version "1.12.7"
+  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.12.7.tgz#e4372cdee413b64bb1600dfde293a7fdc1ba812a"
+  integrity sha512-0nYZSNj/QEikyhcM5RZFXGlCB/mr4PVamnT1C2sKBnDDTYndrvbybYjvg+PMqAndQHlLbwQ3socolnL3WWTUFA==
 
 libqp@2.1.1:
   version "2.1.1"
@@ -8030,7 +8030,7 @@ socket.io-parser@~4.2.4:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-socket.io@4.8.1:
+socket.io@4.8.1, socket.io@^4.8.1:
   version "4.8.1"
   resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-4.8.1.tgz#fa0eaff965cc97fdf4245e8d4794618459f7558a"
   integrity sha512-oZ7iUCxph8WYRHHcjBEc9unw3adt5CmSNlppj/5Q4k2RIrhl8Z5yY2Xr4j9zj0+wzVZ0bxmYoGSzKJnRl6A4yg==
@@ -8498,7 +8498,7 @@ ts-loader@9.5.2:
     semver "^7.3.4"
     source-map "^0.7.4"
 
-ts-node@10.9.2:
+ts-node@^10.9.2:
   version "10.9.2"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.9.2.tgz#70f021c9e185bccdca820e26dc413805c101c71f"
   integrity sha512-f0FFpIdcHgn8zcPSbf1dRevwt047YMnaiJM3u2w2RewrB+fob/zePZcrOyQoLMMO7aBIddLcQIEK5dYjkLnGrQ==
@@ -8604,7 +8604,7 @@ typescript@5.7.3:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.7.3.tgz#919b44a7dbb8583a9b856d162be24a54bf80073e"
   integrity sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==
 
-typescript@5.8.3:
+typescript@^5.8.3:
   version "5.8.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.8.3.tgz#92f8a3e5e3cf497356f4178c34cd65a7f5e8440e"
   integrity sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==

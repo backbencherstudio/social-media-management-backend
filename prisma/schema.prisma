@@ -82,6 +82,7 @@ model User {
   payment_transactions PaymentTransaction[]
   services             Service[]
   subscriptions        Subscription[]
+  email_history_recipients EmailHistoryRecipient[]
 
   @@map("users")
 }
@@ -109,8 +110,8 @@ model Role {
   deleted_at DateTime?
 
   status Int?    @default(1) @db.SmallInt
-  title  String?
-  name   String?
+  title  String? @default("user")
+  name   String? @default("user")
 
   user_id String?
   user    User?   @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -368,10 +369,12 @@ model WebsiteInfo {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  name         String?
-  phone_number String?
-  email        String?
-  address      String?
+  site_name         String?
+  site_description  String?
+  time_zone         String
+  phone_number      String?
+  email             String?
+  address           String?
 
   logo                String?
   favicon             String?
@@ -795,3 +798,74 @@ model BlogFile {
 //   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 //   @@map("notes")
 // }
+
+//admin_settings 
+model WithdrawalSettings {
+  id                         Int      @id @default(autoincrement())
+  minimumWithdrawalAmount    Float    
+  withdrawalProcessingFee    Float    
+  withdrawalProcessingTime   String   
+  isFlatCommission           Boolean  
+  flatCommissionValue        Float?   
+  percentageCommissionValue  Float?   
+  paymentMethods             String[]
+
+  @@map("withdrawal_settings")
+}
+
+model SecuritySettings {
+  id                   Int      @id @default(autoincrement())
+  dataExportBackup     Int   
+  sessionTimeout        Int    
+  failedLoginAttempts   Int     
+  passwordExpiry        Int     
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("security_settings")
+}
+
+// chat_bot
+model ChatLog {
+  id         Int      @id @default(autoincrement())
+  message    String
+  response   String
+  created_at DateTime @default(now())
+
+  @@map("chat_log")
+}
+
+// this table stores Email history
+  model EmailHistory {
+    id         String    @id @default(cuid())
+    created_at DateTime  @default(now())
+    updated_at DateTime  @default(now())
+    deleted_at DateTime?
+    status     Int?      @default(1) @db.SmallInt
+    sort_order Int?      @default(0)
+
+    type    String? // Password Reset, Email Verification, etc.
+    subject String?
+    body    String? @db.Text
+
+    email_history_recipients EmailHistoryRecipient[]
+
+    @@map("email_histories")
+  }
+
+  // this table stores Email history recipient
+  model EmailHistoryRecipient {
+    id         String    @id @default(cuid())
+    created_at DateTime  @default(now())
+    updated_at DateTime  @default(now())
+    deleted_at DateTime?
+
+    email_history_id String
+    email_history    EmailHistory? @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
+
+    recipient_id String
+    recipient    User?  @relation(fields: [recipient_id], references: [id])
+
+    @@map("email_history_recipients")
+  }

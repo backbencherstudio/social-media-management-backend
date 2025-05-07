@@ -4,14 +4,16 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { diskStorage } from 'multer';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -31,9 +33,9 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Get user details' })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@Req() req: Request) {
+  async me(@Req() req: Request)  {
     try {
       const user_id = req.user.userId;
 
@@ -48,6 +50,9 @@ export class AuthController {
     }
   }
 
+
+
+//register
   @ApiOperation({ summary: 'Register a user' })
   @Post('register')
   async create(@Body() data: CreateUserDto) {
@@ -94,6 +99,47 @@ export class AuthController {
       });
 
       return response;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+
+  //get all user
+  @ApiOperation({ summary: 'Get all users' })
+  @Get('all')
+  async findAll() {
+    try {
+      const users = await this.authService.findAllUsers();
+      return {
+        success: true,
+        data: users,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+//get all admins
+ @ApiResponse({ description: 'Get all users' })
+  @Get('admins')
+  async findAllAdmins(
+    @Query() query: { q?: string; type?: string; approved?: string },
+  ) {
+    try {
+      const q = query.q;
+      const type = query.type;
+      const approved = query.approved;
+
+      const users = await this.authService.findAllAdmins({ q, type, approved });
+      return users;
     } catch (error) {
       return {
         success: false,

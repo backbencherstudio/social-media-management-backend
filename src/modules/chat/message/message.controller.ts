@@ -3,7 +3,7 @@ import {
   Post,
   Body,
   Req,
-  UseGuards,
+  // UseGuards,
   Get,
   Query,
 } from '@nestjs/common';
@@ -11,18 +11,18 @@ import { MessageService } from './message.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageGateway } from './message.gateway';
 import { Request } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+// import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
-@ApiBearerAuth()
-@ApiTags('Message')
-@UseGuards(JwtAuthGuard)
+// @ApiBearerAuth()
+// @ApiTags('Message')
+// @UseGuards(JwtAuthGuard)
 @Controller('chat/message')
 export class MessageController {
   constructor(
     private readonly messageService: MessageService,
     private readonly messageGateway: MessageGateway,
-  ) {}
+  ) { }
 
   @ApiOperation({ summary: 'Send message' })
   @Post()
@@ -30,8 +30,11 @@ export class MessageController {
     @Req() req: Request,
     @Body() createMessageDto: CreateMessageDto,
   ) {
-    const user_id = req.user.userId;
+    // const user_id = req.user.userId;
+    // const user_id = req.user.userId;
+    const user_id = "cma6ljoh10001reuk0bv6xban";
     const message = await this.messageService.create(user_id, createMessageDto);
+
     if (message.success) {
       const messageData = {
         message: {
@@ -68,10 +71,12 @@ export class MessageController {
     @Query()
     query: { conversation_id: string; limit?: number; cursor?: string },
   ) {
-    const user_id = req.user.userId;
+    // const user_id = req.user.userId;
+    const user_id = req.query.user_id as string || 'test-user'; // TEMP fallback
     const conversation_id = query.conversation_id as string;
     const limit = Number(query.limit);
     const cursor = query.cursor as string;
+
     try {
       const messages = await this.messageService.findAll({
         user_id,
@@ -85,6 +90,7 @@ export class MessageController {
         success: false,
         message: error.message,
       };
+
     }
   }
 }
