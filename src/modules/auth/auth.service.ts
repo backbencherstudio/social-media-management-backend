@@ -72,6 +72,43 @@ export class AuthService {
     }
   }
 
+
+  // find all 
+  async findAllUsers() {
+    try {
+      const users = await UserRepository.getAllUsers();
+  
+      return {
+        success: true,
+        message: 'Users fetched successfully',
+        data: users,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  //find all admins
+  async findAllAdmins(p0: { q: string; type: string; approved: string; }) {
+    try {
+      const users = await UserRepository.getAllAdmins();
+  
+      return {
+        success: true,
+        message: 'Users fetched successfully',
+        data: users,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  //update a user
   async updateUser(
     userId: string,
     updateUserDto: UpdateUserDto,
@@ -155,6 +192,7 @@ export class AuthService {
     }
   }
 
+  // find only one admin  
   async validateUser(
     email: string,
     pass: string,
@@ -209,6 +247,7 @@ export class AuthService {
     }
   }
 
+  //log in
   async login({ email, userId }) {
     try {
       const payload = { email: email, sub: userId };
@@ -232,6 +271,7 @@ export class AuthService {
     }
   }
 
+  // register
   async register({
     name,
     first_name,
@@ -342,6 +382,8 @@ export class AuthService {
     }
   }
 
+
+  //forget passs
   async forgotPassword(email) {
     try {
       const user = await UserRepository.exist({

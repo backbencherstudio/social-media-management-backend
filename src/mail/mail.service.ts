@@ -73,4 +73,30 @@ export class MailService {
       },
     });
   }
+
+  async supportEmail(params: {
+    email: string;
+    name: string;
+    subject: string;
+    message: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+  
+      //add queue
+      await this.queue.add('sendSupportEmail', {
+        to: params.email,
+        from: from,
+        subject: params.subject,
+        template: 'support-email', 
+        context: {
+          name: params.name,
+          message: params.message,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to add support email to queue:', error);
+    }
+  }
+  
 }

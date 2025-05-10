@@ -24,6 +24,85 @@ export class UserRepository {
     return user;
   }
 
+ /**
+ * Get all users with their roles
+ * 
+ */
+static async getAllUsers() {
+  try {
+    const users = await prisma.user.findMany({
+      include: {
+        role_users: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+      where:{
+        type:'user'
+      }
+    });
+
+    return {
+      success: true,
+      message: 'Users fetched successfully',
+      data: users,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+/**
+ * Get all users with their roles
+ * 
+ */
+static async getAllAdmins() {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        type: 'admin',
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        type: true,
+        role_users: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Users fetched successfully',
+      data: users,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+
   // email varification
   static async verifyEmail({ email }) {
     const user = await prisma.user.findFirst({
