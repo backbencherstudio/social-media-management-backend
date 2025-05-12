@@ -905,3 +905,25 @@ model ChatLog {
 
     @@map("email_history_recipients")
   }
+
+// this table stores Post performance
+model PostPerformance {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  post_id String
+  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  platform String?
+  likes Int?
+  comments Int?
+  shares Int?
+  reach Int?
+  impressions Int?
+  clicks Int?
+  engagement_rate Float?
+
+  @@map("post_performances")
+}

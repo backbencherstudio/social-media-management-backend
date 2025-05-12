@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { PostModule } from './modules/reseller/post/post.module';
 import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
 import {BlogModule} from './modules/admin/blog/blog.module'
 import { UserModule } from './modules/chat/user/user.module';
@@ -49,6 +50,7 @@ import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
     AdminModule,
     ChatModule,
     PaymentModule,
+    PostModule,
     ServiceManagementModule,
     BlogModule,
     FeatureModule,
