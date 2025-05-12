@@ -74,7 +74,7 @@ export class ServiceManagementService {
             data: {
               service_id: service.id,
               name: `Extra ${platform}`,
-              price: dto.extra_platform_price ?? 0,
+              price: dto.extra_platformPrice ?? 0,
             },
           }),
         ),
@@ -189,7 +189,7 @@ export class ServiceManagementService {
             data: {
               service_id: id,
               name: `Extra ${platform}`,
-              price: dto.extra_platform_price ?? 10,
+              price: dto.extra_platformPrice ?? 10,
             },
           }),
         ),
