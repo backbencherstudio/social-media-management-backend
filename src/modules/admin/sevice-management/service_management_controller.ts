@@ -33,7 +33,7 @@ export class ServiceManagementController {
     },
   })
 async create(@Body() dto: CreateServiceDto, @Req() req: any) {
-    const userId = req.user?.id; // adjust to your auth logic
+    const userId = req.user?.id; 
     return await this.serviceManagementService.createService(dto, userId);
   }
 

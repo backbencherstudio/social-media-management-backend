@@ -95,7 +95,7 @@ export class ServiceManagementService {
     }
   }
 
-  // Get all services with related data
+  // Get all services 
   async getAllServices() {
     try {
       const services = await this.prisma.service.findMany({
@@ -114,7 +114,7 @@ export class ServiceManagementService {
         orderBy: { created_at: 'desc' },
       });
 
-      // Format for UI
+  // formation updates
       return services.map((service) => ({
         id: service.id,
         name: service.name,
@@ -122,7 +122,7 @@ export class ServiceManagementService {
         price: service.service_tiers[0]?.price
           ? `$${service.service_tiers[0].price.toFixed(2)}/mo`
           : 'N/A',
-        sale: Math.floor(Math.random() * 50), // Fake sale data for now
+        sale: Math.floor(Math.random() * 50), // dummy data creating here to test purpose 
         status: service.status === 1 ? 'Active' : 'Disable',
         features: service.service_features.map((sf) => sf.feature?.name).filter(Boolean),
       }));
@@ -150,7 +150,7 @@ export class ServiceManagementService {
     }
   }
 
-  // ✅ Update existing service and replace all tiers, features, addons
+  // Update existing service and replace all tiers, features, addons
   async updateServices(id: string, dto: CreateServiceDto) {
     try {
       // 1. Update main service record

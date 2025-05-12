@@ -59,7 +59,7 @@ export class CategoryService {
   // Soft delete category
   async remove(id: string) {
     try {
-      await this.findOne(id); // Ensure it exists
+      await this.findOne(id); 
   
       await this.prisma.category.update({
         where: { id },
