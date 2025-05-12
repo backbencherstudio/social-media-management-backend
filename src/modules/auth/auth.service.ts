@@ -108,6 +108,49 @@ export class AuthService {
       };
     }
   }
+
+
+  //find all admins
+  async findAllClints(p0: { q: string; type: string; approved: string; }) {
+    try {
+      const users = await UserRepository.getAllClints();
+  
+      return {
+        success: true,
+        message: 'Clints fetched successfully',
+        data: users,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+
+
+    //find all admins
+    async findAllResellers(p0: { q: string; type: string; approved: string; }) {
+      try {
+        const users = await UserRepository.getAllResellers();
+    
+        return {
+          success: true,
+          message: 'Resellers fetched successfully',
+          data: users,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    }
+
+
+
   //update a user
   async updateUser(
     userId: string,

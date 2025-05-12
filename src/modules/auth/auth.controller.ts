@@ -148,6 +148,57 @@ export class AuthController {
     }
   }
 
+
+
+
+  @ApiResponse({ description: 'Get all users' })
+  @Get('clints')
+  async findAllClints(
+    @Query() query: { q?: string; type?: string; approved?: string },
+  ) {
+    try {
+      const q = query.q;
+      const type = query.type;
+      const approved = query.approved;
+
+      const users = await this.authService.findAllClints({ q, type, approved });
+      return users;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+
+
+  @ApiResponse({ description: 'Get all users' })
+  @Get('resellers')
+  async findAllResellers(
+    @Query() query: { q?: string; type?: string; approved?: string },
+  ) {
+    try {
+      const q = query.q;
+      const type = query.type;
+      const approved = query.approved;
+
+      const users = await this.authService.findAllResellers({ q, type, approved });
+      return users;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+
+
+
+
   // login user
   @ApiOperation({ summary: 'Login user' })
   @UseGuards(LocalAuthGuard)
@@ -191,7 +242,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Update user' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Patch('update')
+  @Patch('update') // No :id here
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
@@ -213,7 +264,7 @@ export class AuthController {
     @UploadedFile() image: Express.Multer.File,
   ) {
     try {
-      const user_id = req.user.userId;
+      const user_id = req.user.userId; // Comes from JWT
       const response = await this.authService.updateUser(user_id, data, image);
       return response;
     } catch (error) {
@@ -223,6 +274,7 @@ export class AuthController {
       };
     }
   }
+  
 
   // --------------change password---------
 

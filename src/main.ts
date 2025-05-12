@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import * as bodyParser from 'body-parser';
 import { join } from 'path';
 // import express from 'express';
 // internal imports
@@ -20,6 +21,10 @@ async function bootstrap() {
 
   // Handle raw body for webhooks
   // app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));
+  app.use(
+  '/payment/stripe/webhook',
+  bodyParser.raw({ type: 'application/json' })
+);
 
   app.setGlobalPrefix('api');
   app.enableCors();

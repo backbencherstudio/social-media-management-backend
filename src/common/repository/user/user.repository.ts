@@ -28,11 +28,48 @@ export class UserRepository {
  * Get all users with their roles
  * 
  */
+// static async getAllUsers() {
+//   try {
+//     const users = await prisma.user.findMany({
+//       include: {
+//         role_users: {
+//           select: {
+//             role: {
+//               select: {
+//                 id: true,
+//                 title: true,
+//               },
+//             },
+//           },
+//         },
+//       },
+//       where:{
+//         type:'user'
+//       }
+//     });
+
+//     return {
+//       success: true,
+//       message: 'Users fetched successfully',
+//       data: users,
+//     };
+//   } catch (error) {
+//     return {
+//       success: false,
+//       message: error.message,
+//     };
+//   }
+// }
 static async getAllUsers() {
   try {
     const users = await prisma.user.findMany({
-      include: {
-        role_users: {
+      select: {    
+        id: true,
+        name: true,
+        email: true,
+        password: true, 
+        type: true,
+        role_users: {   
           select: {
             role: {
               select: {
@@ -43,9 +80,6 @@ static async getAllUsers() {
           },
         },
       },
-      where:{
-        type:'user'
-      }
     });
 
     return {
@@ -60,9 +94,8 @@ static async getAllUsers() {
     };
   }
 }
-
 /**
- * Get all users with their roles
+ * Get all admins
  * 
  */
 static async getAllAdmins() {
@@ -101,6 +134,98 @@ static async getAllAdmins() {
     };
   }
 }
+
+
+/**
+ * Get all clints
+ * 
+ */
+
+static async getAllClints(){
+  try {
+    const users = await prisma.user.findMany({
+      where: 
+      {type: 'clint',
+
+      }
+      ,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        type: true,
+        role_users: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  
+  );
+  return{
+    success: true,
+      message: 'Clints fetched successfully',
+      data: users,
+  }
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+/**
+ * Get all resellers
+ * 
+ */
+
+static async getAllResellers(){
+  try {
+    const users = await prisma.user.findMany({
+      where: 
+      {type: 'reseller',
+
+      }
+      ,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        type: true,
+        role_users: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  
+  );
+  return{
+    success: true,
+      message: 'Resellers fetched successfully',
+      data: users,
+  }
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
 
 
   // email varification
@@ -379,7 +504,7 @@ static async getAllAdmins() {
       email,
       password,
       role_id = null,
-      type = 'user',
+      type,
     }: {
       name?: string;
       email?: string;
