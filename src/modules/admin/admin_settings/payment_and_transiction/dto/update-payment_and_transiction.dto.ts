@@ -1,4 +1,10 @@
-import { IsOptional, IsBoolean, IsNumber, IsString, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsString,
+  IsArray,
+} from 'class-validator';
 
 export class UpdateWithdrawalSettingsDto {
   @IsOptional()

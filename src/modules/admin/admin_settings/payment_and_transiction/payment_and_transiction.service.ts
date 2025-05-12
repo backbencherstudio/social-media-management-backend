@@ -64,11 +64,23 @@ export class PaymentAndTransactionService {
         throw new NotFoundException('Withdrawal settings not found.');
       }
 
-  
+      const restored = await this.prisma.withdrawalSettings.update({
+        where: { id: existing.id },
+    data: {
+  minimum_withdrawal_amount: 100,
+  withdrawal_processing_fee: 1,
+  withdrawal_processing_time: '3-5 Business Days',
+  is_flat_commission: false,
+  flat_commission_value: null,
+  percentage_commission_value: 10,
+  payment_methods: ['PayPal', 'Visa/MasterCard', 'Bank Transfer'],
+     },
+      });
+
       return {
         success: true,
         message: 'Settings restored to default values.',
-  
+        data: restored,
       };
     } catch (error) {
       return {
