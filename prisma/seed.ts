@@ -32,13 +32,13 @@ async function seedWithdrawalSettings() {
   if (!existing) {
     await prisma.withdrawalSettings.create({
       data: {
-        minimumWithdrawalAmount: 100,
-        withdrawalProcessingFee: 1,
-        withdrawalProcessingTime: '3-5 Business Days',
-        isFlatCommission: false,
-        flatCommissionValue: null,
-        percentageCommissionValue: 10,
-        paymentMethods: ['PayPal', 'Visa/MasterCard', 'Bank Transfer'],
+        minimum_withdrawal_amount: 100,
+        withdrawal_processing_fee: 1,
+        withdrawal_processing_time: '3-5 Business Days',
+        is_flat_commission: false,
+        flat_commission_value: null,
+        percentage_commission_value: 10,
+        payment_methods: ['PayPal', 'Visa/MasterCard', 'Bank Transfer'],
       },
     });
     console.log('✅ Seeded withdrawal settings');
@@ -49,7 +49,7 @@ async function seedWithdrawalSettings() {
 
 async function main() {
   await seedWebsiteInfo();
-  await seedWithdrawalSettings(); // ← just added
+  await seedWithdrawalSettings();
 }
 
 main()

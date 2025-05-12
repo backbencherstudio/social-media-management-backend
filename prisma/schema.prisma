@@ -74,16 +74,14 @@ model User {
   receiver_notifications    Notification[] @relation("receiver")
   sender_notifications      Notification[] @relation("sender")
 
-  user_payment_methods UserPaymentMethod[]
-  user_settings        UserSetting[]
-  ucodes               Ucode[]
-  roles                Role[]
-  role_users           RoleUser[]
-  payment_transactions PaymentTransaction[]
-  services             Service[]
-  subscriptions        Subscription[]
-  email_history_recipients EmailHistoryRecipient[]
-
+  user_payment_methods     UserPaymentMethod[]
+  user_settings            UserSetting[]
+  ucodes                   Ucode[]
+  roles                    Role[]
+  role_users               RoleUser[]
+  payment_transactions     PaymentTransaction[]
+  services                 Service[]
+  subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
 
   @@map("users")
@@ -371,12 +369,12 @@ model WebsiteInfo {
   updated_at DateTime  @default(now())
   deleted_at DateTime?
 
-  site_name         String?
-  site_description  String?
-  time_zone         String
-  phone_number      String?
-  email             String?
-  address           String?
+  site_name        String?
+  site_description String?
+  time_zone        String
+  phone_number     String?
+  email            String?
+  address          String?
 
   logo                String?
   favicon             String?
@@ -649,8 +647,9 @@ model Post {
 
   hashtags String[]
 
-  post_files    PostFile[]
-  post_channels PostChannel[]
+  post_files        PostFile[]
+  post_channels     PostChannel[]
+  post_performances PostPerformance[]
 
   @@map("posts")
 }
@@ -785,6 +784,51 @@ model BlogFile {
   @@map("blog_files")
 }
 
+//admin_settings 
+model WithdrawalSettings {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  minimum_withdrawal_amount   Float
+  withdrawal_processing_fee   Float
+  withdrawal_processing_time  String
+  is_flat_commission          Boolean
+  flat_commission_value       Float?
+  percentage_commission_value Float?
+  payment_methods             String[]
+
+  @@map("withdrawal_settings")
+}
+
+model SecuritySettings {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  data_export_backup    Int
+  session_timeout       Int
+  failed_login_attempts Int
+  password_expiry       Int
+
+  @@map("security_settings")
+}
+
+// chat_bot
+model ChatLog {
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now())
+
+  message  String
+  response String
+
+  @@map("chat_log")
+}
+
 // this table stores Email history
 model EmailHistory {
   id         String    @id @default(cuid())
@@ -819,6 +863,28 @@ model EmailHistoryRecipient {
   @@map("email_history_recipients")
 }
 
+// this table stores Post performance
+model PostPerformance {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  post_id String
+  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  platform        String?
+  likes           Int?
+  comments        Int?
+  shares          Int?
+  reach           Int?
+  impressions     Int?
+  clicks          Int?
+  engagement_rate Float?
+
+  @@map("post_performances")
+}
+
 // this table stores example
 // model Note {
 //   id                String  @id @default(cuid())
@@ -834,96 +900,3 @@ model EmailHistoryRecipient {
 //   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 //   @@map("notes")
 // }
-
-//admin_settings 
-model WithdrawalSettings {
-  id                         Int      @id @default(autoincrement())
-  minimumWithdrawalAmount    Float    
-  withdrawalProcessingFee    Float    
-  withdrawalProcessingTime   String   
-  isFlatCommission           Boolean  
-  flatCommissionValue        Float?   
-  percentageCommissionValue  Float?   
-  paymentMethods             String[]
-
-  @@map("withdrawal_settings")
-}
-
-model SecuritySettings {
-  id                   Int      @id @default(autoincrement())
-  dataExportBackup     Int   
-  sessionTimeout        Int    
-  failedLoginAttempts   Int     
-  passwordExpiry        Int     
-
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  @@map("security_settings")
-}
-
-// chat_bot
-model ChatLog {
-  id         Int      @id @default(autoincrement())
-  message    String
-  response   String
-  created_at DateTime @default(now())
-
-  @@map("chat_log")
-}
-
-// this table stores Email history
-  model EmailHistory {
-    id         String    @id @default(cuid())
-    created_at DateTime  @default(now())
-    updated_at DateTime  @default(now())
-    deleted_at DateTime?
-    status     Int?      @default(1) @db.SmallInt
-    sort_order Int?      @default(0)
-
-    type    String? // Password Reset, Email Verification, etc.
-    subject String?
-    body    String? @db.Text
-
-    email_history_recipients EmailHistoryRecipient[]
-
-    @@map("email_histories")
-  }
-
-  // this table stores Email history recipient
-  model EmailHistoryRecipient {
-    id         String    @id @default(cuid())
-    created_at DateTime  @default(now())
-    updated_at DateTime  @default(now())
-    deleted_at DateTime?
-
-    email_history_id String
-    email_history    EmailHistory? @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
-
-    recipient_id String
-    recipient    User?  @relation(fields: [recipient_id], references: [id])
-
-    @@map("email_history_recipients")
-  }
-
-// this table stores Post performance
-model PostPerformance {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
-
-  post_id String
-  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
-
-  platform String?
-  likes Int?
-  comments Int?
-  shares Int?
-  reach Int?
-  impressions Int?
-  clicks Int?
-  engagement_rate Float?
-
-  @@map("post_performances")
-}
