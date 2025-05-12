@@ -84,5 +84,5 @@ export class CreateServiceDto {
   @ApiPropertyOptional({ example: 10, description: 'Extra cost for additional platforms' })
   @IsOptional()
   @IsNumber()
-  extra_platformPrice: number;
+  extra_platform_Price: number;
 }
