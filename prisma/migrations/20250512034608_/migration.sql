@@ -166,20 +166,17 @@ CREATE TABLE "payment_transactions" (
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP(3),
     "status" TEXT DEFAULT 'pending',
-    "raw_status" TEXT,
-    "provider" TEXT,
-    "reference_number" TEXT,
     "user_id" TEXT,
-    "receiver_id" TEXT,
     "subscription_id" TEXT,
     "type" TEXT DEFAULT 'order',
     "withdraw_via" TEXT DEFAULT 'wallet',
+    "provider" TEXT,
+    "reference_number" TEXT,
+    "raw_status" TEXT,
     "amount" DECIMAL(65,30),
     "currency" TEXT,
     "paid_amount" DECIMAL(65,30),
     "paid_currency" TEXT,
-    "package_name" TEXT,
-    "package_type" TEXT,
 
     CONSTRAINT "payment_transactions_pkey" PRIMARY KEY ("id")
 );
@@ -578,29 +575,34 @@ CREATE TABLE "blog_files" (
 );
 
 -- CreateTable
-<<<<<<<< HEAD:prisma/migrations/20250511032159_/migration.sql
 CREATE TABLE "withdrawal_settings" (
-    "id" SERIAL NOT NULL,
-    "minimumWithdrawalAmount" DOUBLE PRECISION NOT NULL,
-    "withdrawalProcessingFee" DOUBLE PRECISION NOT NULL,
-    "withdrawalProcessingTime" TEXT NOT NULL,
-    "isFlatCommission" BOOLEAN NOT NULL,
-    "flatCommissionValue" DOUBLE PRECISION,
-    "percentageCommissionValue" DOUBLE PRECISION,
-    "paymentMethods" TEXT[],
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMP(3),
+    "status" SMALLINT DEFAULT 1,
+    "minimum_withdrawal_amount" DOUBLE PRECISION NOT NULL,
+    "withdrawal_processing_fee" DOUBLE PRECISION NOT NULL,
+    "withdrawal_processing_time" TEXT NOT NULL,
+    "is_flat_commission" BOOLEAN NOT NULL,
+    "flat_commission_value" DOUBLE PRECISION,
+    "percentage_commission_value" DOUBLE PRECISION,
+    "payment_methods" TEXT[],
 
     CONSTRAINT "withdrawal_settings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "security_settings" (
-    "id" SERIAL NOT NULL,
-    "dataExportBackup" INTEGER NOT NULL,
-    "sessionTimeout" INTEGER NOT NULL,
-    "failedLoginAttempts" INTEGER NOT NULL,
-    "passwordExpiry" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMP(3),
+    "status" SMALLINT DEFAULT 1,
+    "data_export_backup" INTEGER NOT NULL,
+    "session_timeout" INTEGER NOT NULL,
+    "failed_login_attempts" INTEGER NOT NULL,
+    "password_expiry" INTEGER NOT NULL,
 
     CONSTRAINT "security_settings_pkey" PRIMARY KEY ("id")
 );
@@ -608,16 +610,14 @@ CREATE TABLE "security_settings" (
 -- CreateTable
 CREATE TABLE "chat_log" (
     "id" SERIAL NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "message" TEXT NOT NULL,
     "response" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "chat_log_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-========
->>>>>>>> 06e77836c3f22746392ab6f5260dfd4e868f8c02:prisma/migrations/20250506054123_/migration.sql
 CREATE TABLE "email_histories" (
     "id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -642,6 +642,25 @@ CREATE TABLE "email_history_recipients" (
     "recipient_id" TEXT NOT NULL,
 
     CONSTRAINT "email_history_recipients_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "post_performances" (
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMP(3),
+    "post_id" TEXT NOT NULL,
+    "platform" TEXT,
+    "likes" INTEGER,
+    "comments" INTEGER,
+    "shares" INTEGER,
+    "reach" INTEGER,
+    "impressions" INTEGER,
+    "clicks" INTEGER,
+    "engagement_rate" DOUBLE PRECISION,
+
+    CONSTRAINT "post_performances_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -714,9 +733,6 @@ ALTER TABLE "user_payment_methods" ADD CONSTRAINT "user_payment_methods_user_id_
 
 -- AddForeignKey
 ALTER TABLE "payment_transactions" ADD CONSTRAINT "payment_transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "payment_transactions" ADD CONSTRAINT "payment_transactions_receiver_id_fkey" FOREIGN KEY ("receiver_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "payment_transactions" ADD CONSTRAINT "payment_transactions_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "subscriptions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -816,6 +832,9 @@ ALTER TABLE "email_history_recipients" ADD CONSTRAINT "email_history_recipients_
 
 -- AddForeignKey
 ALTER TABLE "email_history_recipients" ADD CONSTRAINT "email_history_recipients_recipient_id_fkey" FOREIGN KEY ("recipient_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "post_performances" ADD CONSTRAINT "post_performances_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_A_fkey" FOREIGN KEY ("A") REFERENCES "permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
