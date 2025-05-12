@@ -20,7 +20,7 @@ export class MessageService {
   async create(user_id: string, createMessageDto: CreateMessageDto) {
     try {
       let conversationId = createMessageDto.conversation_id;
-  
+
       // Step 1: Find or create conversation
       if (!conversationId) {
         const existing = await this.prisma.conversation.findFirst({
@@ -38,7 +38,7 @@ export class MessageService {
             deleted_at: null,
           },
         });
-  
+
         if (existing) {
           conversationId = existing.id;
         } else {
@@ -51,21 +51,21 @@ export class MessageService {
           conversationId = created.id;
         }
       }
-  
+
       // Step 2: Validate receiver
       const receiver = await this.prisma.user.findFirst({
         where: {
           id: createMessageDto.receiver_id,
         },
       });
-  
+
       if (!receiver) {
         return {
           success: false,
           message: 'Receiver not found',
         };
       }
-  
+
       // Step 3: Save message
       const message = await this.prisma.message.create({
         data: {
@@ -81,7 +81,7 @@ export class MessageService {
           conversation_id: conversationId,
         },
       });
-  
+
       // Step 4: Update conversation's updated_at
       await this.prisma.conversation.update({
         where: {
@@ -91,7 +91,7 @@ export class MessageService {
           updated_at: DateHelper.now(),
         },
       });
-  
+
       return {
         success: true,
         data: message,
@@ -104,7 +104,7 @@ export class MessageService {
       };
     }
   }
-  
+
   async findAll({
     user_id,
     conversation_id,
@@ -143,7 +143,7 @@ export class MessageService {
         };
       }
 
-      const paginationData: any = {};
+      const paginationData = {};
       if (limit) {
         paginationData['take'] = limit;
       }
@@ -165,6 +165,7 @@ export class MessageService {
           message: true,
           created_at: true,
           status: true,
+          attachment_id: true,
           sender: {
             select: {
               id: true,
@@ -195,7 +196,7 @@ export class MessageService {
       for (const message of messages) {
         if (message.attachment_id) {
           message.attachment_id['file_url'] = SojebStorage.url(
-            appConfig().storageUrl.attachment + message.attachment_id.file,
+            appConfig().storageUrl.attachment + message.attachment_id,
           );
         }
         if (message.sender?.avatar) {
