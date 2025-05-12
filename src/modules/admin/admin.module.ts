@@ -6,7 +6,6 @@ import { PaymentTransactionModule } from './payment-transaction/payment-transact
 import { NotificationModule } from './notification/notification.module';
 import { UserAndRoleManagementModule } from './admin_settings/user_and_role_management/user_and_role_management.module';
 import { PaymentAndTransactionModule } from './admin_settings/payment_and_transiction/payment_and_transiction.module';
-import { SecuritySettingsModule } from './admin_settings/security_settings/security_settings.module';
 import { EmailModule } from './help_and_support/email/email.module';
 import { EditProfileModule } from './admin_settings/edit-profile/edit-profile.module';
 
@@ -20,7 +19,6 @@ import { EditProfileModule } from './admin_settings/edit-profile/edit-profile.mo
     NotificationModule,
     UserAndRoleManagementModule,
     PaymentAndTransactionModule,
-    SecuritySettingsModule,
     EmailModule,
     EditProfileModule,
   ],
