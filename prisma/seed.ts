@@ -26,35 +26,11 @@ async function seedWebsiteInfo() {
   }
 }
 
-async function seedWithdrawalSettings() {
-  try {
-    const existing = await prisma.withdrawalSettings.findFirst();
 
-    if (!existing) {
-await prisma.withdrawalSettings.create({
-  data: {
-    minimumWithdrawalAmount: 100,
-    withdrawalProcessingFee: 1,
-    withdrawalProcessingTime: '3-5 Business Days',
-    isFlatCommission: false,
-    flatCommissionValue: null,
-    percentageCommissionValue: 10,
-    paymentMethods: ['PayPal', 'Visa/MasterCard', 'Bank Transfer'],
-  },
-});
-      console.log('Seeded withdrawal settings');
-    } else {
-      console.log('Withdrawal settings already exist');
-    }
-  } catch (error) {
-    console.error('❌ Error seeding withdrawal settings:', error);
-  }
-}
 
 
 async function main() {
   await seedWebsiteInfo();
-  await seedWithdrawalSettings();
 }
 
 main()
