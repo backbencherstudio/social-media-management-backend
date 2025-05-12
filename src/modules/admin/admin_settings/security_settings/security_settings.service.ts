@@ -7,25 +7,26 @@ export class SecuritySettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Constants defined directly in the service
-  private readonly DEFAULT_SETTINGS = {
-    dataExportBackup: 7,
-    sessionTimeout: 30,
-    failedLoginAttempts: 5,
-    passwordExpiry: 90,
-  };
+private readonly DEFAULT_SETTINGS = {
+  data_export_backup: 7,
+  session_timeout: 30,
+  failed_login_attempts: 5,
+  password_expiry: 90,
+};
 
-  private readonly SecuritySettingsOptions = {
-    dataExportBackup: [7, 10, 15, 25, 30, 45, 50, 55, 60],
-    sessionTimeout: [15, 30, 45, 60],
-    failedLoginAttempts: [3, 5, 7, 10],
-    passwordExpiry: [30, 60, 90, 120, 180],
-  };
+private readonly SecuritySettingsOptions = {
+  data_export_backup: [7, 10, 15, 25, 30, 45, 50, 55, 60],
+  session_timeout: [15, 30, 45, 60],
+  failed_login_attempts: [3, 5, 7, 10],
+  password_expiry: [30, 60, 90, 120, 180],
+};
+
 
 // GET: Get current security settings
 async get() {
   try {
     let settings = await this.prisma.securitySettings.findUnique({
-      where: { id: 1 },
+      where: { id: "1" },
     });
 
     if (!settings) {
@@ -54,21 +55,21 @@ async update(data: UpdateSecuritySettingsDto) {
       passwordExpiry,
     } = data;
 
-    if (!this.SecuritySettingsOptions.dataExportBackup.includes(dataExportBackup)) {
+    if (!this.SecuritySettingsOptions.data_export_backup.includes(dataExportBackup)) {
       throw new BadRequestException('Invalid dataExportBackup');
     }
-    if (!this.SecuritySettingsOptions.sessionTimeout.includes(sessionTimeout)) {
+    if (!this.SecuritySettingsOptions.session_timeout.includes(sessionTimeout)) {
       throw new BadRequestException('Invalid sessionTimeout');
     }
-    if (!this.SecuritySettingsOptions.failedLoginAttempts.includes(failedLoginAttempts)) {
+    if (!this.SecuritySettingsOptions.failed_login_attempts.includes(failedLoginAttempts)) {
       throw new BadRequestException('Invalid failedLoginAttempts');
     }
-    if (!this.SecuritySettingsOptions.passwordExpiry.includes(passwordExpiry)) {
+    if (!this.SecuritySettingsOptions.password_expiry.includes(passwordExpiry)) {
       throw new BadRequestException('Invalid passwordExpiry');
     }
 
     const updated = await this.prisma.securitySettings.update({
-      where: { id: 1 },
+      where: { id: "1" },
       data,
     });
 
@@ -84,7 +85,7 @@ async update(data: UpdateSecuritySettingsDto) {
 async reset() {
   try {
     const existing = await this.prisma.securitySettings.findUnique({
-      where: { id: 1 },
+      where: { id: "1" },
     });
 
     if (!existing) {
@@ -92,7 +93,7 @@ async reset() {
     }
 
     const restored = await this.prisma.securitySettings.update({
-      where: { id: 1 },
+      where: { id: "1" },
       data: this.DEFAULT_SETTINGS,
     });
 
