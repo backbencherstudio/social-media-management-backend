@@ -3,30 +3,30 @@ import { IsOptional, IsBoolean, IsNumber, IsString, IsArray } from 'class-valida
 export class UpdateWithdrawalSettingsDto {
   @IsOptional()
   @IsNumber()
-  minimumWithdrawalAmount?: number;
+  minimum_withdrawal_amount?: number;
 
   @IsOptional()
   @IsNumber()
-  withdrawalProcessingFee?: number;
+  withdrawal_processing_fee?: number;
 
   @IsOptional()
   @IsString()
-  withdrawalProcessingTime?: string;
+  withdrawal_processing_time?: string;
 
   @IsOptional()
   @IsBoolean()
-  isFlatCommission?: boolean;
+  is_flat_commission?: boolean;
 
   @IsOptional()
   @IsNumber()
-  flatCommissionValue?: number;
+  flat_commission_value?: number;
 
   @IsOptional()
   @IsNumber()
-  percentageCommissionValue?: number;
+  percentage_commission_value?: number;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  paymentMethods?: string[];
+  payment_methods?: string[];
 }
