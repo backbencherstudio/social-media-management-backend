@@ -15,9 +15,9 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Role } from 'src/common/guard/role/role.enum';
 import { Roles } from 'src/common/guard/role/roles.decorator';
 
-// @ApiBearerAuth()
+@ApiBearerAuth()
 @ApiTags('Conversation')
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('chat/conversation')
 export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
