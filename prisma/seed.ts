@@ -20,9 +20,9 @@ async function seedWebsiteInfo() {
         cancellation_policy: '',
       },
     });
-    console.log('✅ Seeded website info settings');
+    console.log('Seeded website info settings');
   } else {
-    console.log('ℹ️ Website info already exists');
+    console.log('Website info already exists');
   }
 }
 
@@ -42,12 +42,12 @@ data: {
   payment_methods: ['PayPal', 'Visa/MasterCard', 'Bank Transfer'],
 },
 });
-      console.log('✅ Seeded withdrawal settings');
+      console.log(' Seeded withdrawal settings');
     } else {
-      console.log('ℹ️ Withdrawal settings already exist');
+      console.log('Withdrawal settings already exist');
     }
   } catch (error) {
-    console.error('❌ Error seeding withdrawal settings:', error);
+    console.error('Error seeding withdrawal settings:', error);
   }
 }
 
