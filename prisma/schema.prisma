@@ -582,6 +582,9 @@ model Subscription {
   service_id String
   service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
 
+  // one time payment
+  one_time_payment Int? @default(0) // 0 if not one time payment, 1 if one time payment
+
   start_at DateTime
   end_at   DateTime
 
