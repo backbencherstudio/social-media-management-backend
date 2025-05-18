@@ -6,7 +6,7 @@ import * as fs from 'fs';
 const STRIPE_SECRET_KEY = appConfig().payment.stripe.secret_key;
 
 const Stripe = new stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2025-03-31.basil',
+  apiVersion: '2025-04-30.basil',
 });
 
 const STRIPE_WEBHOOK_SECRET = appConfig().payment.stripe.webhook_secret;
@@ -125,24 +125,81 @@ export class StripePayment {
     return session;
   }
 
-  static async createPaymentIntent({
-    amount,
-    currency,
-    customer_id,
-    metadata,
-  }: {
-    amount: number;
-    currency: string;
-    customer_id: string;
-    metadata?: stripe.MetadataParam;
-  }): Promise<stripe.PaymentIntent> {
-    return Stripe.paymentIntents.create({
-      amount: amount * 100, // amount in cents
-      currency: currency,
-      customer: customer_id,
-      metadata: metadata,
-    });
+  // static async createPaymentIntent({
+  //   amount,
+  //   currency,
+  //   customer_id,
+  //   metadata,
+  // }: {
+  //   amount: number;
+  //   currency: string;
+  //   customer_id: string;
+  //   metadata?: stripe.MetadataParam;
+  // }): Promise<stripe.PaymentIntent> {
+  //   return Stripe.paymentIntents.create({
+  //     amount: amount * 100, // amount in cents
+  //     currency: currency,
+  //     customer: customer_id,
+  //     metadata: metadata,
+  //   });
+  // }
+
+
+static async createPaymentIntent({
+  amount,
+  currency,
+  user_id,
+  customer_id,
+  service_id,
+  service_tier_id,
+  status,
+  metadata,
+}: {
+  amount: number;
+  currency: string;
+  user_id: string;
+  customer_id: string;
+  service_id: string;
+  service_tier_id: string;
+  status: string;
+  metadata: {
+    start_date: string;
+    end_date: string;
+  };
+}): Promise<stripe.PaymentIntent> {
+  if (!amount || amount <= 0) {
+    throw new Error('Amount must be a positive number');
   }
+  if (!currency) {
+    throw new Error('Currency is required');
+  }
+  if (!user_id || !customer_id || !service_id || !service_tier_id) {
+    throw new Error('All IDs are required');
+  }
+  if (!metadata || !metadata.start_date || !metadata.end_date) {
+    throw new Error('Metadata with start_date and end_date is required');
+  }
+
+  try {
+    
+    return await Stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), 
+      currency: currency.toLowerCase(), 
+      customer: customer_id,
+      metadata: { //pushing to meta data----------------\\
+        user_id,           
+        service_id,        
+        service_tier_id,   
+        status,            
+        start_date: metadata.start_date, 
+        end_date: metadata.end_date,     
+      },
+    });
+  } catch (error) {
+    console.error('Failed to create PaymentIntent:', error);
+    throw new Error('Failed to create payment intent');
+  }
+}
 
   /**
    * Create stripe hosted checkout session
@@ -150,7 +207,7 @@ export class StripePayment {
    * @param price
    * @returns
    */
-  static async createCheckoutSession(customer: string, price: string) {
+  static async createCheckoutSession(customer: string, price: string,duration: string) {
     const success_url = `${
       appConfig().app.url
     }/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -171,10 +228,76 @@ export class StripePayment {
       },
       success_url: success_url,
       cancel_url: cancel_url,
+      //-----------------for dynamic time-------------
+       metadata: { duration: duration.toString() }
       // automatic_tax: { enabled: true },
     });
     return session;
   }
+
+  static async setSubscriptionCancelAt(subscriptionId: string, cancelAt: number) {
+  return Stripe.subscriptions.update(subscriptionId, { cancel_at: cancelAt });
+}
+
+  //  static async createCheckoutSession(customer: string, price: string, duration: string) {
+  //   try {
+  //     // Construct success and cancel URLs
+  //     const success_url = `${appConfig().app.url}/success?session_id={CHECKOUT_SESSION_ID}`;
+  //     const cancel_url = `${appConfig().app.url}/failed`;
+
+  //     // Create the checkout session
+  //     const session = await Stripe.checkout.sessions.create({
+  //       mode: 'subscription',
+  //       payment_method_types: ['card'],
+  //       customer: customer,
+  //       line_items: [
+  //         {
+  //           price: price,  // Ensure this is a valid recurring price ID
+  //           quantity: 1,
+  //         },
+  //       ],
+  //       subscription_data: {
+  //         trial_period_days: 14, // Optional trial period
+  //       },
+  //       success_url: success_url,
+  //       cancel_url: cancel_url,
+  //       metadata: { duration: duration.toString() }, // Store custom duration
+  //     });
+
+  //     console.log('Checkout session created successfully:', session.id);
+  //     return { sessionId: session.id, url: session.url };
+  //   } catch (error) {
+  //     console.error('Error creating checkout session:', error.message);
+  //     throw new Error('Failed to create checkout session');
+  //   }
+  // }
+
+  // /**
+  //  * Set the subscription's cancel_at field based on the given duration
+  //  * @param subscriptionId - Stripe subscription ID
+  //  * @param cancelAt - Timestamp (in seconds) when to cancel the subscription
+  //  * @returns The updated subscription
+  //  */
+  // static async setSubscriptionCancelAt(subscriptionId: string, cancelAt: number) {
+  //   try {
+  //     // Ensure cancelAt is a valid future date (in seconds)
+  //     const currentTimestamp = Math.floor(Date.now() / 1000);
+  //     if (cancelAt <= currentTimestamp) {
+  //       throw new Error('The cancelAt timestamp must be a future date.');
+  //     }
+
+  //     // Update the subscription's cancel_at field
+  //     const updatedSubscription = await Stripe.subscriptions.update(subscriptionId, {
+  //       cancel_at: cancelAt,
+  //     });
+
+  //     console.log('Subscription updated with cancel_at:', updatedSubscription.id);
+  //     return updatedSubscription;
+  //   } catch (error) {
+  //     console.error('Error setting cancel_at for subscription:', error.message);
+  //     throw new Error('Failed to set cancel_at for subscription');
+  //   }
+  // }
 
   /**
    * Calculate taxes

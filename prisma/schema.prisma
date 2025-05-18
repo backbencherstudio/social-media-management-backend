@@ -67,10 +67,14 @@ model User {
   two_factor_secret     String? // secret key for two factor authentication
 
   accounts                  Account[]
+  
+  //message
   creator_conversations     Conversation[] @relation("creator")
   participant_conversations Conversation[] @relation("participant")
   receiver_messages         Message[]      @relation("receiver")
   sender_messages           Message[]      @relation("sender")
+
+  //notification
   receiver_notifications    Notification[] @relation("receiver")
   sender_notifications      Notification[] @relation("sender")
 
@@ -83,6 +87,7 @@ model User {
   services                 Service[]
   subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
+  orders                   Order[]
 
   @@map("users")
 }
@@ -348,6 +353,8 @@ model Contact {
   @@map("contacts")
 }
 
+//reseller
+
 model SocialMedia {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -570,20 +577,25 @@ model Channel {
 }
 
 // user subscription
+enum SubscriptionStatus {
+  active
+  canceled
+  expired
+  pending
+  deactive
+}
 model Subscription {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
-  status     Int?     @default(1)
+  status SubscriptionStatus @default(active)
+
 
   service_tier_id String
   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
 
   service_id String
   service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
-
-  // one time payment
-  one_time_payment Int? @default(0) // 0 if not one time payment, 1 if one time payment
 
   start_at DateTime
   end_at   DateTime
@@ -596,6 +608,7 @@ model Subscription {
   payment_transactions  PaymentTransaction[]
   subscription_addons   SubscriptionAddon[]
   subscription_channels SubscriptionChannel[]
+    orders                   Order[]
 
   @@map("subscriptions")
 }
@@ -861,7 +874,7 @@ model EmailHistoryRecipient {
   email_history    EmailHistory? @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
 
   recipient_id String
-  recipient    User?  @relation(fields: [recipient_id], references: [id])
+  recipient    User?  @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
 
   @@map("email_history_recipients")
 }
@@ -903,3 +916,24 @@ model PostPerformance {
 //   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 //   @@map("notes")
 // }
+
+//admin_order
+enum OrderType {
+  progress
+  completed
+  pending
+  canceled
+}
+
+model Order {
+   id             String    @id @default(cuid()) 
+   created_at     DateTime  @default(now())       
+   
+   order_type     OrderType @default(progress)   
+   subscription_id String?  
+   subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
+   user_id        String?  
+   user           User?    @relation(fields: [user_id], references: [id]) 
+   
+   @@map("orders") 
+}

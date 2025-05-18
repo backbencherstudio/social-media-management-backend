@@ -8,6 +8,7 @@ import { UserAndRoleManagementModule } from './admin_settings/user_and_role_mana
 import { PaymentAndTransactionModule } from './admin_settings/payment_and_transiction/payment_and_transiction.module';
 import { EmailModule } from './help_and_support/email/email.module';
 import { EditProfileModule } from './admin_settings/edit-profile/edit-profile.module';
+import { OrderPageModule } from './order_page/order_page.module';
 
 
 @Module({
@@ -21,6 +22,7 @@ import { EditProfileModule } from './admin_settings/edit-profile/edit-profile.mo
     PaymentAndTransactionModule,
     EmailModule,
     EditProfileModule,
+    OrderPageModule,
   ],
 })
 export class AdminModule {}
