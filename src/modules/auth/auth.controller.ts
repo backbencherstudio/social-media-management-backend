@@ -25,9 +25,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import appConfig from '../../config/app.config';
 import { AuthGuard } from '@nestjs/passport';
+import { Role } from 'src/common/guard/role/role.enum';
 
 @ApiTags('auth')
 @Controller('auth')
+
 export class AuthController {
   constructor(private authService: AuthService) {}
 
