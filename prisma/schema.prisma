@@ -861,7 +861,7 @@ model EmailHistoryRecipient {
   email_history    EmailHistory? @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
 
   recipient_id String
-  recipient    User?  @relation(fields: [recipient_id], references: [id])
+  recipient    User?  @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
 
   @@map("email_history_recipients")
 }
