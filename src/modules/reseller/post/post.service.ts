@@ -161,7 +161,7 @@ export class PostService {
             });
           }
         }
-
+        
         if (remove?.length) {
           await this.prisma.postFile.deleteMany({
             where: { id: { in: remove.map(item => item.id) } },
