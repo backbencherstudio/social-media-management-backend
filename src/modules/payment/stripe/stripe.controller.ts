@@ -133,7 +133,8 @@ if (!tier) {
         data: {
         id: `#ORD_${createId()}`,
         order_type: 'progress', 
-        subscription_id: subscription.id, 
+        subscription_id: subscription.id,
+        service_tier_id:tier.id, 
         user_id: userId,
         user_name: user.name,
         user_email: user.email,
