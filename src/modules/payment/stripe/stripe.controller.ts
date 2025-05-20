@@ -5,7 +5,7 @@ import { TransactionRepository } from '../../../common/repository/transaction/tr
 import { CreatePaymentIntentDto } from './dto/create-stripe.dto';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 import { PrismaService } from '../../../prisma/prisma.service';
-
+import { createId } from '@paralleldrive/cuid2';
 
 
 
@@ -107,11 +107,37 @@ async pay(@Body() createPaymentIntent: CreatePaymentIntentDto) {
           });
 
 //-------------------order -created-----------------------------------\\
+const serviceTier = paymentIntent.metadata?.service_tier_id;
+
+const tier = await this.prisma.serviceTier.findUnique({
+  where: { id: serviceTier },
+});
+
+if (!tier) {
+  throw new Error('Service tier not found');
+}
+
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        });
+
+        if (!user) {
+          throw new Error('User not found');
+        }
         const order = await this.prisma.order.create({
         data: {
+        id: `#ORD_${createId()}`,
         order_type: 'progress', 
         subscription_id: subscription.id, 
-        user_id: userId, 
+        user_id: userId,
+        user_name: user.name,
+        user_email: user.email,
+        ammount:tier.price,
           },
          });
 

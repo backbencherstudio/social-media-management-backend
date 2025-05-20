@@ -533,7 +533,8 @@ model ServiceTier {
 
   max_post Int?
 
-  subscriptions Subscription[]
+subscriptions Subscription[]
+orders        Order[]
 
   @@map("service_tiers")
 }
@@ -926,7 +927,7 @@ enum OrderType {
 }
 
 model Order {
-   id             String    @id @default(cuid()) 
+   id             String    @id
    created_at     DateTime  @default(now())       
    
    order_type     OrderType @default(progress)   
@@ -934,6 +935,13 @@ model Order {
    subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
    user_id        String?  
    user           User?    @relation(fields: [user_id], references: [id]) 
+  
+  service_tier_id String?
+  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
+  
+  ammount        Float?
+  user_name      String?   
+  user_email     String?   
    
    @@map("orders") 
 }
