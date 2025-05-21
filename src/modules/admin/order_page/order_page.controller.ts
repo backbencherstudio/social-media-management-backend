@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
 import { OrderPageService } from './order_page.service';
-import { CreateOrderPageDto, UpdateOrderDto } from './dto/create-order_page.dto';
+import { CreateOrderPageDto , UpdateOrderDto } from './dto/create-order_page.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('order-page')
@@ -40,6 +40,9 @@ export class OrderPageController {
       throw error;
     }
   }
+
+
+
 
 
 }

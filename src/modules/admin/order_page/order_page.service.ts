@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateOrderPageDto, UpdateOrderDto } from './dto/create-order_page.dto';
+import { CreateOrderPageDto , UpdateOrderDto } from './dto/create-order_page.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -8,13 +8,19 @@ export class OrderPageService {
   create(createOrderPageDto: CreateOrderPageDto) {
     return 'This action adds a new orderPage';
   }
+
+//--------------------------get all orders---------------------
 async getAllOrders() {
   try {
     const orders = await this.prisma.order.findMany({
       select: {
         id: true, 
-        order_type: true, 
-        subscription_id: true, 
+        order_status: true, 
+        subscription_id: true,
+        ammount:true,
+        pakage_name:true,
+        user_email:true,
+        user_name:true, 
         user_id: true, 
         subscription: {
           select: {
@@ -31,7 +37,7 @@ async getAllOrders() {
     throw error;
   }
 }
-
+//--------------------------get one order with details------------------------
 async getOneOrder(orderId:string) {
   try {
     const orders = await this.prisma.order.findUnique({
@@ -40,7 +46,7 @@ async getOneOrder(orderId:string) {
       },
       select: {
         id: true, 
-        order_type: true, 
+        order_status: true, 
         subscription_id: true, 
         user_id: true, 
         subscription: {
@@ -58,13 +64,13 @@ async getOneOrder(orderId:string) {
     throw error;
   }
 }
-
+//-------------------update order progress-----------------------
 async updateOrderType(orderId: string, updateOrderDto: UpdateOrderDto) {
     try {
       const updatedOrder = await this.prisma.order.update({
         where: { id: orderId },
         data: {
-          order_type: updateOrderDto.order_type,
+          order_status: updateOrderDto.order_type,
         },
       });
 
@@ -73,9 +79,5 @@ async updateOrderType(orderId: string, updateOrderDto: UpdateOrderDto) {
       console.error('Error updating order type:', error);
       throw error;
     }
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} orderPage`;
   }
 }

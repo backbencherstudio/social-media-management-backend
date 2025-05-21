@@ -1,9 +1,13 @@
 export class CreateOrderPageDto {}
 
-import { IsEnum } from 'class-validator';
-import { OrderType } from '@prisma/client'; 
+import { IsEnum, IsString } from 'class-validator';
+import { OrderStatus } from '@prisma/client'; 
 
 export class UpdateOrderDto {
-  @IsEnum(OrderType)
-  order_type: OrderType; 
+  @IsEnum(OrderStatus)
+  order_type: OrderStatus; 
 }
+
+
+
+

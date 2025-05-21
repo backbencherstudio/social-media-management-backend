@@ -88,8 +88,14 @@ model User {
   subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
   orders                   Order[]
+  
+
+    TaskAssigns TaskAssign[] @relation("TaskAssaingees")
+    TaskAssign TaskAssign[]
 
   @@map("users")
+
+ 
 }
 
 model Ucode {
@@ -126,6 +132,7 @@ model Role {
   permissions      Permission[]     @relation("PermissionToRole")
 
   @@map("roles")
+  TaskAssign TaskAssign[]
 }
 
 model Permission {
@@ -919,29 +926,99 @@ model PostPerformance {
 // }
 
 //admin_order
-enum OrderType {
+enum OrderStatus {
   progress
   completed
   pending
   canceled
 }
 
+// model Order {
+//    id             String    @id
+//    created_at     DateTime  @default(now())       
+   
+//    order_status     OrderStatus @default(progress)   
+//    subscription_id String?  
+//    subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
+//    user_id        String?  
+//    user           User?    @relation(fields: [user_id], references: [id]) 
+  
+//   service_tier_id String?
+//   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
+  
+//   ammount        Float?
+//   user_name      String?   
+//   user_email     String?
+//   role_name      String?   //this will be the role id's role name
+
+//   role_id          String?  
+//   role             Role? @relation(fields: [role_id], references: [id])
+  
+//   pakage_name   String? // this will be the service id's service name
+//   assignees       User[]       @relation("TaskAssaingees") 
+   
+//    @@map("orders") 
+// }
+
 model Order {
-   id             String    @id
-   created_at     DateTime  @default(now())       
-   
-   order_type     OrderType @default(progress)   
-   subscription_id String?  
-   subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
-   user_id        String?  
-   user           User?    @relation(fields: [user_id], references: [id]) 
+  id               String    @id
+  created_at       DateTime  @default(now())       
+
+  order_status     OrderStatus @default(progress)   
+
+  subscription_id  String?  
+  subscription     Subscription? @relation(fields: [subscription_id], references: [id]) 
+
+  user_id          String?  
+  user             User?    @relation(fields: [user_id], references: [id]) 
   
-  service_tier_id String?
-  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
-  
-  ammount        Float?
-  user_name      String?   
-  user_email     String?   
-   
-   @@map("orders") 
+  service_tier_id  String?
+  service_tier     ServiceTier? @relation(fields: [service_tier_id], references: [id])
+
+  ammount          Float?
+  user_name        String?   
+  user_email       String?   
+  pakage_name      String?   
+ 
+
+  @@map("orders") 
+  order_assigns TaskAssign[]
+}
+
+
+
+//admisn_dashboard_assign_tasks and Task management
+enum Status {
+  In_progress
+  completed
+  pending
+  canceled
+  Clint_review
+}
+
+model TaskAssign {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+
+  user_id    String?
+  user       User?     @relation(fields: [user_id], references: [id])
+
+  order_id   String?  
+  order      Order?    @relation(fields: [order_id], references: [id])
+
+  role_name        String?   
+  role_id          String?  
+  role             Role?     @relation(fields: [role_id], references: [id]) 
+
+  ammount          Int?
+
+  note             String?
+
+  user_name  String?
+  due_date   String?
+  status     Status @default(In_progress)
+
+  assignees  User[] @relation("TaskAssaingees")
+
+  @@map("task_assign")
 }

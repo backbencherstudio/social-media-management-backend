@@ -109,13 +109,17 @@ async pay(@Body() createPaymentIntent: CreatePaymentIntentDto) {
 //-------------------order -created-----------------------------------\\
 const serviceTier = paymentIntent.metadata?.service_tier_id;
 
-const tier = await this.prisma.serviceTier.findUnique({
-  where: { id: serviceTier },
-});
+        const tier = await this.prisma.serviceTier.findUnique({
+          where: { id: serviceTier },
+        });
 
-if (!tier) {
-  throw new Error('Service tier not found');
-}
+        const service = await this.prisma.service.findUnique({
+          where: { id: serviceId },
+        });
+
+        if (!tier || !service) {
+          throw new Error('Service tier not found');
+        }
 
         const user = await this.prisma.user.findUnique({
           where: { id: userId },
@@ -126,21 +130,29 @@ if (!tier) {
           },
         });
 
+         await this.prisma.user.update({
+         where: { id: userId },
+         data: { type: 'clint' },
+           });
+
         if (!user) {
           throw new Error('User not found');
         }
         const order = await this.prisma.order.create({
         data: {
-        id: `#ORD_${createId()}`,
-        order_type: 'progress', 
+        id: `ORD_${createId()}`,
+        order_status: 'progress', 
         subscription_id: subscription.id,
-        service_tier_id:tier.id, 
+        service_tier_id:tier.id,
+        pakage_name:service.name,
         user_id: userId,
         user_name: user.name,
         user_email: user.email,
         ammount:tier.price,
           },
          });
+
+       
 
        console.log("order is created");
        

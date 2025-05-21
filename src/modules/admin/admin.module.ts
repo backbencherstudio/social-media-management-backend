@@ -9,6 +9,7 @@ import { PaymentAndTransactionModule } from './admin_settings/payment_and_transi
 import { EmailModule } from './help_and_support/email/email.module';
 import { EditProfileModule } from './admin_settings/edit-profile/edit-profile.module';
 import { OrderPageModule } from './order_page/order_page.module';
+import { TaskManagementModule } from './task_management/task_management.module';
 
 
 @Module({
@@ -23,6 +24,7 @@ import { OrderPageModule } from './order_page/order_page.module';
     EmailModule,
     EditProfileModule,
     OrderPageModule,
+    TaskManagementModule,
   ],
 })
 export class AdminModule {}
