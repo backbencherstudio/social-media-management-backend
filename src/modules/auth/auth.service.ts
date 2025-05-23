@@ -395,6 +395,20 @@ export class AuthService {
           email,
           status: 1,
         },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone_number: true,
+          location: true,
+          position: true,
+          experience_year: true,
+          portfolio_url: true,
+          skills: true,
+          cover_letter: true,
+          agreed_terms: true,
+          avatar: true, // Make sure 'image' exists in your Prisma schema
+        },
       });
       
       
@@ -412,10 +426,7 @@ export class AuthService {
         message: 'Registration successful',
         data: {
           accessToken,
-          user: {
-            id: user.id,
-            email: user.email,
-          },
+          user
         },
       };
     } catch (error) {
