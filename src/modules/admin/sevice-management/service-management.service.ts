@@ -131,7 +131,7 @@ export class ServiceManagementService {
     }
   }
 
-  // ✅ Get service by ID with full relations
+  // Get service by ID with full relations
   async getServiceById(id: string) {
     try {
       return await this.prisma.service.findUnique({
@@ -240,7 +240,7 @@ export class ServiceManagementService {
     }
   }
 
-  // ✅ Get services filtered by status (active/inactive)
+  // Get services filtered by status (active/inactive)
   async getServicesByStatus(status: number) {
     try {
       const services = await this.prisma.service.findMany({

@@ -216,7 +216,6 @@ export class AuthService {
       if (updateUserDto.agreed_terms) {
         data.agreed_terms = updateUserDto.agreed_terms;
       }
-      
       if (image) {
         const oldImage = await this.prisma.user.findFirst({
           where: { id: userId },
@@ -227,25 +226,38 @@ export class AuthService {
             appConfig().storageUrl.avatar + oldImage.avatar,
           );
         }
-        data.avatar = image.filename;
+
+        // upload image
+        const randomName = Array(32)
+          .fill(null)
+          .map(() => Math.round(Math.random() * 16).toString(16))
+          .join('');
+
+        const fileName = `${randomName}${image.originalname}`;
+        await SojebStorage.put(
+          appConfig().storageUrl.avatar + '/' + fileName,
+          image.buffer,
+        );
+
+        data.avatar = fileName;
       }
 
       // Update user with correct where clause
       const updatedUser = await this.prisma.user.update({
         where: { id: user.id },
-        data: data
+        data: data,
       });
 
       if (updatedUser.avatar) {
         updatedUser['avatar_url'] = SojebStorage.url(
-          appConfig().storageUrl.avatar + updatedUser.avatar
+          appConfig().storageUrl.avatar + updatedUser.avatar,
         );
       }
 
       return {
         success: true,
         message: 'User updated successfully',
-        data: updatedUser
+        data: updatedUser,
       };
     } catch (error) {
       return {
@@ -310,7 +322,6 @@ export class AuthService {
     }
   }
 
-
   async login({ email, userId }) {
     try {
       const payload = { email: email, sub: userId };
@@ -340,9 +351,9 @@ export class AuthService {
         where: { email },
       });
 
-      console.log("existingUser: ",existingUser);
+      console.log('existingUser: ', existingUser);
 
-      if(existingUser?.password) {
+      if (existingUser?.password) {
         return {
           success: false,
           message: 'redirect to login page',
@@ -358,11 +369,11 @@ export class AuthService {
 
       // Send verification email with full URL
       const verificationLink = `${process.env.APP_URL}/api/auth/verify-registration?token=${token}`;
-      
-      this.mailService.sendVerificationLink({ 
-        email, 
+
+      this.mailService.sendVerificationLink({
+        email,
         link: verificationLink,
-        name: email
+        name: email,
       });
 
       return {
@@ -382,7 +393,7 @@ export class AuthService {
       // Verify token
       const decoded = this.jwtService.verify(token);
       const { email } = decoded;
-      console.log("decoded: ",decoded);
+      console.log('decoded: ', decoded);
       // Create user
       const user = await this.prisma.user.upsert({
         where: {
@@ -410,10 +421,8 @@ export class AuthService {
           avatar: true, // Make sure 'image' exists in your Prisma schema
         },
       });
-      
-      
 
-      console.log("user: ",user);
+      console.log('user: ', user);
 
       // Generate access token
       const accessToken = this.jwtService.sign({
