@@ -26,17 +26,35 @@ async function bootstrap() {
   bodyParser.raw({ type: 'application/json' })
 );
 
-  app.setGlobalPrefix('api');
-  app.enableCors();
-  app.use(helmet());
+app.setGlobalPrefix('api');
+// Configure CORS
+app.enableCors({
+  origin: true, // Add your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+  ],
+});
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
+
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     index: false,
     prefix: '/public',
   });
+  
   app.useStaticAssets(join(__dirname, '..', 'public/storage'), {
     index: false,
     prefix: '/storage',
   });
+  
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
     whitelist: true,

@@ -58,18 +58,16 @@ export class MailService {
   async sendVerificationLink(params: {
     email: string;
     name: string;
-    token: string;
-    type: string;
+    link: string;
   }) {
-    const verificationLink = `${appConfig().app.client_app_url}/verify-email?token=${params.token}&email=${params.email}&type=${params.type}`;
 
     await this.mailerService.sendMail({
       to: params.email,
       subject: 'Verify Your Email',
       template: './verification-link',
       context: {
-        name: params.name,
-        verificationLink,
+        link: params.link,
+        name: params.name  // Add this line to pass the name to the template
       },
     });
   }

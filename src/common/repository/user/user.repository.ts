@@ -395,38 +395,16 @@ static async getAllResellers(){
    * @returns
    */
   static async createUser({
-    name,
-    first_name,
-    last_name,
     email,
-    password,
-    phone_number,
     role_id = null,
     type = 'user',
   }: {
-    name?: string;
-    first_name?: string;
-    last_name?: string;
     email: string;
-    password: string;
-    phone_number?: string;
     role_id?: string;
     type?: string;
   }) {
     try {
       const data = {};
-      if (name) {
-        data['name'] = name;
-      }
-      if (first_name) {
-        data['first_name'] = first_name;
-      }
-      if (last_name) {
-        data['last_name'] = last_name;
-      }
-      if (phone_number) {
-        data['phone_number'] = phone_number;
-      }
       if (email) {
         // Check if email already exist
         const userEmailExist = await UserRepository.exist({
@@ -442,12 +420,6 @@ static async getAllResellers(){
         }
 
         data['email'] = email;
-      }
-      if (password) {
-        data['password'] = await bcrypt.hash(
-          password,
-          appConfig().security.salt,
-        );
       }
 
       if (type && ArrayHelper.inArray(type, Object.values(Role))) {
@@ -802,4 +774,4 @@ static async getAllResellers(){
     });
     return user;
   }
-}
+} 

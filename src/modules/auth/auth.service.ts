@@ -72,12 +72,11 @@ export class AuthService {
     }
   }
 
-
-  // find all 
+  // find all
   async findAllUsers() {
     try {
       const users = await UserRepository.getAllUsers();
-  
+
       return {
         success: true,
         message: 'Users fetched successfully',
@@ -92,10 +91,10 @@ export class AuthService {
   }
 
   //find all admins
-  async findAllAdmins(p0: { q: string; type: string; approved: string; }) {
+  async findAllAdmins(p0: { q: string; type: string; approved: string }) {
     try {
       const users = await UserRepository.getAllAdmins();
-  
+
       return {
         success: true,
         message: 'Users fetched successfully',
@@ -109,12 +108,11 @@ export class AuthService {
     }
   }
 
-
   //find all admins
-  async findAllClints(p0: { q: string; type: string; approved: string; }) {
+  async findAllClints(p0: { q: string; type: string; approved: string }) {
     try {
       const users = await UserRepository.getAllClints();
-  
+
       return {
         success: true,
         message: 'Clints fetched successfully',
@@ -128,28 +126,23 @@ export class AuthService {
     }
   }
 
+  //find all admins
+  async findAllResellers(p0: { q: string; type: string; approved: string }) {
+    try {
+      const users = await UserRepository.getAllResellers();
 
-
-
-    //find all admins
-    async findAllResellers(p0: { q: string; type: string; approved: string; }) {
-      try {
-        const users = await UserRepository.getAllResellers();
-    
-        return {
-          success: true,
-          message: 'Resellers fetched successfully',
-          data: users,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
-      }
+      return {
+        success: true,
+        message: 'Resellers fetched successfully',
+        data: users,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
-
-
+  }
 
   //update a user
   async updateUser(
@@ -158,6 +151,15 @@ export class AuthService {
     image?: Express.Multer.File,
   ) {
     try {
+      // First verify the user exists
+      const user = await UserRepository.getUserDetails(userId);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+
       const data: any = {};
       if (updateUserDto.name) {
         data.name = updateUserDto.name;
@@ -177,9 +179,6 @@ export class AuthService {
       if (updateUserDto.state) {
         data.state = updateUserDto.state;
       }
-      if (updateUserDto.local_government) {
-        data.local_government = updateUserDto.local_government;
-      }
       if (updateUserDto.city) {
         data.city = updateUserDto.city;
       }
@@ -195,8 +194,30 @@ export class AuthService {
       if (updateUserDto.date_of_birth) {
         data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
       }
+      // New fields
+      if (updateUserDto.location) {
+        data.location = updateUserDto.location;
+      }
+      if (updateUserDto.position) {
+        data.position = updateUserDto.position;
+      }
+      if (updateUserDto.experience_year) {
+        data.experience_year = updateUserDto.experience_year;
+      }
+      if (updateUserDto.portfolio_url) {
+        data.portfolio_url = updateUserDto.portfolio_url;
+      }
+      if (updateUserDto.skills) {
+        data.skills = updateUserDto.skills;
+      }
+      if (updateUserDto.cover_letter) {
+        data.cover_letter = updateUserDto.cover_letter;
+      }
+      if (updateUserDto.agreed_terms) {
+        data.agreed_terms = updateUserDto.agreed_terms;
+      }
+      
       if (image) {
-        // delete old image from storage
         const oldImage = await this.prisma.user.findFirst({
           where: { id: userId },
           select: { avatar: true },
@@ -208,25 +229,24 @@ export class AuthService {
         }
         data.avatar = image.filename;
       }
-      const user = await UserRepository.getUserDetails(userId);
-      if (user) {
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: {
-            ...data,
-          },
-        });
 
-        return {
-          success: true,
-          message: 'User updated successfully',
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User not found',
-        };
+      // Update user with correct where clause
+      const updatedUser = await this.prisma.user.update({
+        where: { id: user.id },
+        data: data
+      });
+
+      if (updatedUser.avatar) {
+        updatedUser['avatar_url'] = SojebStorage.url(
+          appConfig().storageUrl.avatar + updatedUser.avatar
+        );
       }
+
+      return {
+        success: true,
+        message: 'User updated successfully',
+        data: updatedUser
+      };
     } catch (error) {
       return {
         success: false,
@@ -235,7 +255,7 @@ export class AuthService {
     }
   }
 
-  // find only one admin  
+  // find only one admin
   async validateUser(
     email: string,
     pass: string,
@@ -290,7 +310,7 @@ export class AuthService {
     }
   }
 
-  //log in
+
   async login({ email, userId }) {
     try {
       const payload = { email: email, sub: userId };
@@ -314,108 +334,40 @@ export class AuthService {
     }
   }
 
-  // register
-  async register({
-    name,
-    first_name,
-    last_name,
-    email,
-    password,
-    type,
-  }: {
-    name: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    password: string;
-    type?: string;
-  }) {
+  async register({ email }: { email: string }) {
     try {
-      // Check if email already exist
-      const userEmailExist = await UserRepository.exist({
-        field: 'email',
-        value: String(email),
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
       });
 
-      if (userEmailExist) {
-        return {
-          statusCode: 401,
-          message: 'Email already exist',
-        };
-      }
+      console.log("existingUser: ",existingUser);
 
-      const user = await UserRepository.createUser({
-        name: name,
-        first_name: first_name,
-        last_name: last_name,
-        email: email,
-        password: password,
-        type: type,
-      });
-
-      if (user == null && user.success == false) {
+      if(existingUser?.password) {
         return {
           success: false,
-          message: 'Failed to create account',
+          message: 'redirect to login page',
         };
       }
 
-      // create stripe customer account
-      const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
-        email: email,
-        name: name,
-      });
+      const token = this.jwtService.sign(
+        { email },
+        {
+          expiresIn: '24h',
+        },
+      );
 
-      if (stripeCustomer) {
-        await this.prisma.user.update({
-          where: {
-            id: user.data.id,
-          },
-          data: {
-            billing_id: stripeCustomer.id,
-          },
-        });
-      }
-
-      // ----------------------------------------------------
-      // // create otp code
-      // const token = await UcodeRepository.createToken({
-      //   userId: user.data.id,
-      //   isOtp: true,
-      // });
-
-      // // send otp code to email
-      // await this.mailService.sendOtpCodeToEmail({
-      //   email: email,
-      //   name: name,
-      //   otp: token,
-      // });
-
-      // return {
-      //   success: true,
-      //   message: 'We have sent an OTP code to your email',
-      // };
-
-      // ----------------------------------------------------
-
-      // Generate verification token
-      const token = await UcodeRepository.createVerificationToken({
-        userId: user.data.id,
-        email: email,
-      });
-
-      // Send verification email with token
-      await this.mailService.sendVerificationLink({
-        email,
-        name: email,
-        token: token.token,
-        type: type,
+      // Send verification email with full URL
+      const verificationLink = `${process.env.APP_URL}/api/auth/verify-registration?token=${token}`;
+      
+      this.mailService.sendVerificationLink({ 
+        email, 
+        link: verificationLink,
+        name: email
       });
 
       return {
         success: true,
-        message: 'We have sent a verification link to your email',
+        message: 'Registration link sent to email',
       };
     } catch (error) {
       return {
@@ -425,6 +377,54 @@ export class AuthService {
     }
   }
 
+  async verifyRegistrationToken(token: string) {
+    try {
+      // Verify token
+      const decoded = this.jwtService.verify(token);
+      const { email } = decoded;
+      console.log("decoded: ",decoded);
+      // Create user
+      const user = await this.prisma.user.upsert({
+        where: {
+          email,
+        },
+        update: {
+          status: 1,
+        },
+        create: {
+          email,
+          status: 1,
+        },
+      });
+      
+      
+
+      console.log("user: ",user);
+
+      // Generate access token
+      const accessToken = this.jwtService.sign({
+        userId: user.id,
+        email: user.email,
+      });
+
+      return {
+        success: true,
+        message: 'Registration successful',
+        data: {
+          accessToken,
+          user: {
+            id: user.id,
+            email: user.email,
+          },
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Invalid or expired token',
+      };
+    }
+  }
 
   //forget passs
   async forgotPassword(email) {
