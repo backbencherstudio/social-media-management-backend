@@ -390,11 +390,17 @@ export class AuthService {
 
   async verifyRegistrationToken(token: string) {
     try {
-      // Verify token
       const decoded = this.jwtService.verify(token);
       const { email } = decoded;
+  
       console.log('decoded: ', decoded);
-      // Create user
+  
+      // 🔍 Step 1: Check if the user already exists BEFORE upsert
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
+  
+      // 🧠 Step 2: Perform upsert to ensure the user is created or updated
       const user = await this.prisma.user.upsert({
         where: {
           email,
@@ -418,24 +424,45 @@ export class AuthService {
           skills: true,
           cover_letter: true,
           agreed_terms: true,
-          avatar: true, // Make sure 'image' exists in your Prisma schema
+          avatar: true,
         },
       });
-
+  
+      // ✅ Step 3: Only create Stripe customer if this is a new user
+      if (!existingUser) {
+        
+        const stripeCustomer = await StripePayment.createCustomer({
+          user_id: user.id,
+          email: email,
+          name: null,
+        });
+        console.log("stripeCustomer", stripeCustomer)
+        if (stripeCustomer) {
+          await this.prisma.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              billing_id: stripeCustomer.id,
+            },
+          });
+        }
+      }
+  
       console.log('user: ', user);
-
-      // Generate access token
+  
+      // 🔑 Step 4: Generate access token
       const accessToken = this.jwtService.sign({
         userId: user.id,
         email: user.email,
       });
-
+  
       return {
         success: true,
         message: 'Registration successful',
         data: {
           accessToken,
-          user
+          user,
         },
       };
     } catch (error) {
@@ -445,6 +472,7 @@ export class AuthService {
       };
     }
   }
+  
 
   //forget passs
   async forgotPassword(email) {
