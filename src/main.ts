@@ -64,16 +64,17 @@ app.use(
 
   // storage setup
   SojebStorage.config({
-    driver: 'local',
+    driver: 's3',
     connection: {
       rootUrl: appConfig().storageUrl.rootUrl,
       publicUrl: appConfig().storageUrl.rootUrlPublic,
-      // awsBucket: appConfig().fileSystems.s3.bucket,
-      // awsAccessKeyId: appConfig().fileSystems.s3.key,
-      // awsSecretAccessKey: appConfig().fileSystems.s3.secret,
-      // awsDefaultRegion: appConfig().fileSystems.s3.region,
-      // awsEndpoint: appConfig().fileSystems.s3.endpoint,
-      // minio: true,
+      // aws
+      awsBucket: appConfig().fileSystems.s3.bucket,
+      awsAccessKeyId: appConfig().fileSystems.s3.key,
+      awsSecretAccessKey: appConfig().fileSystems.s3.secret,
+      awsDefaultRegion: appConfig().fileSystems.s3.region,
+      awsEndpoint: appConfig().fileSystems.s3.endpoint,
+      minio: true,
     },
   });
   // prisma setup

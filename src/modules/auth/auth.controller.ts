@@ -13,9 +13,14 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Request } from 'express';
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -29,7 +34,6 @@ import { Role } from 'src/common/guard/role/role.enum';
 
 @ApiTags('auth')
 @Controller('auth')
-
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -37,7 +41,7 @@ export class AuthController {
   @ApiBearerAuth()
   // @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@Req() req: Request)  {
+  async me(@Req() req: Request) {
     try {
       const user_id = req.user.userId;
 
@@ -52,9 +56,7 @@ export class AuthController {
     }
   }
 
-
-
-//register
+  //register
   @ApiOperation({ summary: 'Register a user with email' })
   @Post('register')
   async create(@Body() data: CreateUserDto) {
@@ -79,7 +81,7 @@ export class AuthController {
   async verifyRegistration(@Query() data: { token: string }) {
     try {
       const { token } = data;
-      
+
       if (!token) {
         throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
       }
@@ -91,8 +93,6 @@ export class AuthController {
       };
     }
   }
-
-
 
   //get all user
   @ApiOperation({ summary: 'Get all users' })
@@ -112,8 +112,8 @@ export class AuthController {
     }
   }
 
-//get all admins
- @ApiResponse({ description: 'Get all users' })
+  //get all admins
+  @ApiResponse({ description: 'Get all users' })
   @Get('admins')
   async findAllAdmins(
     @Query() query: { q?: string; type?: string; approved?: string },
@@ -132,9 +132,6 @@ export class AuthController {
       };
     }
   }
-
-
-
 
   @ApiResponse({ description: 'Get all users' })
   @Get('clints')
@@ -166,7 +163,11 @@ export class AuthController {
       const type = query.type;
       const approved = query.approved;
 
-      const users = await this.authService.findAllResellers({ q, type, approved });
+      const users = await this.authService.findAllResellers({
+        q,
+        type,
+        approved,
+      });
       return users;
     } catch (error) {
       return {
@@ -175,11 +176,6 @@ export class AuthController {
       };
     }
   }
-
-
-
-
-
 
   // login user
   @ApiOperation({ summary: 'Login user' })
@@ -227,17 +223,18 @@ export class AuthController {
   @Patch('update') // No :id here
   @UseInterceptors(
     FileInterceptor('image', {
-      storage: diskStorage({
-        destination:
-          appConfig().storageUrl.rootUrl + appConfig().storageUrl.avatar,
-        filename: (req, file, cb) => {
-          const randomName = Array(32)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          return cb(null, `${randomName}${file.originalname}`);
-        },
-      }),
+      // storage: diskStorage({
+      //   destination:
+      //     appConfig().storageUrl.rootUrl + appConfig().storageUrl.avatar,
+      //   filename: (req, file, cb) => {
+      //     const randomName = Array(32)
+      //       .fill(null)
+      //       .map(() => Math.round(Math.random() * 16).toString(16))
+      //       .join('');
+      //     return cb(null, `${randomName}${file.originalname}`);
+      //   },
+      // }),
+      storage: memoryStorage(),
     }),
   )
   async updateUser(
@@ -256,7 +253,6 @@ export class AuthController {
       };
     }
   }
-  
 
   // --------------change password---------
 
