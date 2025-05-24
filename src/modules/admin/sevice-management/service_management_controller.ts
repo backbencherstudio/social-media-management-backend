@@ -262,7 +262,7 @@ async getServiceById(@Param('id') id: string) {
   }
 })
 async updateServices(@Param('id') id: string, @Body() dto: CreateServiceDto) {
-    return await this.serviceManagementService.updateServices(id, dto);
+    return await this.serviceManagementService.updateService(id, dto);
   }
 
 @Delete(':id')

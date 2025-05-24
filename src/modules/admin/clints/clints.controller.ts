@@ -2,33 +2,27 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { ClintsService } from './clints.service';
 import { CreateClintDto } from './dto/create-clint.dto';
 import { UpdateClintDto } from './dto/update-clint.dto';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('clints')
 export class ClintsController {
   constructor(private readonly clintsService: ClintsService) {}
 
-  @Post()
-  create(@Body() createClintDto: CreateClintDto) {
-    return this.clintsService.create(createClintDto);
-  }
 
   @Get()
   findAll() {
     return this.clintsService.getAllClints();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.clintsService.findOne(+id);
-  }
+  @Patch('toggle-status/:id')
+@ApiOperation({ summary: 'Toggle order status (active/inactive)' })
+@ApiResponse({
+  status: 200,
+  description: 'Successfully toggled status',
+})
+toggleOrderStatus(@Param('id') id: string) {
+  return this.clintsService.toggleOrderStatus(id);
+}
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClintDto: UpdateClintDto) {
-    return this.clintsService.update(+id, updateClintDto);
-  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.clintsService.remove(+id);
-  }
 }

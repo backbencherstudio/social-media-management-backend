@@ -4,9 +4,6 @@ import { CreateServiceDto } from './dto/create-service.dto';
 
 @Injectable()
 export class ServiceManagementService {
-  updateService: any;
-  softDeleteService: any;
-
   constructor(private readonly prisma: PrismaService) {}
 
   // Create a new service with tiers, features, addons, and primary platform
@@ -151,70 +148,119 @@ export class ServiceManagementService {
   }
 
   // Update existing service and replace all tiers, features, addons
-  async updateServices(id: string, dto: CreateServiceDto) {
-    try {
-      // 1. Update main service record
-      const service = await this.prisma.service.update({
-        where: { id },
-        data: {
-          name: dto.name,
-          description: dto.description,
-          category_id: dto.category_id,
-        },
-      });
 
-      // 2. Remove old related data
-      await this.prisma.serviceTier.deleteMany({ where: { service_id: id } });
-      await this.prisma.addon.deleteMany({ where: { service_id: id } });
-      await this.prisma.serviceFeature.deleteMany({ where: { service_id: id } });
-
-      // 3. Recreate tiers
-      await Promise.all(
-        dto.tiers.map((tier) =>
-          this.prisma.serviceTier.create({
-            data: {
-              service_id: id,
-              price: tier.price,
-              max_post: tier.max_post,
-              name: tier.name ?? `${tier.max_post}`,
-            },
-          }),
-        ),
-      );
-
-      // 4. Recreate addons
-      await Promise.all(
-        dto.extra_platforms.map((platform) =>
-          this.prisma.addon.create({
-            data: {
-              service_id: id,
-              name: `Extra ${platform}`,
-              price: dto.extra_platform_Price ?? 10,
-            },
-          }),
-        ),
-      );
-
-      // 5. Recreate features
-      await Promise.all(
-        dto.features.map(async (featureName) => {
-          let feature = await this.prisma.feature.findFirst({ where: { name: featureName } });
-          if (!feature) {
-            feature = await this.prisma.feature.create({ data: { name: featureName } });
-          }
-          await this.prisma.serviceFeature.create({
-            data: { service_id: id, feature_id: feature.id },
-          });
-        }),
-      );
-
-      return { message: 'Service updated successfully', service_id: service.id };
-    } catch (error) {
-      return { success: false, message: error.message };
+  async updateService(id: string, dto: CreateServiceDto) {
+  try {
+    // 0. Check if service exists (optional but recommended)
+    const existingService = await this.prisma.service.findUnique({ where: { id } });
+    if (!existingService) {
+      return {
+        success: false,
+        message: `Service with ID '${id}' does not exist.`,
+      };
     }
-  }
 
-  // ✅ Toggle service status between active and disabled
+    // 1. Validate category_id
+    const category = await this.prisma.category.findUnique({
+      where: { id: dto.category_id },
+    });
+    if (!category) {
+      return {
+        success: false,
+        message: `Category ID '${dto.category_id}' does not exist.`,
+      };
+    }
+
+    // 2. Update the service
+    const updatedService = await this.prisma.service.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        category_id: dto.category_id,
+      },
+    });
+
+    // 3. Remove old related data
+    await this.prisma.serviceFeature.deleteMany({ where: { service_id: id } });
+    await this.prisma.serviceTier.deleteMany({ where: { service_id: id } });
+    await this.prisma.addon.deleteMany({ where: { service_id: id } });
+
+    // 4. Update features
+    await Promise.all(
+      dto.features.map(async (featureName) => {
+        let feature = await this.prisma.feature.findFirst({
+          where: { id: featureName }, // If you're passing ID
+          // If you're passing name instead, use: where: { name: featureName }
+        });
+
+        if (!feature) {
+          feature = await this.prisma.feature.create({
+            data: { name: featureName },
+          });
+        }
+
+        await this.prisma.serviceFeature.create({
+          data: {
+            service_id: id,
+            feature_id: feature.id,
+          },
+        });
+      }),
+    );
+
+    // 5. Recreate service tiers
+    await Promise.all(
+      dto.tiers.map((tier) =>
+        this.prisma.serviceTier.create({
+          data: {
+            service_id: id,
+            max_post: tier.max_post,
+            price: tier.price,
+            name: tier.name ?? `${tier.max_post} Posts`,
+          },
+        }),
+      ),
+    );
+
+    // 6. Upsert primary platform channel
+    if (dto.primary_platform) {
+      await this.prisma.channel.upsert({
+        where: { name: dto.primary_platform },
+        update: {},
+        create: { name: dto.primary_platform },
+      });
+    }
+
+    // 7. Create addons for extra platforms
+    await Promise.all(
+      dto.extra_platforms.map((platform) =>
+        this.prisma.addon.create({
+          data: {
+            service_id: id,
+            name: `Extra ${platform}`,
+            price: dto.extra_platform_Price ?? 0,
+          },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Service updated successfully',
+      data: {
+        service_id: updatedService.id,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+  // Toggle service status between active and disabled
   async toggleServiceStatus(id: string) {
     try {
       const service = await this.prisma.service.findUnique({
@@ -285,4 +331,47 @@ export class ServiceManagementService {
       return { success: false, message: error.message };
     }
   }
+
+
+  async softDeleteService(id: string) {
+  // 1. Check if service exists
+  const service = await this.prisma.service.findUnique({ where: { id } });
+
+  if (!service) {
+    return {
+      success: false,
+      message: {
+        message: `Service with ID ${id} not found`,
+        error: 'Not Found',
+        statusCode: 404,
+      },
+    };
+  }
+
+  // 2. If already deleted, you can either return or skip this check
+  if (service.deleted_at) {
+    return {
+      success: false,
+      message: `Service with ID ${id} has already been deleted.`,
+    };
+  }
+
+  // 3. Perform soft delete
+  await this.prisma.service.update({
+    where: { id },
+    data: {
+      deleted_at: new Date(),
+      status: 0, // optional: you can mark status as "inactive" if you're using it
+    },
+  });
+
+  return {
+    success: true,
+    message: 'Service deleted successfully',
+    data: {
+      id: service.id,
+    },
+  };
+}
+
 }

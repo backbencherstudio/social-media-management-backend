@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateClintDto } from './dto/create-clint.dto';
 import { UpdateClintDto } from './dto/update-clint.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -52,6 +52,7 @@ async getAllClints() {
       orderBy: { created_at: 'desc' }, 
       select: {
         id: true,
+        status:true,
         order_status: true,
         subscription_id: true,
         ammount: true,
@@ -97,6 +98,29 @@ async getAllClints() {
 }
 
 
+// order.service.ts
+async toggleOrderStatus(orderId: string) {
+  const order = await this.prisma.order.findUnique({
+    where: { id: orderId },
+    select: { status: true },
+  });
+
+  if (!order) {
+    throw new NotFoundException('Order not found');
+  }
+
+  const newStatus = order.status === 'active' ? 'inactive' : 'active';
+
+  const updatedOrder = await this.prisma.order.update({
+    where: { id: orderId },
+    data: { status: newStatus },
+  });
+
+  return {
+    message: `Order status updated to "${newStatus}"`,
+    
+  };
+}
 
 
 
