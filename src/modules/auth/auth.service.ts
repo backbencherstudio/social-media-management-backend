@@ -400,7 +400,7 @@ export class AuthService {
         where: { email },
       });
   
-      // 🧠 Step 2: Perform upsert to ensure the user is created or updated
+  
       const user = await this.prisma.user.upsert({
         where: {
           email,
@@ -428,7 +428,7 @@ export class AuthService {
         },
       });
   
-      // ✅ Step 3: Only create Stripe customer if this is a new user
+
       if (!existingUser) {
         
         const stripeCustomer = await StripePayment.createCustomer({
