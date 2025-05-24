@@ -117,6 +117,7 @@ export class ServiceManagementService {
   // formation updates
       return services.map((service) => ({
         id: service.id,
+        description:service.description,
         name: service.name,
         category: service.category?.name ?? '—',
         price: service.service_tiers[0]?.price

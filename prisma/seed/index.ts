@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   try {
     // Run channel seeder
-    await seedChannels();
+    // await seedChannels();
     
     console.log('All seeders completed successfully');
   } catch (error) {
