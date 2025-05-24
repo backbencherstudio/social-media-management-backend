@@ -22,7 +22,6 @@ export class ServiceManagementService {
         },
       });
 
-      // 2. Link features (create if not exists)
       await Promise.all(
         dto.features.map(async (featureName) => {
           let feature = await this.prisma.feature.findFirst({
@@ -118,6 +117,7 @@ export class ServiceManagementService {
       return services.map((service) => ({
         id: service.id,
         name: service.name,
+        description : service.description,
         category: service.category?.name ?? '—',
         price: service.service_tiers[0]?.price
           ? `$${service.service_tiers[0].price.toFixed(2)}/mo`
