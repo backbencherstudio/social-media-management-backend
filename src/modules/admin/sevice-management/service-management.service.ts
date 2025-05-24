@@ -118,7 +118,6 @@ export class ServiceManagementService {
         id: service.id,
         description:service.description,
         name: service.name,
-        description : service.description,
         category: service.category?.name ?? '—',
         price: service.service_tiers[0]?.price
           ? `$${service.service_tiers[0].price.toFixed(2)}/mo`
