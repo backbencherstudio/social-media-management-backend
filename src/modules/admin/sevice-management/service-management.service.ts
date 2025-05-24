@@ -151,7 +151,7 @@ export class ServiceManagementService {
 
   async updateService(id: string, dto: CreateServiceDto) {
   try {
-    // 0. Check if service exists (optional but recommended)
+    
     const existingService = await this.prisma.service.findUnique({ where: { id } });
     if (!existingService) {
       return {
@@ -160,7 +160,7 @@ export class ServiceManagementService {
       };
     }
 
-    // 1. Validate category_id
+    
     const category = await this.prisma.category.findUnique({
       where: { id: dto.category_id },
     });
@@ -171,7 +171,7 @@ export class ServiceManagementService {
       };
     }
 
-    // 2. Update the service
+   
     const updatedService = await this.prisma.service.update({
       where: { id },
       data: {
@@ -181,17 +181,17 @@ export class ServiceManagementService {
       },
     });
 
-    // 3. Remove old related data
+    
     await this.prisma.serviceFeature.deleteMany({ where: { service_id: id } });
     await this.prisma.serviceTier.deleteMany({ where: { service_id: id } });
     await this.prisma.addon.deleteMany({ where: { service_id: id } });
 
-    // 4. Update features
+   
     await Promise.all(
       dto.features.map(async (featureName) => {
         let feature = await this.prisma.feature.findFirst({
-          where: { id: featureName }, // If you're passing ID
-          // If you're passing name instead, use: where: { name: featureName }
+          where: { id: featureName }, 
+         
         });
 
         if (!feature) {
@@ -209,7 +209,7 @@ export class ServiceManagementService {
       }),
     );
 
-    // 5. Recreate service tiers
+ 
     await Promise.all(
       dto.tiers.map((tier) =>
         this.prisma.serviceTier.create({
@@ -223,7 +223,7 @@ export class ServiceManagementService {
       ),
     );
 
-    // 6. Upsert primary platform channel
+
     if (dto.primary_platform) {
       await this.prisma.channel.upsert({
         where: { name: dto.primary_platform },
@@ -232,7 +232,6 @@ export class ServiceManagementService {
       });
     }
 
-    // 7. Create addons for extra platforms
     await Promise.all(
       dto.extra_platforms.map((platform) =>
         this.prisma.addon.create({
@@ -334,7 +333,7 @@ export class ServiceManagementService {
 
 
   async softDeleteService(id: string) {
-  // 1. Check if service exists
+  
   const service = await this.prisma.service.findUnique({ where: { id } });
 
   if (!service) {
@@ -348,7 +347,7 @@ export class ServiceManagementService {
     };
   }
 
-  // 2. If already deleted, you can either return or skip this check
+  
   if (service.deleted_at) {
     return {
       success: false,
@@ -356,12 +355,12 @@ export class ServiceManagementService {
     };
   }
 
-  // 3. Perform soft delete
+ 
   await this.prisma.service.update({
     where: { id },
     data: {
       deleted_at: new Date(),
-      status: 0, // optional: you can mark status as "inactive" if you're using it
+      status: 0, 
     },
   });
 
