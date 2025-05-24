@@ -27,31 +27,77 @@ export class ClintsService {
   }
 
 
-  async getAllClints() {
+
+async getAllClints() {
   try {
-    const orders = await this.prisma.order.findMany({
+    
+    const userStats = await this.prisma.order.groupBy({
+      by: ['user_id'],
+      _count: { user_id: true },
+      _sum: { ammount: true },
+    });
+
+    const statsMap = new Map(
+      userStats.map(stat => [
+        stat.user_id,
+        {
+          total_orders: stat._count.user_id,
+          total_spent: stat._sum.ammount || 0,
+        },
+      ])
+    );
+
+
+    const allOrders = await this.prisma.order.findMany({
+      orderBy: { created_at: 'desc' }, 
       select: {
-        id: true, 
-        order_status: true, 
+        id: true,
+        order_status: true,
         subscription_id: true,
-        ammount:true,
-        pakage_name:true,
-        user_email:true,
-        user_name:true, 
-        user_id: true, 
+        ammount: true,
+        pakage_name: true,
+        user_email: true,
+        user_name: true,
+        user_id: true,
         subscription: {
           select: {
-            service_id: true, 
-            service_tier_id: true, 
+            service_id: true,
+            service_tier_id: true,
           },
         },
       },
     });
 
-    return orders;
+
+    const seenUserIds = new Set();
+    const latestOrdersPerUser = [];
+
+    for (const order of allOrders) {
+      if (!seenUserIds.has(order.user_id)) {
+        seenUserIds.add(order.user_id);
+
+        const stats = statsMap.get(order.user_id) || {
+          total_orders: 0,
+          total_spent: 0,
+        };
+
+        latestOrdersPerUser.push({
+          ...order,
+          total_orders: stats.total_orders,
+          total_spent: stats.total_spent,
+        });
+      }
+    }
+
+    return { data: latestOrdersPerUser };
   } catch (error) {
-    console.error('Error retrieving orders:', error);
+    console.error('Error retrieving latest orders:', error);
     throw error;
   }
 }
+
+
+
+
+
 }

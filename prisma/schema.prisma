@@ -970,6 +970,10 @@ enum OrderStatus {
 //    @@map("orders") 
 // }
 
+enum clintStatus {
+ active
+ inactive
+}
 model Order {
   id               String    @id
   created_at       DateTime  @default(now())       
@@ -981,6 +985,8 @@ model Order {
 
   user_id          String?  
   user             User?    @relation(fields: [user_id], references: [id]) 
+
+  status           clintStatus  @default(active) 
   
   service_tier_id  String?
   service_tier     ServiceTier? @relation(fields: [service_tier_id], references: [id])
