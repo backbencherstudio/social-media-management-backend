@@ -134,7 +134,7 @@ export class AuthService {
       return {
         success: true,
         message: 'Resellers fetched successfully',
-        data: users,
+        data: users
       };
     } catch (error) {
       return {
