@@ -12,7 +12,6 @@ export class BlogCategoryService {
       const created =  await this.prisma.blogCategory.create({
         data: {
           name: dto.name,
-          slug: dto.slug,
           status: dto.status ?? 1,
         },
       });

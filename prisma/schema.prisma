@@ -98,15 +98,20 @@ model User {
   subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
   orders                   Order[]
-  
+  TaskAssigns TaskAssign[] @relation("TaskAssaingees")
+  TaskAssign TaskAssign[]
+  ResellerApplication ResellerApplication[]
+    adminReseller Reseller[]
 
-    TaskAssigns TaskAssign[] @relation("TaskAssaingees")
-    TaskAssign TaskAssign[]
 
   @@map("users")
 
- 
+
+
 }
+
+
+
 
 model Ucode {
   id         String   @id @default(cuid())
@@ -1037,4 +1042,57 @@ model TaskAssign {
   assignees  User[] @relation("TaskAssaingees")
 
   @@map("task_assign")
+  adminReseller Reseller[] @relation("TaskAssignments")
 }
+
+// user application for reseller role 
+enum applicationStatus {
+accepted
+pending
+rejected
+}
+model ResellerApplication{
+    applicationId  String  @id @default(cuid())
+    user_id String 
+    user    User?   @relation(fields: [user_id], references: [id])
+    full_name       String?
+    user_email      String?
+    phone_number    Int?
+    location        String?
+    position        String?
+    experience      Int?
+    cover_letter    String?
+    portfolio       String?
+    skills          String[]
+    status          applicationStatus 
+
+    
+    @@map("reseller_application")
+    adminReseller Reseller[] @relation("resellers")
+}
+
+//admin dashboard reseller
+
+enum ResellerStatus {
+active
+deactive
+}
+
+model Reseller {
+    id  String @id
+    user_id  String?
+    user    User?   @relation(fields: [user_id], references: [id])
+    user_type  String?
+    full_name  String?
+    user_email  String?
+    skills       String[] 
+    total_task  Int?
+    total_earnings Float?
+    status  ResellerStatus @default(active)
+
+    reseller_application ResellerApplication[]  @relation("resellers")
+    task_assignments TaskAssign[]    @relation("TaskAssignments")
+
+    @@map("admin_reseller")
+
+  }

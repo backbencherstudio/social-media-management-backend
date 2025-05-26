@@ -8,7 +8,16 @@ CREATE TYPE "SubscriptionStatus" AS ENUM ('active', 'canceled', 'expired', 'pend
 CREATE TYPE "OrderStatus" AS ENUM ('progress', 'completed', 'pending', 'canceled');
 
 -- CreateEnum
+CREATE TYPE "clintStatus" AS ENUM ('active', 'inactive');
+
+-- CreateEnum
 CREATE TYPE "Status" AS ENUM ('In_progress', 'completed', 'pending', 'canceled', 'Clint_review');
+
+-- CreateEnum
+CREATE TYPE "applicationStatus" AS ENUM ('accepted', 'rejected');
+
+-- CreateEnum
+CREATE TYPE "ResellerStatus" AS ENUM ('active', 'deactive');
 
 -- CreateTable
 CREATE TABLE "accounts" (
@@ -686,6 +695,7 @@ CREATE TABLE "orders" (
     "order_status" "OrderStatus" NOT NULL DEFAULT 'progress',
     "subscription_id" TEXT,
     "user_id" TEXT,
+    "status" "clintStatus" NOT NULL DEFAULT 'active',
     "service_tier_id" TEXT,
     "ammount" DOUBLE PRECISION,
     "user_name" TEXT,
@@ -713,6 +723,39 @@ CREATE TABLE "task_assign" (
 );
 
 -- CreateTable
+CREATE TABLE "reseller_application" (
+    "applicationId" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "full_name" TEXT,
+    "user_email" TEXT,
+    "phone_number" INTEGER,
+    "location" TEXT,
+    "position" TEXT,
+    "experience" INTEGER,
+    "cover_letter" TEXT,
+    "portfolio" TEXT,
+    "skills" TEXT[],
+    "status" "applicationStatus" NOT NULL,
+
+    CONSTRAINT "reseller_application_pkey" PRIMARY KEY ("applicationId")
+);
+
+-- CreateTable
+CREATE TABLE "admin_reseller" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT,
+    "user_type" TEXT,
+    "full_name" TEXT,
+    "user_email" TEXT,
+    "skills" TEXT[],
+    "total_task" INTEGER,
+    "total_earnings" DOUBLE PRECISION,
+    "status" "ResellerStatus" NOT NULL DEFAULT 'active',
+
+    CONSTRAINT "admin_reseller_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_PermissionToRole" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -726,6 +769,22 @@ CREATE TABLE "_TaskAssaingees" (
     "B" TEXT NOT NULL,
 
     CONSTRAINT "_TaskAssaingees_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "_resellers" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_resellers_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "_TaskAssignments" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_TaskAssignments_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -757,6 +816,12 @@ CREATE INDEX "_PermissionToRole_B_index" ON "_PermissionToRole"("B");
 
 -- CreateIndex
 CREATE INDEX "_TaskAssaingees_B_index" ON "_TaskAssaingees"("B");
+
+-- CreateIndex
+CREATE INDEX "_resellers_B_index" ON "_resellers"("B");
+
+-- CreateIndex
+CREATE INDEX "_TaskAssignments_B_index" ON "_TaskAssignments"("B");
 
 -- AddForeignKey
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -915,6 +980,12 @@ ALTER TABLE "task_assign" ADD CONSTRAINT "task_assign_order_id_fkey" FOREIGN KEY
 ALTER TABLE "task_assign" ADD CONSTRAINT "task_assign_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "reseller_application" ADD CONSTRAINT "reseller_application_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_reseller" ADD CONSTRAINT "admin_reseller_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_A_fkey" FOREIGN KEY ("A") REFERENCES "permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -925,3 +996,15 @@ ALTER TABLE "_TaskAssaingees" ADD CONSTRAINT "_TaskAssaingees_A_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "_TaskAssaingees" ADD CONSTRAINT "_TaskAssaingees_B_fkey" FOREIGN KEY ("B") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_resellers" ADD CONSTRAINT "_resellers_A_fkey" FOREIGN KEY ("A") REFERENCES "admin_reseller"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_resellers" ADD CONSTRAINT "_resellers_B_fkey" FOREIGN KEY ("B") REFERENCES "reseller_application"("applicationId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignments" ADD CONSTRAINT "_TaskAssignments_A_fkey" FOREIGN KEY ("A") REFERENCES "admin_reseller"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignments" ADD CONSTRAINT "_TaskAssignments_B_fkey" FOREIGN KEY ("B") REFERENCES "task_assign"("id") ON DELETE CASCADE ON UPDATE CASCADE;

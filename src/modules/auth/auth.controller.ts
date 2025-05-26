@@ -31,6 +31,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import appConfig from '../../config/app.config';
 import { AuthGuard } from '@nestjs/passport';
 import { Role } from 'src/common/guard/role/role.enum';
+import { ResellerApplicationDto } from './dto/apply_for_reseller.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -520,4 +521,20 @@ export class AuthController {
     }
   }
   // --------- end 2FA ---------
+
+
+
+
+  //// application
+
+  @Post('apply/:userId') 
+  async apply(
+    @Param('userId') userId: string,  
+    @Body() data: ResellerApplicationDto  
+  ) {
+    
+    const result = await this.authService.applyForReseller(data, userId);
+    
+    return result;
+  }
 }
