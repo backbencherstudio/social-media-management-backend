@@ -12,6 +12,7 @@ import { OrderPageModule } from './order_page/order_page.module';
 import { TaskManagementModule } from './task_management/task_management.module';
 import { ClintsModule } from './clints/clints.module';
 import { ResellerModule } from './reseller/reseller.module';
+import { TeamModule } from './team/team.module';
 
 
 @Module({
@@ -29,6 +30,7 @@ import { ResellerModule } from './reseller/reseller.module';
     TaskManagementModule,
     ClintsModule,
     ResellerModule,
+    TeamModule,
   ],
 })
 export class AdminModule {}

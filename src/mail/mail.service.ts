@@ -7,9 +7,9 @@ import { MailerService } from '@nestjs-modules/mailer';
 @Injectable()
 export class MailService {
   constructor(
-    @InjectQueue('mail-queue') private queue: Queue,
+    @InjectQueue('mail2-queue') private queue: Queue,
     private mailerService: MailerService,
-  ) {}
+  ) { }
 
   async sendMemberInvitation({ user, member, url }) {
     try {
@@ -80,13 +80,13 @@ export class MailService {
   }) {
     try {
       const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
-  
+
       //add queue
       await this.queue.add('sendSupportEmail', {
         to: params.email,
         from: from,
         subject: params.subject,
-        template: 'support-email', 
+        template: 'support-email',
         context: {
           name: params.name,
           message: params.message,
@@ -96,5 +96,99 @@ export class MailService {
       console.error('Failed to add support email to queue:', error);
     }
   }
-  
+
+
+  async submitSuccessEmail(params: {
+    email: string;
+    name: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+
+      await this.queue.add('applicationSubmittedSuccess', {
+        to: params.email,
+        from: from,
+        subject: 'Your Application has been submitted successfully',
+        template: 'submitted-success',
+        context: {
+          name: params.name,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to queue application rejected email:', error);
+    }
+  }
+
+
+  async applicationAcceptedEmail(params: {
+    email: string;
+    name: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+
+      await this.queue.add('sendAccept', {
+        to: params.email,
+        from: from,
+        subject: 'Your Reseller Application Has Been Accepted!',
+        template: 'accepted',
+        context: {
+          name: params.name,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to queue application accepted email:', error);
+    }
+  }
+
+  async applicationRejectedEmail(params: {
+    email: string;
+    name: string;
+    reason?: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+
+      await this.queue.add('sendReject', {
+        to: params.email,
+        from: from,
+        subject: 'Your Reseller Application Was Not Approved',
+        template: 'rejected',
+        context: {
+          name: params.name,
+          reason: params.reason || 'We appreciate your interest, but your application did not meet our criteria at this time.',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to queue application rejected email:', error);
+    }
+  }
+
+
+  async confirmAdminMail(params: {
+    email: string;
+    name: string;
+    password: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+
+      await this.queue.add('confirmAdminMail', {
+        to: params.email,
+        from: from,
+        subject: 'Congratulations! Now You are also an Admin',
+        template: 'sendAdminReqEmai',
+        context: {
+          email: params.email,
+          name: params.name,
+          password: params.password,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to queue admin email:', error);
+    }
+  }
+
+
+
 }

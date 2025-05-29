@@ -859,55 +859,8 @@ export class AuthService {
   }
   // --------- end 2FA ---------
 
-
-
-
-
-    // Apply for reseller
-    // async applyForReseller(data:, userId: string) {
-    //   try {
-    //     // Check if the user has already applied
-    //     const existingApplication = await this.prisma.resellerApplication.findFirst({
-    //       where: {
-    //         user_id: userId,
-    //         status: 'rejected', 
-    //       },
-    //     });
-  
-    //     if (existingApplication) {
-    //       throw new Error('You have already applied for reseller status.');
-    //     }
-  
-    //     // Create a new reseller application record
-    //     const application = await this.prisma.resellerApplication.create({
-    //       data: {
-    //         user_id: userId,
-    //         full_name: data.full_name,
-    //         user_email: data.user_email,
-    //         phone_number: data.phone_number,
-    //         location: data.location,
-    //         position: data.position,
-    //         experience: data.experience,
-    //         cover_letter: data.cover_letter,
-    //         portfolio: data.portfolio,
-    //         skills: data.skills,
-    //         status: 'rejected',
-    //   }});
-  
-    //     return {
-    //       success: true,
-    //       message: 'Application for reseller successfully submitted.',
-    //       data: application,
-    //     };
-    //   } catch (error) {
-    //     return {
-    //       success: false,
-    //       message: `Error applying for reseller: ${error.message}`,
-    //     };
-    //   }
-    // }
-
-    async applyForReseller(data: ResellerApplicationDto,userId: string) {
+  // Apply for reseller
+  async applyForReseller(data: ResellerApplicationDto,userId: string) {
       
       try {
         if (!userId) {
@@ -942,6 +895,11 @@ export class AuthService {
             status: 'pending',  
           },
         });
+
+        await this.mailService.submitSuccessEmail({
+          email: application.user_email,
+          name: application.full_name ,
+        });
     
         return {
           success: true,
@@ -954,7 +912,5 @@ export class AuthService {
           message: `Error applying for reseller: ${error.message}`,
         };
       }
-    }
-    
-
+  }
 }
