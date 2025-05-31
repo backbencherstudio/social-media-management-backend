@@ -1,36 +1,61 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
 import { OrderPageService } from './order_page.service';
-import { CreateOrderPageDto , UpdateOrderDto } from './dto/create-order_page.dto';
+import { CreateOrderPageDto, UpdateOrderDto } from './dto/create-order_page.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('order-page')
 export class OrderPageController {
   constructor(
     private readonly orderPageService: OrderPageService,
-   private readonly prisma: PrismaService,) {}
+    private readonly prisma: PrismaService,
+  ) {}
 
   // -----------------assign task to the reseller-------------------
   @Post()
-  create(@Body() createOrderPageDto: CreateOrderPageDto) {
-    return this.orderPageService.create(createOrderPageDto);
+  async create(@Body() createOrderPageDto: CreateOrderPageDto) {
+    try {
+      return await this.orderPageService.create(createOrderPageDto);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
   }
-// ----------------get all orders ----------------------
+  // ----------------get all orders ----------------------
   @Get('all')
-  findAll() {
-    return this.orderPageService.getAllOrders();
+  async findAll() {
+    try {
+      return await this.orderPageService.getAllOrders();
+    } catch (error) {
+      console.error('Error fetching all orders:', error);
+      throw error;
+    }
   }
-
+  // ---------------total ammount---------------------
+  @Get('total')
+  async getTotalAmount() {
+    try {
+      const result = await this.orderPageService.getTotalPurchasedAmount();
+      return result;
+    } catch (error) {
+      console.error('Error calculating total amount:', error);
+      throw error;
+    }
+  }
   // ----------------view order--------------------------
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.orderPageService.getOneOrder(id);
+  async findOne(@Param('id') id: string) {
+    try {
+      return await this.orderPageService.getOneOrder(id);
+    } catch (error) {
+      console.error(`Error fetching order with ID ${id}:`, error);
+      throw error;
+    }
   }
-
   // ---------------update-order-type--------------------
   @Put(':id')
   async updateOrderType(
-    @Param('id') orderId: string, 
-    @Body() updateOrderDto: UpdateOrderDto
+    @Param('id') orderId: string,
+    @Body() updateOrderDto: UpdateOrderDto,
   ) {
     try {
       const updatedOrder = await this.orderPageService.updateOrderType(orderId, updateOrderDto);
@@ -40,9 +65,4 @@ export class OrderPageController {
       throw error;
     }
   }
-
-
-
-
-
 }

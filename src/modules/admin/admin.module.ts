@@ -13,6 +13,7 @@ import { TaskManagementModule } from './task_management/task_management.module';
 import { ClintsModule } from './clints/clints.module';
 import { ResellerModule } from './reseller/reseller.module';
 import { TeamModule } from './team/team.module';
+import { InvoiceModule } from './order_page/invoice/invoice.module';
 
 
 @Module({
@@ -31,6 +32,8 @@ import { TeamModule } from './team/team.module';
     ClintsModule,
     ResellerModule,
     TeamModule,
+    InvoiceModule
+
   ],
 })
 export class AdminModule {}

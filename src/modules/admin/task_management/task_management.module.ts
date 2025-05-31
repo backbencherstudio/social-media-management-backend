@@ -5,5 +5,6 @@ import { TaskManagementController } from './task_management.controller';
 @Module({
   controllers: [TaskManagementController],
   providers: [TaskManagementService],
+   exports: [TaskManagementService]
 })
 export class TaskManagementModule {}

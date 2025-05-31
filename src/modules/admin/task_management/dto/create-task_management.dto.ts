@@ -1,18 +1,19 @@
+import { float } from 'aws-sdk/clients/cloudfront';
 import { int } from 'aws-sdk/clients/datapipeline';
-import { IsInt, IsString } from 'class-validator';
+import { IsInt, IsNumber, IsString } from 'class-validator';
 
 
 export class CreateTaskManagementDto {}
 
 export class AssignUserDto {
   @IsString()
-  userId: string;
+  res_id: string;
 
   @IsString()
   roleId: string;
 
-  @IsInt()
-  ammount: int;
+  @IsNumber()
+  ammount: number;
   
   @IsString()
   note: string;
@@ -21,8 +22,8 @@ export class AssignUserDto {
 
 export class UnassignUserDto {
   @IsString()
-  userId: string;
-
+  res_id: string;
+  
   @IsString()
   taskId: string;
 

@@ -98,13 +98,16 @@ model User {
   subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
   orders                   Order[]
-  TaskAssigns TaskAssign[] @relation("TaskAssaingees")
-  TaskAssign TaskAssign[]
+
+
   ResellerApplication ResellerApplication[]
-    adminReseller Reseller[]
+  Reseller Reseller[]
+  TaskAssign TaskAssign[]
 
 
   @@map("users")
+
+
 
 
 
@@ -979,6 +982,11 @@ enum clintStatus {
  active
  inactive
 }
+enum paymentStatus {
+ paid
+ pending
+ due
+}
 model Order {
   id               String    @id
   created_at       DateTime  @default(now())       
@@ -1000,6 +1008,7 @@ model Order {
   user_name        String?   
   user_email       String?   
   pakage_name      String?   
+  payment_status   paymentStatus @default(pending)
  
 
   @@map("orders") 
@@ -1023,6 +1032,7 @@ model TaskAssign {
 
   user_id    String?
   user       User?     @relation(fields: [user_id], references: [id])
+  reseller_id String?
 
   order_id   String?  
   order      Order?    @relation(fields: [order_id], references: [id])
@@ -1031,18 +1041,18 @@ model TaskAssign {
   role_id          String?  
   role             Role?     @relation(fields: [role_id], references: [id]) 
 
-  ammount          Int?
-
+  ammount          Float?
   note             String?
 
   user_name  String?
   due_date   String?
   status     Status @default(In_progress)
 
-  assignees  User[] @relation("TaskAssaingees")
+  assignees  Reseller[] @relation("TaskAssaingees")
+  
 
   @@map("task_assign")
-  adminReseller Reseller[] @relation("TaskAssignments")
+
 }
 
 // user application for reseller role 
@@ -1069,7 +1079,8 @@ model ResellerApplication{
 
     
     @@map("reseller_application")
-    adminReseller Reseller[] @relation("resellers")
+    
+    Reseller Reseller[] @relation("resellers")
 }
 
 //admin dashboard reseller
@@ -1080,23 +1091,43 @@ deactive
 }
 
 model Reseller {
-    id  String @id
+    reseller_id  String @id
     user_id  String?
     user    User?   @relation(fields: [user_id], references: [id])
     user_type  String?
     full_name  String?
     user_email  String?
     skills       String[] 
-    total_task  Int?
-    total_earnings Float?
+    total_task  Int @default(0)
+    complete_tasks Int @default(0)
+    total_earnings Float @default(0)
     status  ResellerStatus @default(active)
 
     reseller_application ResellerApplication[]  @relation("resellers")
-    task_assignments TaskAssign[]    @relation("TaskAssignments")
+    TaskAssign TaskAssign[] @relation("TaskAssaingees")
+    
 
-    @@map("admin_reseller")
+    @@map("resellers")
 
-  }
+      
+   
+    ResellerPayments ResellerPayments[]
+}
+
+
+enum ResellerPayemntStat {
+pending
+paid
+}
+model ResellerPayments {
+  id                String  @id @default(cuid())
+  reseller_id       String?          
+  reseller          Reseller?          @relation(fields: [reseller_id], references: [reseller_id]) 
+  status           ResellerPayemntStat
+  task_ammount      Float?
+
+  @@map("resellers_payment")
+}
 
 
   // admin dashboard TEAM

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Invoice - Tag Growth</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 20px;
+    }
+    
+    .company-info h2 {
+      color: #4CAF50;
+      margin: 0;
+      font-size: 24px;
+    }
+    
+    .invoice-title {
+      text-align: right;
+    }
+    
+    .invoice-title h1 {
+      margin: 0;
+      color: #333;
+      font-size: 28px;
+    }
+    
+    .invoice-title p {
+      margin: 5px 0 0;
+      color: #666;
+    }
+    
+    .details {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    
+    .client-details, .invoice-details {
+      width: 48%;
+    }
+    
+    h3 {
+      color: #4CAF50;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+      font-size: 18px;
+    }
+    
+    .detail-row {
+      display: flex;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .detail-label {
+      font-weight: bold;
+      width: 120px;
+    }
+    
+    .username {
+      font-weight: bold;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #4CAF50;
+      margin-top: -2px;
+    }
+    
+    .subscription {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    
+    .payment-paid {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .payment-pending {
+      background: #FFC107;
+      color: #333;
+    }
+    
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    
+    .amount {
+      font-size: 20px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="company-info">
+      <h2>Tag Growth</h2>
+      <p>123 Business Street<br>City, State 10001<br>contact@taggrowth.com</p>
+    </div>
+    <div class="invoice-title">
+      <h1>INVOICE</h1>
+      <p>#<%= id %></p>
+      <p>Date: <%= new Date().toLocaleDateString() %></p>
+    </div>
+  </div>
+  
+  <div class="details">
+    <div class="client-details">
+      <h3>Client Information</h3>
+      <div class="detail-row">
+        <div class="detail-label">Email:</div>
+        <div><%= user_email %></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Username:</div>
+        <div class="username"><%= user_name %></div>
+      </div>
+    </div>
+    
+    <div class="invoice-details">
+      <h3>Invoice Details</h3>
+      <div class="detail-row">
+        <div class="detail-label">Package:</div>
+        <div><%= pakage_name %></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Order Status:</div>
+        <div><%= order_status %></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Payment:</div>
+        <div>
+          <span class="status payment-<%= payment_status.toLowerCase() %>"><%= payment_status %></span> - 
+          <span class="amount">$<%= ammount %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="subscription">
+    <h3>Subscription Details</h3>
+    <div class="detail-row">
+      <div class="detail-label">Start Date:</div>
+      <div><%= subscription.start_at %></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">End Date:</div>
+      <div><%= subscription.end_at %></div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>Thank you for your business! | Tag Growth | contact@taggrowth.com</p>
+    <p>This is an automatically generated invoice. No signature required.</p>
+  </div>
+</body>
+</html>

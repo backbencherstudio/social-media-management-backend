@@ -89,6 +89,21 @@ async pay(@Body() createPaymentIntent: CreatePaymentIntentDto) {
           const end = new Date(now);
           end.setMonth(end.getMonth() + 1);
 // -----------------creating-subscription--------------------\\
+
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        
+        });
+
+                if (!user) {
+          throw new Error('User not found');
+        }
+
           const subscription = await this.prisma.subscription.create({
             data: {
               user: {
@@ -106,6 +121,8 @@ async pay(@Body() createPaymentIntent: CreatePaymentIntentDto) {
             },
           });
 
+          
+
 //-------------------order -created-----------------------------------\\
 const serviceTier = paymentIntent.metadata?.service_tier_id;
 
@@ -121,23 +138,15 @@ const serviceTier = paymentIntent.metadata?.service_tier_id;
           throw new Error('Service tier not found');
         }
 
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        });
+
+        
+
 
          await this.prisma.user.update({
          where: { id: userId },
          data: { type: 'clint' },
            });
 
-        if (!user) {
-          throw new Error('User not found');
-        }
         const order = await this.prisma.order.create({
         data: {
         id: `ORD_${createId()}`,
@@ -149,10 +158,9 @@ const serviceTier = paymentIntent.metadata?.service_tier_id;
         user_name: user.name,
         user_email: user.email,
         ammount:tier.price,
+        payment_status:'paid',
           },
          });
-
-       
 
        console.log("order is created");
        
@@ -168,7 +176,15 @@ const serviceTier = paymentIntent.metadata?.service_tier_id;
 
           //-------------paymnet-fail---------------- 
         case 'payment_intent.payment_failed':
+
           const failedPaymentIntent = event.data.object;
+                     const failedOrderId = failedPaymentIntent.metadata?.order_id;
+                      await this.prisma.order.update({
+              where: { id: failedOrderId },
+              data: {
+                payment_status: 'due',
+              },
+            });
           //--------Update-transaction-status-in-database-------------
           await TransactionRepository.updateTransaction({
             reference_number: failedPaymentIntent.id,

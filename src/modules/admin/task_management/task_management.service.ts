@@ -16,127 +16,176 @@ export class TaskManagementService {
  // ---------------------assign order to the reseller--------------------\\
 async assignUserToOrder(
   orderId: string,
-  dto: { userId: string; note: string; roleId: string }
+  dto: { res_id: string; note: string; roleId: string ; ammount:number }
 ) {
-  const { userId, note, roleId } = dto;
+  const { res_id, note, roleId,ammount } = dto;
+
+  
+  const reseller = await this.prisma.reseller.findUnique({
+    where: { reseller_id: res_id },
+    select: {
+      reseller_id: true,
+      full_name: true,
+      status: true,
+      user_id: true, 
+    },
+  });
+
+  if (!reseller) {
+    return { message: 'Reseller not found' };
+  }
+
+  if (reseller.status !== 'active') {
+    return { message: 'Reseller is inactive' };
+  }
+
+  if (!reseller.user_id) {
+    return { message: 'No user linked to this reseller' };
+  }
 
   const user = await this.prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: reseller.user_id },
     select: { id: true, name: true },
   });
 
-  if (!user) return ('User not found');
+  if (!user) {
+    return { message: 'User not found for this reseller' };
+  }
 
+ 
   const role = await this.prisma.role.findUnique({
     where: { id: roleId },
   });
 
-  if (!role) return ('Role not found');
+  if (!role) {
+    return { message: 'Role not found' };
+  }
+
 
   const order = await this.prisma.order.findUnique({
     where: { id: orderId },
   });
 
-  if (!order) return ('Order not found');
+  if (!order) {
+    return { message: 'Order not found' };
+  }
 
-    const existingTask = await this.prisma.taskAssign.findFirst({
+  
+  const existingTask = await this.prisma.taskAssign.findFirst({
     where: {
       order_id: orderId,
-      user_id: userId,
+      reseller_id: reseller.reseller_id,
       role_id: roleId,
     },
   });
 
   if (existingTask) {
     return {
-      message: 'This user is already assigned to this order with the same role.',
+      message: 'This reseller is already assigned to this order with the same role.',
     };
   }
 
+ 
   const task = await this.prisma.taskAssign.create({
     data: {
-        id: `TASk_${createId()}`,
+      id: `TASK_${createId()}`,
       user_id: user.id,
-      user_name: user.name ?? '',
+      reseller_id: reseller.reseller_id,
+      user_name: reseller.full_name ?? '',
       order_id: order.id,
       role_id: role.id,
-      role_name: role.name ?? '', 
+      role_name: role.name ?? '',
       note: note,
-      due_date: new Date().toISOString(),
-      assignees: {
-        connect: [{ id: user.id }],
-      },
+      ammount:ammount,
+      status: 'In_progress',
     },
     include: {
       assignees: true,
+      user: true,
       role: true,
       order: true,
     },
   });
 
-  return {
-    message: 'User assigned with role successfully',
-    task_details: {
-    task_id:task.id,
-    task_ammount:task.ammount,
-       
-    task_assignee_details:{
-    assignee_id:task.user_id,
-    assignee_name:task.user_name,
-    task_status:task.status,
-    role_id:task.role_id,
-    role_name:task.role_name,
-
+ 
+  await this.prisma.taskAssign.update({
+    where: { id: task.id },
+    data: {
+      assignees: {
+        connect: { reseller_id: reseller.reseller_id },
+      },
     },
+  });
 
-    due_date:task.due_date,
+  await this.prisma.reseller.update({
+    where:{reseller_id:reseller.reseller_id},
+    data:{
+    total_task: { increment: 1 },
+    }
+  })
 
+ 
+  return {
+    message: 'Reseller assigned with role successfully',
+    task_details: {
+      task_id: task.id,
+      task_amount: task.ammount ?? 0, 
+      task_assignee_details: {
+        assignee_id: task.id,
+        assignee_name: task.user_name,
+        task_status: task.status,
+        role_id: task.role_id,
+        role_name: task.role_name,
+      },
+      due_date: task.due_date,
     },
     order_details: {
-    order_id: task.order_id,
-    order_status:order.order_status,
-    clint_name:order.user_name,
-    clint_email:order.user_email,
-    package_name:order.pakage_name,
-    }
+      order_id: order.id,
+      order_status: order.order_status,
+      client_name: order.user_name,
+      client_email: order.user_email,
+      package_name: order.pakage_name,
+    },
   };
 }
 // //---------------unassginging orders to the resellers-----------------\\
-async unassignUserFromOrder(orderId: string, dto: UnassignUserDto) {
-  const { taskId, userId, note } = dto;
+async unassignUserFromOrder(
+  orderId: string,
+  dto: { taskId: string; res_id: string; note: string }
+) {
+  const { taskId, res_id, note } = dto;
 
-  // Step 1: Check if the task exists and belongs to the correct order
   const task = await this.prisma.taskAssign.findUnique({
     where: { id: taskId },
-    include: { assignees: true },
+    include: { assignees: true, order: true },
   });
 
   if (!task || task.order_id !== orderId) {
-    throw new Error('Task not found or does not belong to this order');
+    return { message: 'Task not found or does not belong to this order' };
   }
 
-  // Step 2: Check if the user is assigned to the task
-  const isAssigned = task.assignees.some((user) => user.id === userId);
+
+  const isAssigned = task.assignees.some((res_id) => res_id === res_id);
   if (!isAssigned) {
     return { message: 'User is not assigned to this task' };
   }
 
-  // Step 3: Disconnect the user from the task
+  
   const updatedTask = await this.prisma.taskAssign.update({
     where: { id: taskId },
     data: {
       assignees: {
-        disconnect: { id: userId },
+        disconnect: { reseller_id: res_id },
       },
     },
     include: {
       assignees: {
-        select: { id: true, name: true, email: true },
+        select: {reseller_id: true, full_name: true, user_email: true },
       },
     },
   });
 
-  // Step 4: If no assignees left, delete the task
+
   if (updatedTask.assignees.length === 0) {
     await this.prisma.taskAssign.delete({
       where: { id: taskId },
@@ -148,10 +197,12 @@ async unassignUserFromOrder(orderId: string, dto: UnassignUserDto) {
     };
   }
 
-  // Step 5: Return success message with updated task details
+
   return {
     message: `User unassigned from task. Note: ${note}`,
     task: updatedTask,
   };
 }
+
+
 }

@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Put } from '@nestjs/common';
 import { ResellerService } from './reseller.service';
+import { TaskManagementService } from '../task_management/task_management.service';
 
 
 @Controller('reseller')
 export class ResellerController {
-  constructor(private readonly resellerService: ResellerService) {}
+  constructor(private readonly resellerService: ResellerService,private readonly taskAssignService: TaskManagementService) {}
 // Route to handle accept reseller application
   @Post('application/accept/:applicationId') 
   async acceptResellerApplication(
@@ -51,12 +52,28 @@ export class ResellerController {
       throw new BadRequestException(`Error handling reseller application: ${error.message}`);
     }
   }
-  // Route to get all reseller application
+  //get all resellers
+   @Get('all') 
+  async getAllResellers() {
+    try {
+      const resellers = await this.resellerService.getAllResellers();
+      return {
+        success: true,
+        data: resellers,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error fetching resellers',
+      };
+    }
+  }
+  //get all applications
   @Get('allApplications')
   findAllApplication() {
     return this.resellerService.getAllApplication();
   }
-    // Route to get reseller 
+  // Route to get reseller 
   @Get('allresellers')
   findAllResellers() {
     return this.resellerService.findAllResellers();
@@ -82,10 +99,31 @@ export class ResellerController {
       );
     }
   }
+    //get only one reseller
+  @Get(':resellerId')
+  async getReseller(@Param('resellerId') resellerId: string) {
+    const result = await this.resellerService.getResellerById(resellerId);
+    return result;
+  }
 // toggle the status
   @Patch(':id')
   async toggleStatus(@Param('id') id: string) {
     return this.resellerService.toggleStatus(id);
   }
+  //complete
+ @Patch('complete/:taskId/:resellerId')
+  async completeTask(
+    @Param('taskId') taskId: string,
+    @Param('resellerId') resellerId: string,
+  ){
+    await this.resellerService.completeTask(taskId, resellerId);
+  }
+// admin release payment
+    @Post(':resellerId/release-payment')
+  async releasePayment(@Param('resellerId') resellerId: string) {
+    const result = await this.resellerService.releasePayment(resellerId);
+    return result;
+  }
 }
+
   
