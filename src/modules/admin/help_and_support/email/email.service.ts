@@ -228,8 +228,6 @@ export class EmailService {
       };
     }
   }
-  
-  //getting all the user sent emails
   async findAllUsersEmails() {
     try {
       const emails = await this.Prisma.emailHistory.findMany({
@@ -264,10 +262,8 @@ export class EmailService {
         message: error.message,
       };
     }
-  } // not completed yet
-
-//get all the unread mails 
-getInboxMails(email: string, password: string): Promise<any[]> {
+  }
+  async getInboxMails(email: string, password: string): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const Imap = require('imap');
     const { simpleParser } = require('mailparser');
@@ -335,5 +331,5 @@ getInboxMails(email: string, password: string): Promise<any[]> {
 
     imap.connect();
   });
-}
+  }
 }
