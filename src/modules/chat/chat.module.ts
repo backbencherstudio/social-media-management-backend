@@ -1,9 +1,12 @@
+// chat.module.ts
 import { Module } from '@nestjs/common';
-import { ConversationModule } from './conversation/conversation.module';
-import { MessageModule } from './message/message.module';
-import { UserModule } from './user/user.module';
+import { MessageModule } from './message/message.module'; // Import MessageModule
+import { UserModule } from './user/user.module'; // Import UserModule
+import { MsgController } from './message/message.controller';
+
 
 @Module({
-  imports: [ConversationModule, MessageModule, UserModule],
+  imports: [MessageModule, UserModule], // Ensure MessageModule is imported
+  controllers: [MsgController], // Add MsgController to the controllers array
 })
 export class ChatModule {}

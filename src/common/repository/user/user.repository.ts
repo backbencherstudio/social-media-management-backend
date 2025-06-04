@@ -188,16 +188,28 @@ export class UserRepository {
           name: true,
           email: true,
           type: true,
-          role_users: {
-            select: {
-              role: {
-                select: {
-                  id: true,
-                  title: true,
-                },
-              },
-            },
+          TaskAssign:{
+         select:{
+          role_name:true,
+         }
           },
+          Reseller:{
+           select:{
+            total_task:true,
+            total_earnings:true,
+           }
+          },
+          // role_users: {
+          //   select: {
+          //     role: {
+          //       select: {
+          //         id: true,
+          //         title: true,
+          //         role_users:true,
+          //       },
+          //     },
+          //   },
+          // },
         },
       });
       return users;

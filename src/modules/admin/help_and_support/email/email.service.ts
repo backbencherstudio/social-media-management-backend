@@ -3,10 +3,14 @@ import { CreateEmailDto } from './dto/create-email.dto';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { MailService } from '../../../../mail/mail.service';
 import { CreateEmailForAll } from './dto/create-email-for-all.dto';
+import { Email } from 'aws-sdk/clients/codecommit';
+const Imap = require('imap');
+const { simpleParser } = require('mailparser');
 
 
 @Injectable()
 export class EmailService {
+  emailRepository: any;
   constructor(private readonly Prisma: PrismaService, private mailService: MailService) {}
   
   // this is for sent emails 
@@ -225,7 +229,6 @@ export class EmailService {
     }
   }
   
-
   //getting all the user sent emails
   async findAllUsersEmails() {
     try {
@@ -262,6 +265,79 @@ export class EmailService {
       };
     }
   } // not completed yet
+
+//get all the unread mails 
+getInboxMails(email: string, password: string): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const Imap = require('imap');
+    const { simpleParser } = require('mailparser');
+    const imap = new Imap({
+      user: email,
+      password: password,
+      host: 'imap.gmail.com',
+      port: 993,
+      tls: true,
+      tlsOptions: { rejectUnauthorized: false },
+    });
+
+    function openInbox(cb) {
+      imap.openBox('INBOX', true, cb);
+    }
+    
+
+    imap.once('ready', function () {
+      openInbox(function (err, box) {
+
+
+        const since = new Date();
+since.setDate(since.getDate() - 7); 
+
+
+        if (err) throw err;
+        imap.search(['UNSEEN', ['SINCE', since]], function (err, results) {
+          if (err) {
+            imap.end();
+            return reject(err);
+          }
+          if (!results.length) {
+            imap.end();
+            return resolve([]);
+          }
+          const f = imap.fetch(results, { bodies: '' });
+          const mails = [];
+          f.on('message', function (msg, seqno) {
+            msg.on('body', function (stream) {
+              simpleParser(stream, (err, parsed) => {
+                if (parsed) {
+                  // Extract the info you want
+                  mails.push({
+                    from_email: parsed.from?.value?.[0]?.address || null,
+                    from_name: parsed.from?.value?.[0]?.name || null,
+                    date: parsed.date || null,
+                    subject: parsed.subject || null,
+                    body: parsed.text || parsed.html || null,
+                  });
+                }
+              });
+            });
+          });
+          f.once('end', function () {
+            imap.end();
+            resolve(mails);
+          });
+        });
+      });
+    });
+
+    imap.once('error', function (err) {
+      reject(err);
+    });
+
+    imap.connect();
+  });
+}
+
+
 
 
 }
