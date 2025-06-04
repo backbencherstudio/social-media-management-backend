@@ -288,9 +288,9 @@ getInboxMails(email: string, password: string): Promise<any[]> {
     imap.once('ready', function () {
       openInbox(function (err, box) {
 
-
+//-----------------customized fetvhing the emails----------------
         const since = new Date();
-since.setDate(since.getDate() - 7); 
+          since.setDate(since.getDate()); 
 
 
         if (err) throw err;
@@ -336,8 +336,4 @@ since.setDate(since.getDate() - 7);
     imap.connect();
   });
 }
-
-
-
-
 }
