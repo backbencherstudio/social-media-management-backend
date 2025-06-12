@@ -1142,3 +1142,23 @@ model ResellerPayments {
     role      String?
     password  String?
   }
+
+
+
+model DesignFile {
+  id         String             @id @default(cuid())
+  created_at DateTime           @default(now())
+  content    String?
+  files      DesignFileAsset[]
+}
+
+model DesignFileAsset {
+  id           String   @id @default(cuid())
+  designFileId String
+  name         String
+  type         String
+  file_path    String
+  size         Int?
+  created_at   DateTime @default(now())
+  designFile   DesignFile @relation(fields: [designFileId], references: [id], onDelete: Cascade)
+}
