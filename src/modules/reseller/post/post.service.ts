@@ -4,6 +4,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { cliPluginError } from 'nest-commander/src/constants';
 
 @Injectable()
 export class PostService {
@@ -12,7 +13,7 @@ export class PostService {
     @InjectQueue('post-schedule') private postQueue: Queue,
   ) { }
 
-  async create(createPostDto: CreatePostDto) {
+  async create(createPostDto: CreatePostDto, mediaFiles?: Express.Multer.File[]) {
     console.log("post_channels", createPostDto);
     try {
       // Create the post
@@ -66,16 +67,15 @@ export class PostService {
         await this.postQueue.add('publish-post', { postId: post.id });
       }
 
-      return post;
+      return { success: true, data: await this.findOne(post.id) };
     } catch (error) {
-      console.error('Error creating post:', error);
-      throw new Error('Failed to create post');
+      return { success: false, message: error.message };
     }
   }
 
   async findAll() {
     try {
-      return this.prisma.post.findMany({
+      const posts = await this.prisma.post.findMany({
         include: {
           post_channels: {
             include: {
@@ -85,24 +85,24 @@ export class PostService {
           post_files: true,
         },
       });
+      return { success: true, data: posts };
     } catch (error) {
-      console.error('Error finding all posts:', error);
-      throw new Error('Failed to find all posts');
+      return { success: false, message: error.message };
     }
   }
 
   async findOne(id: string) {
     try {
-      return this.prisma.post.findUnique({
+      const post = await this.prisma.post.findUnique({
         where: { id },
         include: {
           post_channels: true,
           post_files: true,
         },
       });
+      return { success: true, data: post };
     } catch (error) {
-      console.error('Error finding post by ID:', error);
-      throw new Error('Failed to find post by ID');
+      return { success: false, message: error.message };
     }
   }
 
@@ -170,12 +170,11 @@ export class PostService {
       }
 
     } catch (error) {
-      console.error('Error updating post:', error);
-      throw new Error('Failed to update post');
+      return { success: false, message: error.message };
     }
     // Update the post itself
     const { post_channels, post_files, ...postData } = updatePostDto;
-    return this.prisma.post.update({
+    const updated = await this.prisma.post.update({
       where: { id },
       data: postData,
       include: {
@@ -183,11 +182,40 @@ export class PostService {
         post_files: true,
       },
     });
+    return { success: true, data: updated };
   }
 
   async remove(id: string) {
-    return this.prisma.post.delete({
-      where: { id },
-    });
+    try {
+      const deleted = await this.prisma.post.delete({
+        where: { id },
+      });
+      return { success: true, data: deleted };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
+
+  async getScheduledPostsForCalendar(start: Date, end: Date) {
+    try {
+      const posts = await this.prisma.post.findMany({
+        where: {
+          schedule_at: {
+            gte: start,
+            lte: end,
+          },
+          deleted_at: null,
+        },
+        include: {
+          post_channels: { include: { channel: true } },
+          post_files: true,
+        },
+        orderBy: { schedule_at: 'asc' }
+      });
+      return { success: true, data: posts };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+  
 }

@@ -11,17 +11,8 @@ export class DesignFileController {
   constructor(private readonly designFileService: DesignFileService) {}
 
   @Post()
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [{ name: 'files', maxCount: 10 }],
-      { storage: memoryStorage() }
-    )
-  )
-  create(
-    @Body() createDesignFileDto: CreateDesignFileDto,
-    @UploadedFiles() files: { files?: Express.Multer.File[] }
-  ) {
-    return this.designFileService.create(createDesignFileDto, files?.files);
+  create(@Body() createDesignFileDto: CreateDesignFileDto) {
+    return this.designFileService.create(createDesignFileDto);
   }
 
   @Get()
