@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -36,7 +37,7 @@ import { ResellerApplicationDto } from './dto/apply_for_reseller.dto';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @ApiOperation({ summary: 'Get user details' })
   @ApiBearerAuth()
@@ -202,19 +203,91 @@ export class AuthController {
     }
   }
 
+  // @Get('google')
+  // @UseGuards(AuthGuard('google'))
+  // async googleLogin(): Promise<any> {
+  //   return HttpStatus.OK;
+  // }
+
+  // @Get('google/redirect')
+  // @UseGuards(AuthGuard('google'))
+  // async googleLoginRedirect(@Req() req: Request): Promise<any> {
+  //   return {
+  //     statusCode: HttpStatus.OK,
+  //     data: req.user,
+  //   };
+  // }
+
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleLogin(): Promise<any> {
-    return HttpStatus.OK;
+    return HttpStatus.OK; // Redirects automatically
   }
 
   @Get('google/redirect')
   @UseGuards(AuthGuard('google'))
-  async googleLoginRedirect(@Req() req: Request): Promise<any> {
-    return {
-      statusCode: HttpStatus.OK,
-      data: req.user,
-    };
+  async googleLoginRedirect(@Req() req, @Res() res) {
+    const user = req.user;
+    const result = await this.authService.handleGoogleLogin(user);
+
+    // Redirect to frontend with token or user info (or respond with JSON)
+    return res.redirect(`${appConfig().app.client_app_url}/auth/success?token=${result.authorization.token}`);
+  }
+
+  @Get('facebook')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLogin(): Promise<any> {
+    return HttpStatus.OK; // redirects to Facebook login
+  }
+
+  @Get('facebook/redirect')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLoginRedirect(@Req() req, @Res() res) {
+    const user = req.user;
+    const result = await this.authService.handleFacebookLogin(user);
+    return res.redirect(`${appConfig().app.client_app_url}/auth/success?token=${result.authorization.token}`);
+  }
+
+  @Get('instagram')
+  @UseGuards(AuthGuard('instagram'))
+  async instagramLogin() {
+    return HttpStatus.OK; // Redirects automatically
+  }
+
+  @Get('instagram/redirect')
+  @UseGuards(AuthGuard('instagram'))
+  async instagramRedirect(@Req() req, @Res() res) {
+    const user = req.user;
+    const result = await this.authService.handleInstagramLogin(user);
+    // Redirect user to frontend with JWT token or data
+    return res.redirect(`${process.env.CLIENT_APP_URL}/auth/success?token=${result.authorization.token}`);
+  }
+
+  @Get('twitter')
+  @UseGuards(AuthGuard('twitter'))
+  async twitterLogin(): Promise<any> {
+    return HttpStatus.OK; // Redirects to Twitter
+  }
+
+  @Get('twitter/redirect')
+  @UseGuards(AuthGuard('twitter'))
+  async twitterLoginCallback(@Req() req, @Res() res) {
+    const result = await this.authService.handleTwitterLogin(req.user);
+    return res.redirect(`${process.env.CLIENT_APP_URL}/auth/success?token=${result.authorization.token}`);
+  }
+
+  @Get('linkedin')
+  @UseGuards(AuthGuard('linkedin'))
+  async linkedinLogin(): Promise<any> {
+    return HttpStatus.OK;
+  }
+
+  @Get('linkedin/redirect')
+  @UseGuards(AuthGuard('linkedin'))
+  async linkedinCallback(@Req() req, @Res() res) {
+    const result = await this.authService.handleLinkedinLogin(req.user);
+    return res.redirect(`${process.env.CLIENT_APP_URL}/auth/success?token=${result.authorization.token}`);
   }
 
   // update user
@@ -527,14 +600,14 @@ export class AuthController {
 
   //// application
 
-  @Post('apply/:userId') 
+  @Post('apply/:userId')
   async apply(
-    @Param('userId') userId: string,  
-    @Body() data: ResellerApplicationDto  
+    @Param('userId') userId: string,
+    @Body() data: ResellerApplicationDto
   ) {
-    
+
     const result = await this.authService.applyForReseller(data, userId);
-    
+
     return result;
   }
 }

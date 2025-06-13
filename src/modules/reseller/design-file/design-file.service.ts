@@ -1,59 +1,132 @@
 import { Injectable } from '@nestjs/common';
 import { CreateDesignFileDto } from './dto/create-design-file.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class DesignFileService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createDesignFileDto: CreateDesignFileDto) {
-    // Create DesignFile record
-    const designFile = await this.prisma.designFile.create({
-      data: {
-        content: createDesignFileDto.content,
-      },
-    });
+  async create(createDesignFileDto: CreateDesignFileDto, files?: Express.Multer.File[]) {
+    console.log("createDesignFileDto",createDesignFileDto);
+    try {
+      // Create DesignFile record
+      const designFile = await this.prisma.designFile.create({
+        data: {
+          content: createDesignFileDto.content,
+        },
+      });
 
-    // Process files from DTO (as plain metadata)
-    if (createDesignFileDto.files && createDesignFileDto.files.length > 0) {
-      const fileAssets = createDesignFileDto.files.map(file => ({
-        designFileId: designFile.id,
-        name: file.name,
-        type: file.type,
-        file_path: file.file_path,
-        size: file.size,
-      }));
+      // Handle file uploads
+      if (files && files.length > 0) {
+        const fileAssets = [];
+        
+        for (const file of files) {
+          // Generate random filename
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
 
-      await this.prisma.designFileAsset.createMany({ data: fileAssets });
+          const fileName = `${randomName}${file.originalname}`;
+          
+          // Upload file using SojebStorage
+          await SojebStorage.put(
+            appConfig().storageUrl.rootUrl + '/design-files/' + fileName,
+            file.buffer,
+          );
+
+          fileAssets.push({
+            designFileId: designFile.id,
+            name: file.originalname,
+            type: file.mimetype.startsWith('image') ? 'image' : 'video',
+            file_path: fileName,
+            size: file.size,
+          });
+        }
+
+        if (fileAssets.length > 0) {
+          await this.prisma.designFileAsset.createMany({ data: fileAssets });
+        }
+      }
+
+      return {
+        success: true,
+        data: await this.findOne(designFile.id),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
-
-    return {
-      success: true,
-      data: designFile,
-    };
   }
 
   async findAll() {
-    const designFiles = await this.prisma.designFile.findMany({
-      include: { files: true },
-      orderBy: { created_at: 'desc' },
-    });
+    try {
+      const designFiles = await this.prisma.designFile.findMany({
+        include: { files: true },
+        orderBy: { created_at: 'desc' },
+      });
 
-    return {
-      success: true,
-      data: designFiles,
-    };
+      // Add public URLs to files
+      const designFilesWithUrls = designFiles.map(designFile => ({
+        ...designFile,
+        files: designFile.files.map(file => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path
+          ),
+        })),
+      }));
+
+      return {
+        success: true,
+        data: designFilesWithUrls,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 
   async findOne(id: string) {
-    const designFile = await this.prisma.designFile.findUnique({
-      where: { id },
-      include: { files: true },
-    });
+    try {
+      const designFile = await this.prisma.designFile.findUnique({
+        where: { id },
+        include: { files: true },
+      });
 
-    return {
-      success: true,
-      data: designFile,
-    };
+      if (!designFile) {
+        return {
+          success: false,
+          message: 'Design file not found',
+        };
+      }
+
+      // Add public URLs to files
+      const designFileWithUrls = {
+        ...designFile,
+        files: designFile.files.map(file => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path
+          ),
+        })),
+      };
+
+      return {
+        success: true,
+        data: designFileWithUrls,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 }

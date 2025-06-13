@@ -29,6 +29,7 @@ import { BlogCategoryModule } from './modules/admin/blog/blog_category/blog_cate
 import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/website-info.module';
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
+import { SocialsModule } from './modules/socials/socials.module';
 
 @Module({
   imports: [
@@ -60,7 +61,8 @@ import { DesignFileModule } from './modules/reseller/design-file/design-file.mod
     BlogCategoryModule,
     WebsiteInfoModule,
     AiChatbotModule,
-    DesignFileModule
+    DesignFileModule,
+    SocialsModule
   ],
   controllers: [AppController],
   providers: [AppService],
