@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Post - My 8th Post</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .blog-header {
+            margin-bottom: 30px;
+        }
+        .blog-title {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .blog-meta {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        .hashtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .hashtag {
+            background-color: #f0f0f0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #3498db;
+        }
+        .category {
+            display: inline-block;
+            background-color: #e8f4fc;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #2980b9;
+            margin-bottom: 20px;
+        }
+        .blog-content {
+            margin-bottom: 40px;
+        }
+        .text-content {
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+        .media-content {
+            margin: 25px 0;
+        }
+        .media-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .media-content video {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .media-caption {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-align: center;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="blog-header">
+        <h1 class="blog-title" id="blog-title">Loading...</h1>
+        <div class="blog-meta">
+            Published on: <span id="publish-date">Loading...</span>
+        </div>
+        <div class="hashtags" id="hashtags-container"></div>
+        <div class="category" id="category-container"></div>
+    </div>
+
+    <div class="blog-content" id="blog-content-container"></div>
+
+    <script>
+        // Fetch blog data from API
+        fetch('http://localhost:4000/api/admin/blog/cmbvydlf30000rezwaco23uc9')
+            .then(response => response.json())
+            .then(data => {
+                // Display basic post info
+                document.getElementById('blog-title').textContent = data.title;
+                
+                const publishDate = new Date(data.created_at);
+                document.getElementById('publish-date').textContent = publishDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // Display hashtags
+                const hashtagsContainer = document.getElementById('hashtags-container');
+                data.hashtags.forEach(tag => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'hashtag';
+                    tagElement.textContent = tag;
+                    hashtagsContainer.appendChild(tagElement);
+                });
+
+                // Display category
+                if (data.blog_blog_categories && data.blog_blog_categories.length > 0) {
+                    document.getElementById('category-container').textContent = 
+                        data.blog_blog_categories[0].blog_category.name;
+                }
+
+                // Display content
+                const contentContainer = document.getElementById('blog-content-container');
+                
+                data.blog_contents.forEach(content => {
+                    if (content.content_type === 'text') {
+                        const textElement = document.createElement('div');
+                        textElement.className = 'text-content';
+                        textElement.textContent = content.content;
+                        contentContainer.appendChild(textElement);
+                    } else if (content.content_type === 'media') {
+                        const mediaContainer = document.createElement('div');
+                        mediaContainer.className = 'media-content';
+                        
+                        if (content.blog_files && content.blog_files.length > 0) {
+                            const file = content.blog_files[0];
+                            
+                            if (file.name.endsWith('.mp4') || file.name.endsWith('.mov') || file.name.endsWith('.webm')) {
+                                // Video content
+                                const videoElement = document.createElement('video');
+                                videoElement.controls = true;
+                                videoElement.src = file.file_path;
+                                videoElement.style.width = '100%';
+                                mediaContainer.appendChild(videoElement);
+                            } else {
+                                // Image content
+                                const imgElement = document.createElement('img');
+                                imgElement.src = file.file_path;
+                                imgElement.alt = file.file_alt || 'Blog image';
+                                mediaContainer.appendChild(imgElement);
+                            }
+                            
+                            if (content.content && content.content !== 'image desc' && content.content !== 'video') {
+                                const captionElement = document.createElement('div');
+                                captionElement.className = 'media-caption';
+                                captionElement.textContent = content.content;
+                                mediaContainer.appendChild(captionElement);
+                            }
+                        }
+                        
+                        contentContainer.appendChild(mediaContainer);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching blog data:', error);
+                document.getElementById('blog-title').textContent = 'Error loading blog post';
+            });
+    </script>
+</body>
+</html>
