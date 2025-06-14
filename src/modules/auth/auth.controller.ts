@@ -278,7 +278,7 @@ export class AuthController {
   }
 
   @Get('linkedin')
-  @UseGuards(AuthGuard('linkedin'))
+   @UseGuards(AuthGuard('linkedin'))
   async linkedinLogin(): Promise<any> {
     return HttpStatus.OK;
   }

@@ -60,6 +60,7 @@
     "nest-commander": "3.17.0",
     "nestjs-url-generator": "1.0.2",
     "nodemailer": "6.10.1",
+    "oauth-1.0a": "^2.2.6",
     "openai": "^4.97.0",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",

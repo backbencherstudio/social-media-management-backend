@@ -47,9 +47,15 @@ async function bootstrap() {
     }),
   );
 
-  app.use(passport.initialize());
-  app.use(passport.session());
-
+ app.use(
+  session({
+    secret: 'your-secret',
+    resave: false,
+    saveUninitialized: false,
+  }),
+);
+app.use(passport.initialize());
+app.use(passport.session());
   app.useStaticAssets(join(__dirname, '..', 'public/storage'), {
     index: false,
     prefix: '/storage',
