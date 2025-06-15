@@ -38,30 +38,30 @@ export class SocialsController {
     @Req() req,
     @Body() credentials: CreateCredentialDto,
   ) {
-    const userId = 'cmbvsnbto0000wseg09f8eqpl';
+   
 
-    return this.socialsService.connectWithCredentials(userId, credentials);
+    return this.socialsService.connectWithCredentials(req.user.userId, credentials);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('pages/:provider')
   async getPages(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmbvsnbto0000wseg09f8eqpl';
-    return this.socialsService.getPages(userId, provider);
+   
+    return this.socialsService.getPages(req.user.userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile/:provider')
   async getProfile(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmbvsnbto0000wseg09f8eqpl';
-    return this.socialsService.getProfile(userId, provider);
+   
+    return this.socialsService.getProfile(req.user.userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('posts/:provider')
   async getSocialPosts(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmbvsnbto0000wseg09f8eqpl';
-    return this.socialsService.fetchPostsByProvider(userId, provider);
+   
+    return this.socialsService.fetchPostsByProvider(req.user.userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -98,10 +98,10 @@ export class SocialsController {
   @UseGuards(JwtAuthGuard)
   @Get('test-twitter-api')
   async testTwitterApi(@Req() req) {
-    const userId = 'cmbvsnbto0000wseg09f8eqpl';
+   
     try {
       const account = await this.socialsService['prisma'].account.findFirst({
-        where: { user_id: userId, provider: 'twitter' },
+        where: { user_id: req.user.userId, provider: 'twitter' },
       });
 
       if (!account) {
@@ -139,7 +139,6 @@ export class SocialsController {
     @Query('start') start: string,
     @Query('end') end: string
   ) {
-    const userId = 'cmbvsnbto0000wseg09f8eqpl'; // Replace with req.user.userId in production
-    return this.socialsService.getFollowerActivity(userId, provider, start, end);
+    return this.socialsService.getFollowerActivity(req.user.userId, provider, start, end);
   }
 }

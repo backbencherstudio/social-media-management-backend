@@ -30,6 +30,9 @@ import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/w
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
+import { ClientModule } from './modules/reseller/client/client.module';
+import { ActiveServiceModule } from './modules/reseller/active-service/active-service.module';
+
 
 @Module({
   imports: [
@@ -62,7 +65,10 @@ import { SocialsModule } from './modules/socials/socials.module';
     WebsiteInfoModule,
     AiChatbotModule,
     DesignFileModule,
-    SocialsModule
+    SocialsModule,
+    ClientModule,
+    ActiveServiceModule,
+   
   ],
   controllers: [AppController],
   providers: [AppService],
