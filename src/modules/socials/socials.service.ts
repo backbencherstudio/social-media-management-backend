@@ -183,10 +183,7 @@ export class SocialsService {
       const account = await this.prisma.account.findFirst({
         where: { user_id: userId, provider },
       });
-      console.log(
-        `Fetching profile for userId: ${userId}, provider: ${provider}`,
-      );
-      console.log('Account found:', account);
+     
       if (!account) {
         return { success: false, message: `${provider} not connected` };
       }
