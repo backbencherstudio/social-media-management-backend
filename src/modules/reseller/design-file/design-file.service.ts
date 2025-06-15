@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { CreateDesignFileDto } from './dto/create-design-file.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import appConfig from 'src/config/app.config';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class DesignFileService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createDesignFileDto: CreateDesignFileDto, files?: Express.Multer.File[]) {
-    console.log("createDesignFileDto",createDesignFileDto);
+  async create(
+    createDesignFileDto: CreateDesignFileDto,
+    files?: Express.Multer.File[],
+  ) {
+    console.log('Creating design file with data:', createDesignFileDto);
+    console.log('Files:', files);
     try {
       // Create DesignFile record
       const designFile = await this.prisma.designFile.create({
@@ -21,7 +25,7 @@ export class DesignFileService {
       // Handle file uploads
       if (files && files.length > 0) {
         const fileAssets = [];
-        
+
         for (const file of files) {
           // Generate random filename
           const randomName = Array(32)
@@ -30,7 +34,7 @@ export class DesignFileService {
             .join('');
 
           const fileName = `${randomName}${file.originalname}`;
-          
+          console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
           // Upload file using SojebStorage
           await SojebStorage.put(
             appConfig().storageUrl.rootUrl + '/design-files/' + fileName,
@@ -64,19 +68,20 @@ export class DesignFileService {
   }
 
   async findAll() {
+    console.log('Fetching all design files');
     try {
       const designFiles = await this.prisma.designFile.findMany({
         include: { files: true },
         orderBy: { created_at: 'desc' },
       });
-
+      console.log('designFiles', designFiles);
       // Add public URLs to files
-      const designFilesWithUrls = designFiles.map(designFile => ({
+      const designFilesWithUrls = designFiles.map((designFile) => ({
         ...designFile,
-        files: designFile.files.map(file => ({
+        files: designFile.files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path
+            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path,
           ),
         })),
       }));
@@ -110,10 +115,10 @@ export class DesignFileService {
       // Add public URLs to files
       const designFileWithUrls = {
         ...designFile,
-        files: designFile.files.map(file => ({
+        files: designFile.files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path
+            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path,
           ),
         })),
       };

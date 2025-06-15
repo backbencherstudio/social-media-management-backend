@@ -13,13 +13,13 @@ export class ActiveServiceController {
   }
 
   @Get()
-  findAll() {
+  async findAll() {
     return this.activeServiceService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.activeServiceService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return this.activeServiceService.findOne(id);
   }
 
   @Patch(':id')
