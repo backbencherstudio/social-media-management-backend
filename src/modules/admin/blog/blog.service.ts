@@ -111,7 +111,7 @@ export class BlogService {
 
   // }
   /////////////////////////////////////////////
-
+//updated create with multiple imgae and vidoes 
 async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
   const { title, hashtags, categoryIds = [], contents = [] } = dto;
 
