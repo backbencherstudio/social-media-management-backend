@@ -19,7 +19,7 @@ export class DesignFileService {
       const designFile = await this.prisma.designFile.create({
         data: {
           content: createDesignFileDto.content,
-          status: createDesignFileDto.status || 0, 
+          status: createDesignFileDto.status || 0,
         },
       });
 
@@ -133,7 +133,7 @@ export class DesignFileService {
     }
   }
 
-  async reviewPost(
+  async reviewDesignFile(
     designFileId: string,
     action: 1 | 2, // 1 for approve, 2 for reject
     feedback?: string,
@@ -146,7 +146,7 @@ export class DesignFileService {
           feedback: feedback || null,
         },
       });
-     
+
       return {
         success: true,
         message: `Post update successfully`,

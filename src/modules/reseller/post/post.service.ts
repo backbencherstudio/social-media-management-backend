@@ -215,6 +215,7 @@ export class PostService {
             gte: start,
             lte: end,
           },
+          status: 1, // Only get scheduled posts
           deleted_at: null,
         },
         include: {
@@ -223,6 +224,31 @@ export class PostService {
         },
         orderBy: { schedule_at: 'asc' },
       });
+      return { success: true, data: posts };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUpcomingPosts() {
+    try {
+      const now = new Date();
+
+      const posts = await this.prisma.post.findMany({
+        where: {
+          schedule_at: {
+            gt: now,
+          },
+          status: 1,
+          deleted_at: null,
+        },
+        include: {
+          post_channels: { include: { channel: true } },
+          post_files: true,
+        },
+        orderBy: { schedule_at: 'asc' },
+      });
+
       return { success: true, data: posts };
     } catch (error) {
       return { success: false, message: error.message };

@@ -70,6 +70,11 @@ export class PostController {
     }
   }
 
+  @Get('upcoming')
+  getUpcomingPosts() {
+    return this.postService.getUpcomingPosts();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.postService.findOne(id);

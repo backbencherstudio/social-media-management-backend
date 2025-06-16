@@ -6,6 +6,7 @@ import {
   Param,
   UseInterceptors,
   UploadedFiles,
+  Patch,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -39,4 +40,12 @@ export class DesignFileController {
   findOne(@Param('id') id: string) {
     return this.designFileService.findOne(id);
   }
+
+  @Patch(':id/review')
+    reviewPost(
+      @Param('id') id: string,
+      @Body() body: { action: 1 | 2; feedback?: string },
+    ) {
+      return this.designFileService.reviewDesignFile(id, body.action, body.feedback);
+    }
 }
