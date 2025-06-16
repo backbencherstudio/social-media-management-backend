@@ -19,6 +19,7 @@ export class DesignFileService {
       const designFile = await this.prisma.designFile.create({
         data: {
           content: createDesignFileDto.content,
+          status: createDesignFileDto.status || 0, 
         },
       });
 
@@ -129,6 +130,31 @@ export class DesignFileService {
         success: false,
         message: error.message,
       };
+    }
+  }
+
+  async reviewPost(
+    designFileId: string,
+    action: 1 | 2, // 1 for approve, 2 for reject
+    feedback?: string,
+  ) {
+    try {
+      const post = await this.prisma.designFile.update({
+        where: { id: designFileId },
+        data: {
+          status: action,
+          feedback: feedback || null,
+          updated_at: new Date(),
+        },
+      });
+     
+      return {
+        success: true,
+        message: `Post update successfully`,
+        data: post,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   }
 }

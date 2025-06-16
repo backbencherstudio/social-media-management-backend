@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
 
 export class CreateDesignFileAssetDto {
   @IsString()
@@ -18,6 +18,10 @@ export class CreateDesignFileDto {
   @IsString()
   @IsOptional()
   content?: string;
+
+  @IsNumber()
+  @IsOptional()
+  status?: number;
 
   @IsArray()
   @IsOptional()

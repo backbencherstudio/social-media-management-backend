@@ -663,7 +663,6 @@ model SubscriptionChannel {
   @@map("subscription_channel")
 }
 
-
 // social media schedule post
 model Post {
   id         String    @id @default(cuid())
@@ -1125,6 +1124,9 @@ model Team {
 model DesignFile {
   id         String            @id @default(cuid())
   created_at DateTime          @default(now())
+
+  status     Int?      @default(0) @db.SmallInt
+  feedback  String?
   content    String?
   files      DesignFileAsset[]
 }
