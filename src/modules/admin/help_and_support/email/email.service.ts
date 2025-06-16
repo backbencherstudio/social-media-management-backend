@@ -4,16 +4,22 @@ import { PrismaService } from '../../../../prisma/prisma.service';
 import { MailService } from '../../../../mail/mail.service';
 import { CreateEmailForAll } from './dto/create-email-for-all.dto';
 import { Email } from 'aws-sdk/clients/codecommit';
+import { from } from 'rxjs';
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
 
 
 @Injectable()
 export class EmailService {
-  emailRepository: any;
+private readonly imapConfig = {
+  user: process.env.MAIL_USERNAME,
+  password: process.env.MAIL_PASSWORD,
+  host: 'imap.gmail.com',
+  port: 993,
+  tls: true,
+  tlsOptions: { rejectUnauthorized: false },
+};
   constructor(private readonly Prisma: PrismaService, private mailService: MailService) {}
-  
-  // this is for sent emails 
 
   async createEmail(data: CreateEmailDto) {
     try {
@@ -263,73 +269,167 @@ export class EmailService {
       };
     }
   }
-  async getInboxMails(email: string, password: string): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    const Imap = require('imap');
-    const { simpleParser } = require('mailparser');
-    const imap = new Imap({
-      user: email,
-      password: password,
-      host: 'imap.gmail.com',
-      port: 993,
-      tls: true,
-      tlsOptions: { rejectUnauthorized: false },
-    });
+   
+async getInboxMails(): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const imap = new Imap(this.imapConfig);
+      const mails: any[] = [];
 
-    function openInbox(cb) {
-      imap.openBox('INBOX', true, cb);
-    }
-    
+      function openInbox(cb) {
+        imap.openBox('INBOX', true, cb); 
+      }
 
-    imap.once('ready', function () {
-      openInbox(function (err, box) {
+      imap.once('ready', () => {
+        openInbox((err, box) => {
+          if (err) return reject(err);
 
-//-----------------customized fetvhing the emails----------------
-        const since = new Date();
-          since.setDate(since.getDate()); 
+          // Get the last 20 messages
+          imap.search(['ALL'], (err, results) => {
+            if (err || !results || results.length === 0) {
+              imap.end();
+              return resolve([]);
+            }
 
+            const latest = results.slice(-10);
+            const fetch = imap.fetch(latest, {
+              bodies: '',
+              markSeen: false,
+            });
 
-        if (err) throw err;
-        imap.search(['UNSEEN', ['SINCE', since]], function (err, results) {
-          if (err) {
-            imap.end();
-            return reject(err);
-          }
-          if (!results.length) {
-            imap.end();
-            return resolve([]);
-          }
-          const f = imap.fetch(results, { bodies: '' });
-          const mails = [];
-          f.on('message', function (msg, seqno) {
-            msg.on('body', function (stream) {
-              simpleParser(stream, (err, parsed) => {
-                if (parsed) {
-                  // Extract the info you want
-                  mails.push({
-                    from_email: parsed.from?.value?.[0]?.address || null,
-                    from_name: parsed.from?.value?.[0]?.name || null,
-                    date: parsed.date || null,
-                    subject: parsed.subject || null,
-                    body: parsed.text || parsed.html || null,
-                  });
-                }
+            fetch.on('message', (msg, seqno) => {
+              let mailBuffer = '';
+              let uid: number;
+
+              msg.on('attributes', (attrs) => {
+                uid = attrs.uid; 
+              });
+
+              msg.on('body', (stream) => {
+                stream.on('data', (chunk) => {
+                  mailBuffer += chunk.toString('utf8');
+                });
+
+                stream.once('end', async () => {
+                  try {
+                    const parsed = await simpleParser(mailBuffer);
+
+                    mails.push({
+                      uid,
+                      seqno,
+                      subject: parsed.subject,
+                      from: parsed.from?.text,
+                      to: parsed.to?.text,
+                      date: parsed.date,
+                      text: parsed.text,
+                      html: parsed.html,
+                      messageId: parsed.messageId,
+                    });
+                  } catch (parseErr) {
+                    console.error('Parse error:', parseErr);
+                  }
+                });
               });
             });
+
+            fetch.once('error', (err) => {
+              console.error('Fetch error:', err);
+              reject(err);
+            });
+
+            fetch.once('end', () => {
+              imap.end();
+              resolve(mails);
+            });
           });
-          f.once('end', function () {
-            imap.end();
-            resolve(mails);
+        });
+      });
+
+      imap.once('error', (err) => {
+        console.error('IMAP error:', err);
+        reject(err);
+      });
+
+      imap.once('end', () => {
+        console.log('Connection ended');
+      });
+
+      imap.connect();
+    });
+  }
+
+async getOneMail(uid: number): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const imap = new Imap(this.imapConfig);
+
+    function openInbox(cb) {
+      imap.openBox('INBOX', true, cb); // read-only
+    }
+
+    imap.once('ready', () => {
+      openInbox((err, box) => {
+        if (err) return reject(err);
+
+        const fetch = imap.fetch(uid, {
+          bodies: '',
+          markSeen: false,
+        });
+
+        let mailBuffer = '';
+        let seqno: number;
+
+        fetch.on('message', (msg, _seqno) => {
+          seqno = _seqno;
+
+          msg.on('body', (stream) => {
+            stream.on('data', (chunk) => {
+              mailBuffer += chunk.toString('utf8');
+            });
+
+            stream.once('end', async () => {
+              try {
+                const parsed = await simpleParser(mailBuffer);
+
+                resolve({
+                  uid,
+                  seqno,
+                  subject: parsed.subject,
+                  from: parsed.from?.text,
+                  to: parsed.to?.text,
+                  date: parsed.date,
+                  text: parsed.text,
+                  html: parsed.html,
+                  messageId: parsed.messageId,
+                  attachments: parsed.attachments?.map((a) => ({
+                    filename: a.filename,
+                    contentType: a.contentType,
+                    size: a.size,
+                  })),
+                });
+              } catch (parseErr) {
+                reject(parseErr);
+              }
+            });
           });
+        });
+
+        fetch.once('error', (err) => {
+          reject(err);
+        });
+
+        fetch.once('end', () => {
+          imap.end();
         });
       });
     });
 
-    imap.once('error', function (err) {
+    imap.once('error', (err) => {
       reject(err);
     });
 
     imap.connect();
   });
-  }
+}
+
+
+
 }

@@ -28,6 +28,7 @@ import { CategoryModule } from './modules/admin/sevice-management/category/categ
 import { BlogCategoryModule } from './modules/admin/blog/blog_category/blog_category.module';
 import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/website-info.module';
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
+import { EmailSettingsModule } from './modules/admin/email_settings/email_settings.module';
 
 @Module({
   imports: [
@@ -58,7 +59,8 @@ import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
     UserModule,
     BlogCategoryModule,
     WebsiteInfoModule,
-    AiChatbotModule
+    AiChatbotModule,
+    EmailSettingsModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -121,6 +121,7 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
       data: {
         title,
         hashtags,
+         status: dto.status || false,
         blog_blog_categories: {
           create: categoryIds.map((id) => ({
             blog_category: { connect: { id } },
@@ -203,6 +204,7 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
     return {
       message: 'Created successfully',
       blog_id: blog.id,
+      status:blog.status,
       title: blog.title,
       hashtags: blog.hashtags,
       categories,
@@ -361,97 +363,6 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
     }
 
   }
-  //Update
-  async update(id: string, dto: UpdateBlogDto) {
-    await this.findOne(id); // checking blog exists or not 
-
-    const { title, hashtags, categoryIds, contents } = dto;
-
-    try {
-      const updated = await this.prisma.blog.update({
-        where: { id },
-        data: {
-          title,
-          hashtags,
-          ...(categoryIds
-            ? {
-              blog_blog_categories: {
-                deleteMany: {},
-                create: categoryIds.map(cid => ({ blog_category_id: cid })),
-              },
-            }
-            : {}),
-          ...(contents
-            ? {
-              blog_contents: {
-                deleteMany: {},
-                create: contents.map(c => ({
-                  content_type: c.contentType,
-                  content: c.content,
-
-                })),
-              },
-            }
-            : {}),
-        },
-        select: {
-          id: true,
-          title: true,
-          hashtags: true,
-          blog_blog_categories: {
-            select: {
-              blog_category: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-          blog_contents: {
-            select: {
-              id: true,
-              content_type: true,
-              content: true,
-
-              blog_files: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      });
-      return {
-        message: 'Updated successfully',
-        blog_id: updated.id,
-        title: updated.title,
-        hashtags: updated.hashtags,
-        categories: updated.blog_blog_categories.map(({ blog_category }) => ({
-          id: blog_category.id,
-          name: blog_category.name,
-        })),
-        contents: updated.blog_contents.map(content => {
-          const isMedia = content.content_type === ContentType.MEDIA;
-
-          return {
-            id: content.id,
-            content_type: `${content.content_type} updated`,
-            content: isMedia
-              ? content.blog_files?.[0]?.name || 'default.jpg'
-              : content.content,
-          };
-        }),
-      };
-    } catch (error) {
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException(error.message || 'Blog Updation failed');
-    }
-
-
-
-  }
   //find all
   async findAll() {
     try {
@@ -555,5 +466,184 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
     }
 
   }
+
+//update
+async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
+  const { title, hashtags, categoryIds, contents } = dto;
+
+  try {
+    const existingBlog = await this.prisma.blog.findUnique({
+      where: { id },
+      include: {
+        blog_blog_categories: true,
+        blog_contents: { include: { blog_files: true } },
+      },
+    });
+
+    if (!existingBlog) {
+      throw new NotFoundException(`Blog with ID ${id} not found`);
+    }
+
+    // ✅ 1. Update title / hashtags (if provided)
+    if (title || hashtags) {
+      await this.prisma.blog.update({
+        where: { id },
+        data: {
+          ...(title && { title }),
+          ...(hashtags && { hashtags }),
+        },
+      });
+    }
+
+    // ✅ 2. Update categories (if provided)
+    if (Array.isArray(categoryIds)) {
+      await this.prisma.blogBlogCategory.deleteMany({ where: { blog_id: id } });
+
+      if (categoryIds.length > 0) {
+        await this.prisma.blogBlogCategory.createMany({
+          data: categoryIds.map((cid) => ({
+            blog_id: id,
+            blog_category_id: cid,
+          })),
+        });
+      }
+    }
+
+    // ✅ 3. Update contents (if provided)
+    if (Array.isArray(contents)) {
+      await this.prisma.blogContent.deleteMany({ where: { blog_id: id } });
+
+      let fileIndex = 0;
+
+      for (const c of contents) {
+        const content = await this.prisma.blogContent.create({
+          data: {
+            blog_id: id,
+            content_type: c.contentType,
+            content: c.content,
+            ...(c.contentType === 'media' ? { blog_files: { create: [{}] } } : {}),
+          },
+          include: { blog_files: true },
+        });
+
+        // 🔁 Upload file if content is media
+        if (c.contentType === 'media' && files[fileIndex]) {
+          const file = files[fileIndex];
+          const blogFile = content.blog_files[0];
+
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          const fileName = `${randomName}${file.originalname}`;
+          const storagePath = appConfig().storageUrl.blog + '/' + fileName;
+
+          await SojebStorage.put(storagePath, file.buffer);
+
+          await this.prisma.blogFile.update({
+            where: { id: blogFile.id },
+            data: {
+              name: file.originalname,
+              size: file.size,
+              file_alt: c.content,
+              file_path: storagePath,
+            },
+          });
+
+          fileIndex++;
+        }
+      }
+    }
+
+    // ✅ 4. Final response
+    const updated = await this.prisma.blog.findUnique({
+      where: { id },
+      include: {
+        blog_blog_categories: { include: { blog_category: true } },
+        blog_contents: { include: { blog_files: true } },
+      },
+    });
+
+    const categories = updated.blog_blog_categories.map(({ blog_category }) => ({
+      id: blog_category.id,
+      name: blog_category.name,
+    }));
+
+    const contentResponse = updated.blog_contents.map((c) => {
+      const isMedia = c.content_type === 'media';
+      const file = c.blog_files?.[0];
+      return {
+        id: c.id,
+        content_type: c.content_type,
+        content: isMedia && file ? SojebStorage.url(file.file_path) : c.content,
+      };
+    });
+
+    return {
+      message: 'Updated successfully',
+      blog_id: updated.id,
+      title: updated.title,
+      hashtags: updated.hashtags,
+      categories,
+      contents: contentResponse,
+    };
+
+  } catch (error) {
+    console.error('[❌ Blog Update Error]', error);
+    throw new InternalServerErrorException(error.message || 'Update failed');
+  }
+}
+
+async findDrafts() {
+  try {
+    const drafts = await this.prisma.blog.findMany({
+      where: {
+        status: false,
+        deleted_at: null,
+      },
+      orderBy: { created_at: 'desc' },
+      include: {
+        blog_blog_categories: { include: { blog_category: true } },
+        blog_contents: { include: { blog_files: true } },
+      },
+    });
+
+    return drafts.map(blog => {
+      const categories = blog.blog_blog_categories.map(({ blog_category }) => ({
+        id: blog_category.id,
+        name: blog_category.name,
+      }));
+
+      const contents = blog.blog_contents.map(content => ({
+        id: content.id,
+        content_type: content.content_type,
+        content:
+          content.content_type === 'media'
+            ? content.blog_files?.[0]?.file_path ?? 'image.jpg'
+            : content.content,
+      }));
+
+      return {
+        status:"200",
+        massage:"Successs",
+        data:{
+        blog_id: blog.id,
+        title: blog.title,
+        hashtags: blog.hashtags,
+        status: blog.status,
+        categories,
+        contents,
+        }
+      };
+    });
+
+  } catch (error) {
+    console.error('[❌ Fetch Draft Blogs Error]', error);
+    throw new InternalServerErrorException(error.message || 'Failed to fetch drafts');
+  }
+}
+
+
+
 
 }

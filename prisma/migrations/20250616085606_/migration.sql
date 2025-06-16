@@ -11,13 +11,19 @@ CREATE TYPE "OrderStatus" AS ENUM ('progress', 'completed', 'pending', 'canceled
 CREATE TYPE "clintStatus" AS ENUM ('active', 'inactive');
 
 -- CreateEnum
+CREATE TYPE "paymentStatus" AS ENUM ('paid', 'pending', 'due');
+
+-- CreateEnum
 CREATE TYPE "Status" AS ENUM ('In_progress', 'completed', 'pending', 'canceled', 'Clint_review');
 
 -- CreateEnum
-CREATE TYPE "applicationStatus" AS ENUM ('accepted', 'rejected');
+CREATE TYPE "applicationStatus" AS ENUM ('accepted', 'pending', 'rejected');
 
 -- CreateEnum
 CREATE TYPE "ResellerStatus" AS ENUM ('active', 'deactive');
+
+-- CreateEnum
+CREATE TYPE "ResellerPayemntStat" AS ENUM ('pending', 'paid');
 
 -- CreateTable
 CREATE TABLE "accounts" (
@@ -207,19 +213,28 @@ CREATE TABLE "payment_transactions" (
 );
 
 -- CreateTable
-CREATE TABLE "messages" (
+CREATE TABLE "Conversation" (
     "id" TEXT NOT NULL,
+    "creator_id" TEXT NOT NULL,
+    "participant_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "deleted_at" TIMESTAMP(3),
-    "status" "MessageStatus" DEFAULT 'PENDING',
-    "sender_id" TEXT,
-    "receiver_id" TEXT,
-    "conversation_id" TEXT,
-    "attachment_id" TEXT,
-    "message" TEXT,
 
-    CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" TEXT NOT NULL,
+    "sender_id" TEXT NOT NULL,
+    "receiver_id" TEXT NOT NULL,
+    "conversation_id" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "status" "MessageStatus" NOT NULL DEFAULT 'PENDING',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -235,18 +250,6 @@ CREATE TABLE "attachments" (
     "file_alt" TEXT,
 
     CONSTRAINT "attachments_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "conversations" (
-    "id" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "deleted_at" TIMESTAMP(3),
-    "creator_id" TEXT,
-    "participant_id" TEXT,
-
-    CONSTRAINT "conversations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -537,7 +540,7 @@ CREATE TABLE "blogs" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP(3),
-    "status" SMALLINT DEFAULT 1,
+    "status" BOOLEAN DEFAULT false,
     "title" TEXT,
     "hashtags" TEXT[],
 
@@ -670,6 +673,20 @@ CREATE TABLE "email_history_recipients" (
 );
 
 -- CreateTable
+CREATE TABLE "email_settings" (
+    "id" SERIAL NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "smtpHost" TEXT NOT NULL,
+    "smtpPort" INTEGER NOT NULL,
+    "smtpUsername" TEXT NOT NULL,
+    "smtpPassword" TEXT NOT NULL,
+    "smtpFrom" TEXT NOT NULL,
+
+    CONSTRAINT "email_settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "post_performances" (
     "id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -701,6 +718,7 @@ CREATE TABLE "orders" (
     "user_name" TEXT,
     "user_email" TEXT,
     "pakage_name" TEXT,
+    "payment_status" "paymentStatus" NOT NULL DEFAULT 'pending',
 
     CONSTRAINT "orders_pkey" PRIMARY KEY ("id")
 );
@@ -710,10 +728,11 @@ CREATE TABLE "task_assign" (
     "id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "user_id" TEXT,
+    "reseller_id" TEXT,
     "order_id" TEXT,
     "role_name" TEXT,
     "role_id" TEXT,
-    "ammount" INTEGER,
+    "ammount" DOUBLE PRECISION,
     "note" TEXT,
     "user_name" TEXT,
     "due_date" TEXT,
@@ -725,6 +744,7 @@ CREATE TABLE "task_assign" (
 -- CreateTable
 CREATE TABLE "reseller_application" (
     "applicationId" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "user_id" TEXT NOT NULL,
     "full_name" TEXT,
     "user_email" TEXT,
@@ -741,18 +761,40 @@ CREATE TABLE "reseller_application" (
 );
 
 -- CreateTable
-CREATE TABLE "admin_reseller" (
-    "id" TEXT NOT NULL,
+CREATE TABLE "resellers" (
+    "reseller_id" TEXT NOT NULL,
     "user_id" TEXT,
     "user_type" TEXT,
     "full_name" TEXT,
     "user_email" TEXT,
     "skills" TEXT[],
-    "total_task" INTEGER,
-    "total_earnings" DOUBLE PRECISION,
+    "total_task" INTEGER NOT NULL DEFAULT 0,
+    "complete_tasks" INTEGER NOT NULL DEFAULT 0,
+    "total_earnings" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "status" "ResellerStatus" NOT NULL DEFAULT 'active',
 
-    CONSTRAINT "admin_reseller_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "resellers_pkey" PRIMARY KEY ("reseller_id")
+);
+
+-- CreateTable
+CREATE TABLE "resellers_payment" (
+    "id" TEXT NOT NULL,
+    "reseller_id" TEXT,
+    "status" "ResellerPayemntStat" NOT NULL,
+    "task_ammount" DOUBLE PRECISION,
+
+    CONSTRAINT "resellers_payment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Team" (
+    "id" TEXT NOT NULL,
+    "full_name" TEXT,
+    "email" TEXT,
+    "role" TEXT,
+    "password" TEXT,
+
+    CONSTRAINT "Team_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -764,11 +806,11 @@ CREATE TABLE "_PermissionToRole" (
 );
 
 -- CreateTable
-CREATE TABLE "_TaskAssaingees" (
+CREATE TABLE "_AttachmentToMessage" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
 
-    CONSTRAINT "_TaskAssaingees_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_AttachmentToMessage_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateTable
@@ -780,11 +822,11 @@ CREATE TABLE "_resellers" (
 );
 
 -- CreateTable
-CREATE TABLE "_TaskAssignments" (
+CREATE TABLE "_TaskAssaingees" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
 
-    CONSTRAINT "_TaskAssignments_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_TaskAssaingees_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -812,16 +854,19 @@ CREATE UNIQUE INDEX "channels_name_key" ON "channels"("name");
 CREATE UNIQUE INDEX "blog_categories_slug_key" ON "blog_categories"("slug");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Team_email_key" ON "Team"("email");
+
+-- CreateIndex
 CREATE INDEX "_PermissionToRole_B_index" ON "_PermissionToRole"("B");
 
 -- CreateIndex
-CREATE INDEX "_TaskAssaingees_B_index" ON "_TaskAssaingees"("B");
+CREATE INDEX "_AttachmentToMessage_B_index" ON "_AttachmentToMessage"("B");
 
 -- CreateIndex
 CREATE INDEX "_resellers_B_index" ON "_resellers"("B");
 
 -- CreateIndex
-CREATE INDEX "_TaskAssignments_B_index" ON "_TaskAssignments"("B");
+CREATE INDEX "_TaskAssaingees_B_index" ON "_TaskAssaingees"("B");
 
 -- AddForeignKey
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -863,22 +908,19 @@ ALTER TABLE "payment_transactions" ADD CONSTRAINT "payment_transactions_user_id_
 ALTER TABLE "payment_transactions" ADD CONSTRAINT "payment_transactions_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "subscriptions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "messages" ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "messages" ADD CONSTRAINT "messages_receiver_id_fkey" FOREIGN KEY ("receiver_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_participant_id_fkey" FOREIGN KEY ("participant_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "messages" ADD CONSTRAINT "messages_attachment_id_fkey" FOREIGN KEY ("attachment_id") REFERENCES "attachments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_receiver_id_fkey" FOREIGN KEY ("receiver_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "conversations" ADD CONSTRAINT "conversations_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "conversations" ADD CONSTRAINT "conversations_participant_id_fkey" FOREIGN KEY ("participant_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "Conversation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_settings" ADD CONSTRAINT "user_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -983,7 +1025,10 @@ ALTER TABLE "task_assign" ADD CONSTRAINT "task_assign_role_id_fkey" FOREIGN KEY 
 ALTER TABLE "reseller_application" ADD CONSTRAINT "reseller_application_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "admin_reseller" ADD CONSTRAINT "admin_reseller_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "resellers" ADD CONSTRAINT "resellers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "resellers_payment" ADD CONSTRAINT "resellers_payment_reseller_id_fkey" FOREIGN KEY ("reseller_id") REFERENCES "resellers"("reseller_id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_A_fkey" FOREIGN KEY ("A") REFERENCES "permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -992,19 +1037,19 @@ ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_A_fkey" FOREIG
 ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_B_fkey" FOREIGN KEY ("B") REFERENCES "roles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_TaskAssaingees" ADD CONSTRAINT "_TaskAssaingees_A_fkey" FOREIGN KEY ("A") REFERENCES "task_assign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_AttachmentToMessage" ADD CONSTRAINT "_AttachmentToMessage_A_fkey" FOREIGN KEY ("A") REFERENCES "attachments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_TaskAssaingees" ADD CONSTRAINT "_TaskAssaingees_B_fkey" FOREIGN KEY ("B") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_AttachmentToMessage" ADD CONSTRAINT "_AttachmentToMessage_B_fkey" FOREIGN KEY ("B") REFERENCES "Message"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_resellers" ADD CONSTRAINT "_resellers_A_fkey" FOREIGN KEY ("A") REFERENCES "admin_reseller"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_resellers" ADD CONSTRAINT "_resellers_A_fkey" FOREIGN KEY ("A") REFERENCES "resellers"("reseller_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_resellers" ADD CONSTRAINT "_resellers_B_fkey" FOREIGN KEY ("B") REFERENCES "reseller_application"("applicationId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_TaskAssignments" ADD CONSTRAINT "_TaskAssignments_A_fkey" FOREIGN KEY ("A") REFERENCES "admin_reseller"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_TaskAssaingees" ADD CONSTRAINT "_TaskAssaingees_A_fkey" FOREIGN KEY ("A") REFERENCES "resellers"("reseller_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_TaskAssignments" ADD CONSTRAINT "_TaskAssignments_B_fkey" FOREIGN KEY ("B") REFERENCES "task_assign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_TaskAssaingees" ADD CONSTRAINT "_TaskAssaingees_B_fkey" FOREIGN KEY ("B") REFERENCES "task_assign"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -739,7 +739,7 @@ model Blog {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
+  status     Boolean?   @default(false)
 
   title    String?
   hashtags String[]
@@ -901,6 +901,23 @@ model EmailHistoryRecipient {
 
   @@map("email_history_recipients")
 }
+
+//EMAIL settings 
+
+model EmailSettings {
+  id             Int    @id @default(autoincrement())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  smtpHost       String
+  smtpPort       Int
+  smtpUsername   String
+  smtpPassword   String
+  smtpFrom       String
+
+  @@map("email_settings")
+
+}
+
 
 // this table stores Post performance
 model PostPerformance {

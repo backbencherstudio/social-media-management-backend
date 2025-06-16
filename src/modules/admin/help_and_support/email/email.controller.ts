@@ -3,9 +3,11 @@ import { EmailService } from './email.service';
 import { CreateEmailDto } from './dto/create-email.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { CreateEmailForAll } from './dto/create-email-for-all.dto';
+import { ConfigService } from '@nestjs/config';
+
 @Controller('admin/email')
 export class EmailController {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(private readonly emailService: EmailService,   private readonly configService: ConfigService) {}
 
   @Post('create_email')
   createOne(@Body() createEmailDto: CreateEmailDto) {
@@ -23,28 +25,27 @@ export class EmailController {
     return this.emailService.findAll();
   }
 
-  //working here ----->>>>>4-6-2025
  @Get('inbox')
-  async getGmailInbox(
-    @Query('email') email: string,
-    @Query('password') password: string
-  ) {
-    if (!email || !password) {
-      throw new BadRequestException('Email and password (app password) are required!');
-    }
-    // For demo/testing only! In production, use OAuth, not direct passwords.
-    const inbox = await this.emailService.getInboxMails(email, password);
+  async getGmailInbox() {
+    const inbox = await this.emailService.getInboxMails();
     return {
       success: true,
       message: 'Fetched Gmail inbox!',
-      data: inbox
+      data: inbox,
     };
   }
 
 
-  @Get(':id')
+  @Get('sent/:id')
   findOne(@Param('id') id: string) {
     return this.emailService.findOne(id);
   }
+
+@Get('inbox/:uid')
+async getOne(@Param('uid') uid: string) {
+  return this.emailService.getOneMail(Number(uid));
+}
+
+
 
 }
