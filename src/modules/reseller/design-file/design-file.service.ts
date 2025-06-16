@@ -144,7 +144,6 @@ export class DesignFileService {
         data: {
           status: action,
           feedback: feedback || null,
-          updated_at: new Date(),
         },
       });
      

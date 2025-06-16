@@ -28,15 +28,11 @@ import { CategoryModule } from './modules/admin/sevice-management/category/categ
 import { BlogCategoryModule } from './modules/admin/blog/blog_category/blog_category.module';
 import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/website-info.module';
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
-<<<<<<< HEAD
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
 import { ClientModule } from './modules/reseller/client/client.module';
 import { ActiveServiceModule } from './modules/reseller/active-service/active-service.module';
 
-=======
-import { EmailSettingsModule } from './modules/admin/email_settings/email_settings.module';
->>>>>>> 6037f1d148312e631f8c0cd04acdd7ebdb01f0cb
 
 @Module({
   imports: [
@@ -68,15 +64,11 @@ import { EmailSettingsModule } from './modules/admin/email_settings/email_settin
     BlogCategoryModule,
     WebsiteInfoModule,
     AiChatbotModule,
-<<<<<<< HEAD
     DesignFileModule,
     SocialsModule,
     ClientModule,
     ActiveServiceModule,
    
-=======
-    EmailSettingsModule
->>>>>>> 6037f1d148312e631f8c0cd04acdd7ebdb01f0cb
   ],
   controllers: [AppController],
   providers: [AppService],

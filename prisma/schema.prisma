@@ -1135,6 +1135,7 @@ model Team {
   password  String?
 }
 
+// reseller dashboard assets
 model DesignFile {
   id         String            @id @default(cuid())
   created_at DateTime          @default(now())
