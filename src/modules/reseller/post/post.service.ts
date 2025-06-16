@@ -4,7 +4,6 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 @Injectable()
@@ -16,25 +15,17 @@ export class PostService {
 
   async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
     console.log('Creating post with data:', createPostDto);
-    console.log('Files:', files);
     try {
-      // Create the post
       const post = await this.prisma.post.create({
         data: {
           content: createPostDto.content,
-          schedule_at: createPostDto.schedule_at,
+          schedule_at: createPostDto.schedule_at, // schedule input here
           hashtags: createPostDto.hashtags,
-          status: 1, // 1 = scheduled
+          status: 0,
         },
       });
 
-      // Create post channels if provided
       if (createPostDto.post_channels?.length) {
-        console.log(
-          'Creating post channels for post ID:',
-          post.id,
-          createPostDto.post_channels,
-        );
         await this.prisma.postChannel.createMany({
           data: createPostDto.post_channels.map((channel) => ({
             post_id: post.id,
@@ -42,6 +33,7 @@ export class PostService {
           })),
         });
       }
+
       if (files && files.length > 0) {
         const postFiles = [];
 
@@ -50,11 +42,7 @@ export class PostService {
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
-
           const fileName = `${randomName}-${file.originalname}`;
-          console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
-
-          // Upload to storage
           await SojebStorage.put('post-files/' + fileName, file.buffer);
 
           postFiles.push({
@@ -73,19 +61,6 @@ export class PostService {
           });
         }
       }
-      // // Create post files if provided
-      // if (createPostDto.post_files?.length) {
-      //   await this.prisma.postFile.createMany({
-      //     data: createPostDto.post_files.map((file) => ({
-      //       post_id: post.id,
-      //       name: file.name,
-      //       type: file.type,
-      //       file_path: file.file_path,
-      //       file_alt: file.file_alt,
-      //     })),
-      //   });
-      // }
-
       // If schedule_at is provided, add to queue
       if (createPostDto.schedule_at) {
         const scheduleDate = new Date(createPostDto.schedule_at);
@@ -249,6 +224,49 @@ export class PostService {
         orderBy: { schedule_at: 'asc' },
       });
       return { success: true, data: posts };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async reviewPost(
+    postId: string,
+    action: 1 | 2, // 1 for approve, 2 for reject
+    feedback?: string,
+  ) {
+    try {
+      const post = await this.prisma.post.update({
+        where: { id: postId },
+        data: {
+          status: action,
+          feedback: feedback || null,
+          updated_at: new Date(),
+        },
+      });
+      // // Only queue post on approval
+      // if (post.status === 1) {
+      //   if (post.schedule_at) {
+      //     const scheduleDate = new Date(post.schedule_at);
+      //     const delay = scheduleDate.getTime() - Date.now();
+      //     if (delay > 0) {
+      //       await this.postQueue.add(
+      //         'publish-post',
+      //         { postId: post.id },
+      //         { delay },
+      //       );
+      //     } else {
+      //       await this.postQueue.add('publish-post', { postId: post.id });
+      //     }
+      //   } else {
+      //     await this.postQueue.add('publish-post', { postId: post.id });
+      //   }
+      // }
+
+      return {
+        success: true,
+        message: `Post update successfully`,
+        data: post,
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }

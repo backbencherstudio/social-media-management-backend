@@ -21,10 +21,6 @@ import { memoryStorage } from 'multer';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  // @Post()
-  // create(@Body() createPostDto: CreatePostDto) {
-  //   return this.postService.create(createPostDto);
-  // }
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'files', maxCount: 10 }], {
@@ -87,5 +83,13 @@ export class PostController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.postService.remove(id);
+  }
+
+  @Patch(':id/review')
+  reviewPost(
+    @Param('id') id: string,
+    @Body() body: { action: 1 | 2; feedback?: string },
+  ) {
+    return this.postService.reviewPost(id, body.action, body.feedback);
   }
 }

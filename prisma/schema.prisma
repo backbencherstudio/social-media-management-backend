@@ -39,7 +39,6 @@ model User {
   approved_at  DateTime?
   availability String?
 
-
   username   String? @unique
   first_name String? @db.VarChar(255)
   last_name  String? @db.VarChar(255)
@@ -58,7 +57,6 @@ model User {
   cover_letter    String?
   agreed_terms    Boolean @default(false)
 
-
   country       String?
   state         String?
   city          String?
@@ -76,8 +74,8 @@ model User {
   is_two_factor_enabled Int?    @default(0)
   two_factor_secret     String? // secret key for two factor authentication
 
-  accounts                  Account[]
-  
+  accounts Account[]
+
   //message
   creator_conversations     Conversation[] @relation("creator")
   participant_conversations Conversation[] @relation("participant")
@@ -85,8 +83,8 @@ model User {
   sender_messages           Message[]      @relation("sender")
 
   //notification
-  receiver_notifications    Notification[] @relation("receiver")
-  sender_notifications      Notification[] @relation("sender")
+  receiver_notifications Notification[] @relation("receiver")
+  sender_notifications   Notification[] @relation("sender")
 
   user_payment_methods     UserPaymentMethod[]
   user_settings            UserSetting[]
@@ -99,22 +97,12 @@ model User {
   email_history_recipients EmailHistoryRecipient[]
   orders                   Order[]
 
-
   ResellerApplication ResellerApplication[]
-  Reseller Reseller[]
-  TaskAssign TaskAssign[]
-
+  Reseller            Reseller[]
+  TaskAssign          TaskAssign[]
 
   @@map("users")
-
-
-
-
-
 }
-
-
-
 
 model Ucode {
   id         String   @id @default(cuid())
@@ -148,9 +136,9 @@ model Role {
   permission_roles PermissionRole[]
   role_users       RoleUser[]
   permissions      Permission[]     @relation("PermissionToRole")
+  TaskAssign       TaskAssign[]
 
   @@map("roles")
-  TaskAssign TaskAssign[]
 }
 
 model Permission {
@@ -558,8 +546,8 @@ model ServiceTier {
 
   max_post Int?
 
-subscriptions Subscription[]
-orders        Order[]
+  subscriptions Subscription[]
+  orders        Order[]
 
   @@map("service_tiers")
 }
@@ -610,12 +598,12 @@ enum SubscriptionStatus {
   pending
   deactive
 }
-model Subscription {
-  id         String   @id @default(cuid())
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-  status SubscriptionStatus @default(active)
 
+model Subscription {
+  id         String             @id @default(cuid())
+  created_at DateTime           @default(now())
+  updated_at DateTime           @default(now())
+  status     SubscriptionStatus @default(active)
 
   service_tier_id String
   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
@@ -634,7 +622,7 @@ model Subscription {
   payment_transactions  PaymentTransaction[]
   subscription_addons   SubscriptionAddon[]
   subscription_channels SubscriptionChannel[]
-    orders                   Order[]
+  orders                Order[]
 
   @@map("subscriptions")
 }
@@ -675,18 +663,19 @@ model SubscriptionChannel {
   @@map("subscription_channel")
 }
 
+
 // social media schedule post
 model Post {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
+  status     Int?      @default(0) @db.SmallInt
 
   schedule_at DateTime?
 
-  content String? @db.Text
-
+  content  String?  @db.Text
+  feedback String?  @db.Text
   hashtags String[]
 
   post_files        PostFile[]
@@ -954,16 +943,16 @@ enum OrderStatus {
 // model Order {
 //    id             String    @id
 //    created_at     DateTime  @default(now())       
-   
+
 //    order_status     OrderStatus @default(progress)   
 //    subscription_id String?  
 //    subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
 //    user_id        String?  
 //    user           User?    @relation(fields: [user_id], references: [id]) 
-  
+
 //   service_tier_id String?
 //   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
-  
+
 //   ammount        Float?
 //   user_name      String?   
 //   user_email     String?
@@ -971,51 +960,50 @@ enum OrderStatus {
 
 //   role_id          String?  
 //   role             Role? @relation(fields: [role_id], references: [id])
-  
+
 //   pakage_name   String? // this will be the service id's service name
 //   assignees       User[]       @relation("TaskAssaingees") 
-   
+
 //    @@map("orders") 
 // }
 
 enum clintStatus {
- active
- inactive
+  active
+  inactive
 }
+
 enum paymentStatus {
- paid
- pending
- due
+  paid
+  pending
+  due
 }
+
 model Order {
-  id               String    @id
-  created_at       DateTime  @default(now())       
+  id         String   @id
+  created_at DateTime @default(now())
 
-  order_status     OrderStatus @default(progress)   
+  order_status OrderStatus @default(progress)
 
-  subscription_id  String?  
-  subscription     Subscription? @relation(fields: [subscription_id], references: [id]) 
+  subscription_id String?
+  subscription    Subscription? @relation(fields: [subscription_id], references: [id])
 
-  user_id          String?  
-  user             User?    @relation(fields: [user_id], references: [id]) 
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
 
-  status           clintStatus  @default(active) 
-  
-  service_tier_id  String?
-  service_tier     ServiceTier? @relation(fields: [service_tier_id], references: [id])
+  status clintStatus @default(active)
 
-  ammount          Float?
-  user_name        String?   
-  user_email       String?   
-  pakage_name      String?   
-  payment_status   paymentStatus @default(pending)
- 
+  service_tier_id String?
+  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
 
-  @@map("orders") 
-  order_assigns TaskAssign[]
+  ammount        Float?
+  user_name      String?
+  user_email     String?
+  pakage_name    String?
+  payment_status paymentStatus @default(pending)
+  order_assigns  TaskAssign[]
+
+  @@map("orders")
 }
-
-
 
 //admisn_dashboard_assign_tasks and Task management
 enum Status {
@@ -1027,138 +1015,127 @@ enum Status {
 }
 
 model TaskAssign {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
 
-  user_id    String?
-  user       User?     @relation(fields: [user_id], references: [id])
+  user_id     String?
+  user        User?   @relation(fields: [user_id], references: [id])
   reseller_id String?
 
-  order_id   String?  
-  order      Order?    @relation(fields: [order_id], references: [id])
+  order_id String?
+  order    Order?  @relation(fields: [order_id], references: [id])
 
-  role_name        String?   
-  role_id          String?  
-  role             Role?     @relation(fields: [role_id], references: [id]) 
+  role_name String?
+  role_id   String?
+  role      Role?   @relation(fields: [role_id], references: [id])
 
-  ammount          Float?
-  note             String?
+  ammount Float?
+  note    String?
 
-  user_name  String?
-  due_date   String?
-  status     Status @default(In_progress)
+  user_name String?
+  due_date  String?
+  status    Status  @default(In_progress)
 
-  assignees  Reseller[] @relation("TaskAssaingees")
-  
+  assignees Reseller[] @relation("TaskAssaingees")
 
   @@map("task_assign")
-
 }
 
 // user application for reseller role 
 enum applicationStatus {
-accepted
-pending
-rejected
+  accepted
+  pending
+  rejected
 }
-model ResellerApplication{
-    applicationId  String  @id @default(cuid())
-    created_at DateTime  @default(now())
-    user_id String 
-    user    User?   @relation(fields: [user_id], references: [id])
-    full_name       String?
-    user_email      String?
-    phone_number    Int?
-    location        String?
-    position        String?
-    experience      Int?
-    cover_letter    String?
-    portfolio       String?
-    skills          String[]
-    status          applicationStatus 
 
-    
-    @@map("reseller_application")
-    
-    Reseller Reseller[] @relation("resellers")
+model ResellerApplication {
+  applicationId String            @id @default(cuid())
+  created_at    DateTime          @default(now())
+  user_id       String
+  user          User?             @relation(fields: [user_id], references: [id])
+  full_name     String?
+  user_email    String?
+  phone_number  Int?
+  location      String?
+  position      String?
+  experience    Int?
+  cover_letter  String?
+  portfolio     String?
+  skills        String[]
+  status        applicationStatus
+
+  Reseller Reseller[] @relation("resellers")
+
+  @@map("reseller_application")
 }
 
 //admin dashboard reseller
 
 enum ResellerStatus {
-active
-deactive
+  active
+  deactive
 }
 
 model Reseller {
-    reseller_id  String @id
-    user_id  String?
-    user    User?   @relation(fields: [user_id], references: [id])
-    user_type  String?
-    full_name  String?
-    user_email  String?
-    skills       String[] 
-    total_task  Int @default(0)
-    complete_tasks Int @default(0)
-    total_earnings Float @default(0)
-    status  ResellerStatus @default(active)
+  reseller_id    String         @id
+  user_id        String?
+  user           User?          @relation(fields: [user_id], references: [id])
+  user_type      String?
+  full_name      String?
+  user_email     String?
+  skills         String[]
+  total_task     Int            @default(0)
+  complete_tasks Int            @default(0)
+  total_earnings Float          @default(0)
+  status         ResellerStatus @default(active)
 
-    reseller_application ResellerApplication[]  @relation("resellers")
-    TaskAssign TaskAssign[] @relation("TaskAssaingees")
-    
+  reseller_application ResellerApplication[] @relation("resellers")
+  TaskAssign           TaskAssign[]          @relation("TaskAssaingees")
 
-    @@map("resellers")
+  ResellerPayments ResellerPayments[]
 
-      
-   
-    ResellerPayments ResellerPayments[]
+  @@map("resellers")
 }
-
 
 enum ResellerPayemntStat {
-pending
-paid
+  pending
+  paid
 }
+
 model ResellerPayments {
-  id                String  @id @default(cuid())
-  reseller_id       String?          
-  reseller          Reseller?          @relation(fields: [reseller_id], references: [reseller_id]) 
-  status           ResellerPayemntStat
-  task_ammount      Float?
+  id           String              @id @default(cuid())
+  reseller_id  String?
+  reseller     Reseller?           @relation(fields: [reseller_id], references: [reseller_id])
+  status       ResellerPayemntStat
+  task_ammount Float?
 
   @@map("resellers_payment")
 }
 
+// admin dashboard TEAM
 
-  // admin dashboard TEAM
-
-
-
-
-  model Team{
-    id  String @id
-    full_name  String?
-    email      String? @unique
-    role      String?
-    password  String?
-  }
-
-
+model Team {
+  id        String  @id
+  full_name String?
+  email     String? @unique
+  role      String?
+  password  String?
+}
 
 model DesignFile {
-  id         String             @id @default(cuid())
-  created_at DateTime           @default(now())
+  id         String            @id @default(cuid())
+  created_at DateTime          @default(now())
   content    String?
   files      DesignFileAsset[]
 }
 
 model DesignFileAsset {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   designFileId String
   name         String
   type         String
   file_path    String
   size         Int?
-  created_at   DateTime @default(now())
+  created_at   DateTime   @default(now())
   designFile   DesignFile @relation(fields: [designFileId], references: [id], onDelete: Cascade)
 }
