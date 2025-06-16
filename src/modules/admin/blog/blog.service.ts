@@ -593,7 +593,7 @@ async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
     throw new InternalServerErrorException(error.message || 'Update failed');
   }
 }
-
+//drafts
 async findDrafts() {
   try {
     const drafts = await this.prisma.blog.findMany({
