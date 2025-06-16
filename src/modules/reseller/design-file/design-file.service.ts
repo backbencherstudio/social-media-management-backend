@@ -36,10 +36,7 @@ export class DesignFileService {
           const fileName = `${randomName}${file.originalname}`;
           console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
           // Upload file using SojebStorage
-          await SojebStorage.put(
-            appConfig().storageUrl.rootUrl + '/design-files/' + fileName,
-            file.buffer,
-          );
+          await SojebStorage.put('design-files/' + fileName, file.buffer);
 
           fileAssets.push({
             designFileId: designFile.id,

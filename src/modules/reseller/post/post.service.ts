@@ -4,17 +4,19 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { cliPluginError } from 'nest-commander/src/constants';
+
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('post-schedule') private postQueue: Queue,
-  ) { }
+  ) {}
 
-  async create(createPostDto: CreatePostDto, mediaFiles?: Express.Multer.File[]) {
-    console.log("post_channels", createPostDto);
+  async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
+    console.log('Creating post with data:', createPostDto);
+    console.log('Files:', files);
     try {
       // Create the post
       const post = await this.prisma.post.create({
@@ -28,6 +30,11 @@ export class PostService {
 
       // Create post channels if provided
       if (createPostDto.post_channels?.length) {
+        console.log(
+          'Creating post channels for post ID:',
+          post.id,
+          createPostDto.post_channels,
+        );
         await this.prisma.postChannel.createMany({
           data: createPostDto.post_channels.map((channel) => ({
             post_id: post.id,
@@ -35,23 +42,55 @@ export class PostService {
           })),
         });
       }
+      if (files && files.length > 0) {
+        const postFiles = [];
 
-      // Create post files if provided
-      if (createPostDto.post_files?.length) {
-        await this.prisma.postFile.createMany({
-          data: createPostDto.post_files.map((file) => ({
+        for (const file of files) {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+
+          const fileName = `${randomName}-${file.originalname}`;
+          console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
+
+          // Upload to storage
+          await SojebStorage.put('post-files/' + fileName, file.buffer);
+
+          postFiles.push({
             post_id: post.id,
-            name: file.name,
-            type: file.type,
-            file_path: file.file_path,
-            file_alt: file.file_alt,
-          })),
-        });
+            name: file.originalname,
+            type: file.mimetype.startsWith('image') ? 'image' : 'video',
+            file_path: fileName,
+            size: file.size,
+            file_alt: '',
+          });
+        }
+
+        if (postFiles.length > 0) {
+          await this.prisma.postFile.createMany({
+            data: postFiles,
+          });
+        }
       }
+      // // Create post files if provided
+      // if (createPostDto.post_files?.length) {
+      //   await this.prisma.postFile.createMany({
+      //     data: createPostDto.post_files.map((file) => ({
+      //       post_id: post.id,
+      //       name: file.name,
+      //       type: file.type,
+      //       file_path: file.file_path,
+      //       file_alt: file.file_alt,
+      //     })),
+      //   });
+      // }
 
       // If schedule_at is provided, add to queue
       if (createPostDto.schedule_at) {
-        const delay = createPostDto.schedule_at.getTime() - Date.now();
+        const scheduleDate = new Date(createPostDto.schedule_at);
+        const delay = scheduleDate.getTime() - Date.now();
+
         if (delay > 0) {
           await this.postQueue.add(
             'publish-post',
@@ -59,11 +98,9 @@ export class PostService {
             { delay },
           );
         } else {
-          // If schedule time is in the past, publish immediately
           await this.postQueue.add('publish-post', { postId: post.id });
         }
       } else {
-        // If no schedule time, publish immediately
         await this.postQueue.add('publish-post', { postId: post.id });
       }
 
@@ -79,8 +116,8 @@ export class PostService {
         include: {
           post_channels: {
             include: {
-              channel: true
-            }
+              channel: true,
+            },
           },
           post_files: true,
         },
@@ -114,7 +151,7 @@ export class PostService {
 
         if (create?.length) {
           await this.prisma.postChannel.createMany({
-            data: create.map(channel => ({
+            data: create.map((channel) => ({
               post_id: id,
               channel_id: channel.channel_id,
             })),
@@ -132,7 +169,7 @@ export class PostService {
 
         if (remove?.length) {
           await this.prisma.postChannel.deleteMany({
-            where: { id: { in: remove.map(item => item.id) } },
+            where: { id: { in: remove.map((item) => item.id) } },
           });
         }
       }
@@ -143,7 +180,7 @@ export class PostService {
 
         if (create?.length) {
           await this.prisma.postFile.createMany({
-            data: create.map(file => ({
+            data: create.map((file) => ({
               post_id: id,
               name: file.name,
               type: file.type,
@@ -161,14 +198,13 @@ export class PostService {
             });
           }
         }
-        
+
         if (remove?.length) {
           await this.prisma.postFile.deleteMany({
-            where: { id: { in: remove.map(item => item.id) } },
+            where: { id: { in: remove.map((item) => item.id) } },
           });
         }
       }
-
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -210,12 +246,11 @@ export class PostService {
           post_channels: { include: { channel: true } },
           post_files: true,
         },
-        orderBy: { schedule_at: 'asc' }
+        orderBy: { schedule_at: 'asc' },
       });
       return { success: true, data: posts };
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
-  
 }

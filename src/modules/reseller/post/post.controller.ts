@@ -1,15 +1,50 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  BadRequestException,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  // @Post()
+  // create(@Body() createPostDto: CreatePostDto) {
+  //   return this.postService.create(createPostDto);
+  // }
   @Post()
-  create(@Body() createPostDto: CreatePostDto) {
-    return this.postService.create(createPostDto);
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'files', maxCount: 10 }], {
+      storage: memoryStorage(),
+    }),
+  )
+  async create(
+    @Body() body: any,
+    @UploadedFiles() files: { files?: Express.Multer.File[] },
+  ) {
+    let createPostDto: CreatePostDto;
+
+    // If data is sent as JSON string inside `body.data`, parse it
+    if (body?.data) {
+      createPostDto = JSON.parse(body.data);
+    } else {
+      createPostDto = body;
+    }
+
+    return this.postService.create(createPostDto, files?.files || []);
   }
 
   @Get()
@@ -20,7 +55,7 @@ export class PostController {
   @Get('calendar')
   async getScheduledPosts(
     @Query('start') start: string,
-    @Query('end') end: string
+    @Query('end') end: string,
   ) {
     try {
       const startDate = new Date(start);
@@ -30,7 +65,10 @@ export class PostController {
         return { success: false, message: 'Invalid start or end date' };
       }
 
-      return await this.postService.getScheduledPostsForCalendar(startDate, endDate);
+      return await this.postService.getScheduledPostsForCalendar(
+        startDate,
+        endDate,
+      );
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -50,5 +88,4 @@ export class PostController {
   remove(@Param('id') id: string) {
     return this.postService.remove(id);
   }
-  
 }
