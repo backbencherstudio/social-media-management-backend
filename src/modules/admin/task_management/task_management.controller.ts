@@ -7,6 +7,10 @@ import { AssignUserDto, UnassignUserDto } from './dto/create-task_management.dto
 export class TaskManagementController {
   constructor(private readonly taskManagementService: TaskManagementService) {}
 
+  @Get('all')
+  async getAllTasks() {
+    return await this.taskManagementService.getAllTasks();
+  }
 
     // -----------------assign-order-to-the-resellers-----------------\\
 @Post('/assign/:orderId')

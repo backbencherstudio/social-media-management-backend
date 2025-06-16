@@ -7,23 +7,60 @@ import {
   Patch,
   Delete,
   InternalServerErrorException,
+  UseInterceptors,
+  UploadedFiles,
+  Put,
 } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express/multer';
+import { memoryStorage } from 'multer';
 
 @Controller('admin/blog')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
-  @Post()
-  async create(@Body() dto: CreateBlogDto) {
-    try {
-      return await this.blogService.create(dto);
-    } catch (error) {
-      throw new InternalServerErrorException(error.message || 'Create failed');
-    }
+ 
+
+
+@Post()
+@UseInterceptors(
+  FilesInterceptor('img', 10, {
+    storage: memoryStorage(),
+  }),
+)
+async create(
+  @UploadedFiles() files: Express.Multer.File[],
+  @Body() body: any,
+) {
+  try {
+    const parsedDto = {
+      ...body,
+      hashtags: Array.isArray(body.hashtags) ? body.hashtags : JSON.parse(body.hashtags || '[]'),
+  categoryIds: Array.isArray(body.categoryIds) ? body.categoryIds : JSON.parse(body.categoryIds || '[]'),
+  contents: Array.isArray(body.contents) ? body.contents : JSON.parse(body.contents || '[]'),
+    };
+
+    console.log("Blog created");
+
+    return await this.blogService.create(parsedDto, files);
+  } catch (error) {
+    console.error('[Create Blog Error]', error);
+    throw new InternalServerErrorException(
+      error.message || 'Invalid form body or file.',
+    );
   }
+}
+
+
+@Get('/drafts')
+async findDrafts() {
+  return await this.blogService.findDrafts();
+}
+
+
+
   @Get()
   async findAll() {
     try {
@@ -40,14 +77,40 @@ export class BlogController {
       throw new InternalServerErrorException(error.message || 'Not found');
     }
   }
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateBlogDto) {
+ @Patch(':id')
+  @UseInterceptors(FilesInterceptor('img', 10, { storage: memoryStorage() }))
+  async update(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() body: any,
+  ) {
     try {
-      return await this.blogService.update(id, dto);
+      const parsedDto: UpdateBlogDto = {
+        ...body,
+        ...(body.hashtags && {
+          hashtags: Array.isArray(body.hashtags)
+            ? body.hashtags
+            : JSON.parse(body.hashtags),
+        }),
+        ...(body.categoryIds && {
+          categoryIds: Array.isArray(body.categoryIds)
+            ? body.categoryIds
+            : JSON.parse(body.categoryIds),
+        }),
+        ...(body.contents && {
+          contents: Array.isArray(body.contents)
+            ? body.contents
+            : JSON.parse(body.contents),
+        }),
+      };
+
+      return await this.blogService.update(id, parsedDto, files);
     } catch (error) {
+      console.error('[❌ Update Blog Error]', error);
       throw new InternalServerErrorException(error.message || 'Update failed');
     }
   }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {

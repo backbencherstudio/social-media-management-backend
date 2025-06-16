@@ -5,6 +5,7 @@ import {
   IsArray,
   ValidateNested,
   IsUUID,
+  IsBoolean,
 } from 'class-validator';
 import { CreateBlogContentDto } from './create-blog-content.dto';
 
@@ -12,6 +13,10 @@ export class CreateBlogDto {
   @IsString()
   @IsOptional()
   title?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  status?:boolean;
 
   @IsArray()
   @IsString({ each: true })

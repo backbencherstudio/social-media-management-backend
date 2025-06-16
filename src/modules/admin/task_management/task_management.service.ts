@@ -205,4 +205,51 @@ async unassignUserFromOrder(
 }
 
 
+// get all taks 
+async getAllTasks() {
+  const tasks = await this.prisma.taskAssign.findMany({
+    orderBy: {
+      created_at: 'desc',
+    },
+    include: {
+      assignees: {
+        select: {
+          reseller_id: true,
+          full_name: true,
+          user_email: true,
+        },
+      },
+    },
+  });
+
+  if (!tasks.length) {
+    return { message: 'No tasks found', tasks: [] };
+  }
+
+  const formattedTasks = tasks.map((task) => ({
+    task_id: task.id,
+    task_status: task.status,
+    task_amount: task.ammount,
+    created_at: task.created_at,
+    due_date: task.due_date,
+    note: task.note,
+    assignees: task.assignees.map((a) => ({
+      reseller_id: a.reseller_id,
+      full_name: a.full_name,
+      email: a.user_email,
+    })),
+  }));
+
+  return {
+    message: 'Tasks fetched successfully',
+   data:{
+    total: formattedTasks.length,
+    tasks: formattedTasks,
+   }
+  };
+}
+
+
+
+
 }

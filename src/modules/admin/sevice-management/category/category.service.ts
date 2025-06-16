@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, ConflictException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category';
 
@@ -7,27 +7,36 @@ export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Create category
-  async create(dto: CreateCategoryDto) {
-    try {
-      return await this.prisma.category.create({
-        data: {
-          name: dto.name,
-          slug: dto.slug,
-          status: dto.status,
-        },
-      });
-    } catch (error) {
-      console.error('Error creating category:', error);
-      throw new InternalServerErrorException('Failed to create category');
+async create(dto: CreateCategoryDto) {
+  try {
+    const existingCategory = await this.prisma.category.findUnique({
+      where: { slug: dto.slug },
+    });
+
+    if (existingCategory) {
+      throw new ConflictException('Slug already exists. Please choose a different one.');
     }
+
+    return await this.prisma.category.create({
+      data: {
+        name: dto.name,
+        slug: dto.slug,
+        status: dto.status,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    if (error instanceof ConflictException) throw error;
+    throw new InternalServerErrorException('Failed to create category');
   }
+}
+
 
   // Get all categories
   async findAll() {
     try {
       return await this.prisma.category.findMany({
         where: { deleted_at: null },
-        include: { services: true, service_categories: true },
       });
     } catch (error) {
       console.error('Error fetching categories:', error);

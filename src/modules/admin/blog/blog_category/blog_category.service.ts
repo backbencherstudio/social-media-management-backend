@@ -29,7 +29,7 @@ export class BlogCategoryService {
     try {
       return await this.prisma.blogCategory.findMany({
         where: { deleted_at: null },
-        include: { blog_blog_categories: true },
+        // include: { blog_blog_categories: true },
       });
     } catch (error) {
       throw new InternalServerErrorException('Failed to retrieve blog categories', error?.message);

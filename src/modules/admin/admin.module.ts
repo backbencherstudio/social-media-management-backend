@@ -14,6 +14,9 @@ import { ClintsModule } from './clints/clints.module';
 import { ResellerModule } from './reseller/reseller.module';
 import { TeamModule } from './team/team.module';
 import { InvoiceModule } from './order_page/invoice/invoice.module';
+import { EmailSettingsModule } from './email_settings/email_settings.module';
+import { BlogCategoryModule } from './blog/blog_category/blog_category.module';
+
 
 
 @Module({
@@ -32,7 +35,9 @@ import { InvoiceModule } from './order_page/invoice/invoice.module';
     ClintsModule,
     ResellerModule,
     TeamModule,
-    InvoiceModule
+    InvoiceModule,
+    EmailSettingsModule,
+    BlogCategoryModule
 
   ],
 })

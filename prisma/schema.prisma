@@ -270,6 +270,18 @@ model PaymentTransaction {
   @@map("payment_transactions")
 }
 
+
+model Conversation {
+  id              String    @id @default(cuid())
+  creator_id      String
+  participant_id  String
+  creator         User      @relation("creator", fields: [creator_id], references: [id])
+  participant     User      @relation("participant", fields: [participant_id], references: [id])
+  messages        Message[]
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+}
+
 enum MessageStatus {
   PENDING
   SENT
@@ -278,29 +290,29 @@ enum MessageStatus {
 }
 
 model Message {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
+  id              String    @id @default(cuid())
+  sender_id       String
+  receiver_id     String
+  conversation_id String
+  message         String
+  status          MessageStatus @default(PENDING)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
 
-  status MessageStatus? @default(PENDING)
+  sender          User      @relation("sender", fields: [sender_id], references: [id])
+  receiver        User      @relation("receiver", fields: [receiver_id], references: [id])
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
 
-  sender_id String?
-  sender    User?   @relation("sender", fields: [sender_id], references: [id])
-
-  receiver_id String?
-  receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
-
-  conversation_id String?
-  conversation    Conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
-
-  attachment_id String?
-  attachment    Attachment? @relation(fields: [attachment_id], references: [id])
-
-  message String?
-
-  @@map("messages")
+  Attachment Attachment[]
 }
+
+
+
+
+
+
+
+
 
 model Attachment {
   id         String    @id @default(cuid())
@@ -320,22 +332,7 @@ model Attachment {
   @@map("attachments")
 }
 
-model Conversation {
-  id         String    @id @default(cuid())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  deleted_at DateTime?
 
-  creator_id     String?
-  participant_id String?
-
-  creator     User? @relation("creator", fields: [creator_id], references: [id])
-  participant User? @relation("participant", fields: [participant_id], references: [id])
-
-  messages Message[]
-
-  @@map("conversations")
-}
 
 model Faq {
   id         String    @id @default(cuid())
@@ -730,7 +727,7 @@ model Blog {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
+  status     Boolean?   @default(false)
 
   title    String?
   hashtags String[]
@@ -892,6 +889,23 @@ model EmailHistoryRecipient {
 
   @@map("email_history_recipients")
 }
+
+//EMAIL settings 
+
+model EmailSettings {
+  id             Int    @id @default(autoincrement())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  smtpHost       String
+  smtpPort       Int
+  smtpUsername   String
+  smtpPassword   String
+  smtpFrom       String
+
+  @@map("email_settings")
+
+}
+
 
 // this table stores Post performance
 model PostPerformance {
