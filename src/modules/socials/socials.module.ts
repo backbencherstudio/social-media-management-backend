@@ -17,5 +17,12 @@ import { SocialsService } from './socials.service';
     TwitterService,
     LinkedInService,
   ],
+  exports: [
+    SocialsService,
+    FacebookService,
+    InstagramService,
+    TwitterService,
+    LinkedInService,
+  ],
 })
 export class SocialsModule {}

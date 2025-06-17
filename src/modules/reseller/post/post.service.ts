@@ -21,6 +21,7 @@ export class PostService {
           content: createPostDto.content,
           schedule_at: createPostDto.schedule_at, // schedule input here
           hashtags: createPostDto.hashtags,
+          task_id: createPostDto.task_id,
           status: 0,
         },
       });
@@ -255,12 +256,56 @@ export class PostService {
     }
   }
 
+  // async reviewPost(
+  //   postId: string,
+  //   action: 1 | 2, // 1 for approve, 2 for reject
+  //   feedback?: string,
+  // ) {
+  //   try {
+  //     const post = await this.prisma.post.update({
+  //       where: { id: postId },
+  //       data: {
+  //         status: action,
+  //         feedback: feedback || null,
+  //         updated_at: new Date(),
+  //       },
+  //     });
+  //     // // Only queue post on approval
+  //     // if (post.status === 1) {
+  //     //   if (post.schedule_at) {
+  //     //     const scheduleDate = new Date(post.schedule_at);
+  //     //     const delay = scheduleDate.getTime() - Date.now();
+  //     //     if (delay > 0) {
+  //     //       await this.postQueue.add(
+  //     //         'publish-post',
+  //     //         { postId: post.id },
+  //     //         { delay },
+  //     //       );
+  //     //     } else {
+  //     //       await this.postQueue.add('publish-post', { postId: post.id });
+  //     //     }
+  //     //   } else {
+  //     //     await this.postQueue.add('publish-post', { postId: post.id });
+  //     //   }
+  //     // }
+
+  //     return {
+  //       success: true,
+  //       message: `Post update successfully`,
+  //       data: post,
+  //     };
+  //   } catch (error) {
+  //     return { success: false, message: error.message };
+  //   }
+  // }
+
   async reviewPost(
     postId: string,
-    action: 1 | 2, // 1 for approve, 2 for reject
+    action: 1 | 2, // 1 = approved, 2 = rejected
     feedback?: string,
   ) {
     try {
+      // Step 1: Update post status
       const post = await this.prisma.post.update({
         where: { id: postId },
         data: {
@@ -269,29 +314,155 @@ export class PostService {
           updated_at: new Date(),
         },
       });
-      // // Only queue post on approval
-      // if (post.status === 1) {
-      //   if (post.schedule_at) {
-      //     const scheduleDate = new Date(post.schedule_at);
-      //     const delay = scheduleDate.getTime() - Date.now();
-      //     if (delay > 0) {
-      //       await this.postQueue.add(
-      //         'publish-post',
-      //         { postId: post.id },
-      //         { delay },
-      //       );
-      //     } else {
-      //       await this.postQueue.add('publish-post', { postId: post.id });
-      //     }
-      //   } else {
-      //     await this.postQueue.add('publish-post', { postId: post.id });
-      //   }
-      // }
+
+      // Step 2: Get related task via post.task_id
+      const task = await this.prisma.taskAssign.findFirst({
+        where: {
+          posts: { some: { id: postId } }, // or use post.task_id if defined
+        },
+        include: {
+          posts: true,
+          order: {
+            include: { order_assigns: true }, // get all tasks under order
+          },
+        },
+      });
+
+      if (task) {
+        // Step 3: Check if all posts in task are approved
+        const allPostsApproved = task.posts.every((p) => p.status === 1);
+
+        if (allPostsApproved) {
+          // Step 4: Update task status to Completed
+          await this.prisma.taskAssign.update({
+            where: { id: task.id },
+            data: { status: 'completed' }, // or Status.completed enum if using
+          });
+        }
+
+        // Step 5: After task completion, check if all tasks in the order are completed
+        const updatedTasks = await this.prisma.taskAssign.findMany({
+          where: { order_id: task.order_id },
+        });
+
+        const allTasksCompleted = updatedTasks.every(
+          (t) => t.status === 'completed',
+        );
+
+        if (allTasksCompleted) {
+          await this.prisma.order.update({
+            where: { id: task.order_id },
+            data: { order_status: 'completed' }, // Or OrderStatus.completed enum
+          });
+        }
+      }
 
       return {
         success: true,
-        message: `Post update successfully`,
+        message: 'Post reviewed and related updates applied.',
         data: post,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // New method for resellers to create posts for specific users
+  async createForUser(
+    createPostDto: CreatePostDto,
+    userId: string,
+    taskId: string,
+    files?: Express.Multer.File[],
+  ) {
+    console.log('Creating post for user:', userId, 'task:', taskId);
+    try {
+      // Verify the task exists and belongs to the user
+      const task = await this.prisma.taskAssign.findFirst({
+        where: {
+          id: taskId,
+          user_id: userId,
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!task) {
+        return { success: false, message: 'Task not found or does not belong to the user' };
+      }
+
+      // Create the post with task_id
+      const post = await this.prisma.post.create({
+        data: {
+          content: createPostDto.content,
+          schedule_at: createPostDto.schedule_at,
+          hashtags: createPostDto.hashtags,
+          task_id: taskId,
+          status: 0, // Pending approval
+        },
+      });
+
+      // Add channels if specified
+      if (createPostDto.post_channels?.length) {
+        await this.prisma.postChannel.createMany({
+          data: createPostDto.post_channels.map((channel) => ({
+            post_id: post.id,
+            channel_id: channel.channel_id,
+          })),
+        });
+      }
+
+      // Handle file uploads
+      if (files && files.length > 0) {
+        const postFiles = [];
+
+        for (const file of files) {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          const fileName = `${randomName}-${file.originalname}`;
+          await SojebStorage.put('post-files/' + fileName, file.buffer);
+
+          postFiles.push({
+            post_id: post.id,
+            name: file.originalname,
+            type: file.mimetype.startsWith('image') ? 'image' : 'video',
+            file_path: fileName,
+            size: file.size,
+            file_alt: '',
+          });
+        }
+
+        if (postFiles.length > 0) {
+          await this.prisma.postFile.createMany({
+            data: postFiles,
+          });
+        }
+      }
+
+      // Queue the post for processing (will be published when approved)
+      if (createPostDto.schedule_at) {
+        const scheduleDate = new Date(createPostDto.schedule_at);
+        const delay = scheduleDate.getTime() - Date.now();
+
+        if (delay > 0) {
+          await this.postQueue.add(
+            'publish-post',
+            { postId: post.id },
+            { delay },
+          );
+        } else {
+          await this.postQueue.add('publish-post', { postId: post.id });
+        }
+      } else {
+        await this.postQueue.add('publish-post', { postId: post.id });
+      }
+
+      return { 
+        success: true, 
+        message: 'Post created successfully and queued for approval',
+        data: await this.findOne(post.id) 
       };
     } catch (error) {
       return { success: false, message: error.message };

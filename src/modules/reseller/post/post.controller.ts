@@ -43,6 +43,35 @@ export class PostController {
     return this.postService.create(createPostDto, files?.files || []);
   }
 
+  @Post('for-user/:userId/:taskId')
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'files', maxCount: 10 }], {
+      storage: memoryStorage(),
+    }),
+  )
+  async createForUser(
+    @Param('userId') userId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: any,
+    @UploadedFiles() files: { files?: Express.Multer.File[] },
+  ) {
+    let createPostDto: CreatePostDto;
+
+    // If data is sent as JSON string inside `body.data`, parse it
+    if (body?.data) {
+      createPostDto = JSON.parse(body.data);
+    } else {
+      createPostDto = body;
+    }
+
+    return this.postService.createForUser(
+      createPostDto,
+      userId,
+      taskId,
+      files?.files || [],
+    );
+  }
+
   @Get()
   findAll() {
     return this.postService.findAll();

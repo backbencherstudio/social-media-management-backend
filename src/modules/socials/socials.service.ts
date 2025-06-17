@@ -89,6 +89,13 @@ export class SocialsService {
       };
     }
 
+    if (!userId) {
+      return {
+        success: false,
+        message: 'user id is required',
+      };
+    }
+
     try {
       // First, verify the user exists
       const user = await this.prisma.user.findUnique({
@@ -183,7 +190,9 @@ export class SocialsService {
       const account = await this.prisma.account.findFirst({
         where: { user_id: userId, provider },
       });
-     
+
+      console.log('Account found:', account);
+
       if (!account) {
         return { success: false, message: `${provider} not connected` };
       }
@@ -202,7 +211,10 @@ export class SocialsService {
         case 'twitter':
           return {
             success: true,
-            data: await this.twitterService.getProfile(account.access_token),
+            data: await this.twitterService.getProfile(
+              account.access_token,
+              account.provider_account_id,
+            ),
           };
         case 'linkedin':
           return {
@@ -246,7 +258,10 @@ export class SocialsService {
         case 'twitter':
           return {
             success: true,
-            data: await this.twitterService.getAnalytics(account.access_token),
+            data: await this.twitterService.getAnalytics(
+              account.access_token,
+              account.provider_account_id,
+            ),
           };
         case 'linkedin':
           return {
@@ -348,7 +363,12 @@ export class SocialsService {
     }
   }
 
-  async getFollowerActivity(userId: string, provider: string, start?: string, end?: string) {
+  async getFollowerActivity(
+    userId: string,
+    provider: string,
+    start?: string,
+    end?: string,
+  ) {
     switch (provider) {
       case 'facebook':
         return this.facebookService.getFollowerActivity(userId, start, end);
@@ -360,6 +380,36 @@ export class SocialsService {
         return this.linkedinService.getFollowerActivity(userId, start, end);
       default:
         return { success: false, message: 'Provider not supported' };
+    }
+  }
+
+  async publishPost(
+    userId: string,
+    provider: string,
+    postData: {
+      content: string;
+      hashtags?: string[];
+      mediaFiles?: Array<{
+        name: string;
+        type: string;
+        file_path: string;
+      }>;
+    },
+  ) {
+    switch (provider) {
+      case 'twitter':
+        return this.twitterService.publishPost(userId, postData);
+      case 'facebook':
+        // TODO: Implement Facebook posting
+        return { success: false, message: 'Facebook posting not implemented yet' };
+      case 'instagram':
+        // TODO: Implement Instagram posting
+        return { success: false, message: 'Instagram posting not implemented yet' };
+      case 'linkedin':
+        // TODO: Implement LinkedIn posting
+        return { success: false, message: 'LinkedIn posting not implemented yet' };
+      default:
+        return { success: false, message: 'Provider not supported for posting' };
     }
   }
 }

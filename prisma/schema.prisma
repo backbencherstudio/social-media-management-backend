@@ -270,16 +270,15 @@ model PaymentTransaction {
   @@map("payment_transactions")
 }
 
-
 model Conversation {
-  id              String    @id @default(cuid())
-  creator_id      String
-  participant_id  String
-  creator         User      @relation("creator", fields: [creator_id], references: [id])
-  participant     User      @relation("participant", fields: [participant_id], references: [id])
-  messages        Message[]
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @default(now())
+  id             String    @id @default(cuid())
+  creator_id     String
+  participant_id String
+  creator        User      @relation("creator", fields: [creator_id], references: [id])
+  participant    User      @relation("participant", fields: [participant_id], references: [id])
+  messages       Message[]
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now())
 }
 
 enum MessageStatus {
@@ -290,29 +289,21 @@ enum MessageStatus {
 }
 
 model Message {
-  id              String    @id @default(cuid())
+  id              String        @id @default(cuid())
   sender_id       String
   receiver_id     String
   conversation_id String
   message         String
   status          MessageStatus @default(PENDING)
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @default(now())
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @default(now())
 
-  sender          User      @relation("sender", fields: [sender_id], references: [id])
-  receiver        User      @relation("receiver", fields: [receiver_id], references: [id])
-  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  sender       User         @relation("sender", fields: [sender_id], references: [id])
+  receiver     User         @relation("receiver", fields: [receiver_id], references: [id])
+  conversation Conversation @relation(fields: [conversation_id], references: [id])
 
   Attachment Attachment[]
 }
-
-
-
-
-
-
-
-
 
 model Attachment {
   id         String    @id @default(cuid())
@@ -331,8 +322,6 @@ model Attachment {
 
   @@map("attachments")
 }
-
-
 
 model Faq {
   id         String    @id @default(cuid())
@@ -674,6 +663,9 @@ model Post {
   feedback String?  @db.Text
   hashtags String[]
 
+  task_id String? // Optional if not every post has a task
+  task    TaskAssign? @relation(fields: [task_id], references: [id])
+
   post_files        PostFile[]
   post_channels     PostChannel[]
   post_performances PostPerformance[]
@@ -727,7 +719,7 @@ model Blog {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Boolean?   @default(false)
+  status     Boolean?  @default(false)
 
   title    String?
   hashtags String[]
@@ -893,19 +885,17 @@ model EmailHistoryRecipient {
 //EMAIL settings 
 
 model EmailSettings {
-  id             Int    @id @default(autoincrement())
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  smtpHost       String
-  smtpPort       Int
-  smtpUsername   String
-  smtpPassword   String
-  smtpFrom       String
+  id           Int      @id @default(autoincrement())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  smtpHost     String
+  smtpPort     Int
+  smtpUsername String
+  smtpPassword String
+  smtpFrom     String
 
   @@map("email_settings")
-
 }
-
 
 // this table stores Post performance
 model PostPerformance {
@@ -1050,6 +1040,7 @@ model TaskAssign {
   status    Status  @default(In_progress)
 
   assignees Reseller[] @relation("TaskAssaingees")
+  posts     Post[]
 
   @@map("task_assign")
 }
@@ -1137,13 +1128,13 @@ model Team {
 
 // reseller dashboard assets
 model DesignFile {
-  id         String            @id @default(cuid())
-  created_at DateTime          @default(now())
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
 
-  status     Int?      @default(0) @db.SmallInt
-  feedback  String?
-  content    String?
-  files      DesignFileAsset[]
+  status   Int?              @default(0) @db.SmallInt
+  feedback String?
+  content  String?
+  files    DesignFileAsset[]
 }
 
 model DesignFileAsset {
