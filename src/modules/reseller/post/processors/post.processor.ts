@@ -98,7 +98,7 @@ export class PostProcessor extends WorkerHost {
               channel: 'twitter',
               success: twitterResult.success,
               message: twitterResult.message,
-              data: twitterResult.data,
+              data: twitterResult.details,
             });
 
             this.logger.log(`Twitter publish result:`, twitterResult);

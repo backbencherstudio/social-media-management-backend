@@ -36,6 +36,11 @@ export class DesignFileController {
     return this.designFileService.findAll();
   }
 
+  @Get('approve-file')
+  approveFile() {
+    return this.designFileService.approveFile();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.designFileService.findOne(id);

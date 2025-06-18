@@ -66,7 +66,7 @@ export class DesignFileService {
   }
 
   async findAll() {
-    console.log('Fetching all design files');
+   
     try {
       const designFiles = await this.prisma.designFile.findMany({
         include: { files: true },
@@ -149,11 +149,45 @@ export class DesignFileService {
 
       return {
         success: true,
-        message: `Post update successfully`,
+        message: `File update successfully`,
         data: post,
       };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  async approveFile() {
+   
+    try {
+      const designFiles = await this.prisma.designFile.findMany({
+        where:{
+          status:1
+        },
+        include: { files: true },
+        orderBy: { created_at: 'desc' },
+      });
+     
+      // Add public URLs to files
+      const designFilesWithUrls = designFiles.map((designFile) => ({
+        ...designFile,
+        files: designFile.files.map((file) => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path,
+          ),
+        })),
+      }));
+
+      return {
+        success: true,
+        data: designFilesWithUrls,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
   }
 }
