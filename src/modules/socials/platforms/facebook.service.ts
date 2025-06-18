@@ -144,4 +144,47 @@ export class FacebookService {
     );
     return response.data;
   }
+
+  async getMessages(userId: string) {
+    const account = await this.prisma.account.findFirst({
+      where: { user_id: userId, provider: 'facebook' },
+    });
+    if (!account) return { success: false, message: 'Facebook not connected' };
+
+    // Example: Fetch page conversations
+    // You need to replace PAGE_ID and use the correct endpoint for your use case
+    const pageId = account.provider_account_id;
+    const accessToken = account.access_token;
+    const response = await axios.get(
+      `https://graph.facebook.com/v19.0/${pageId}/conversations`,
+      { params: { access_token: accessToken } }
+    );
+
+    // Map to unified format
+    const data = (response.data.data || []).map(conv => ({
+      id: conv.id,
+      sender: { name: conv.participants?.data[0]?.name, avatar: null },
+      text: conv.snippet,
+      platform: 'Facebook',
+      type: 'dm',
+      timestamp: conv.updated_time,
+    }));
+
+    return { success: true, data };
+  }
+
+  async sendMessage(userId: string, body: { conversationId: string; text: string }) {
+    // Send a reply to a Facebook conversation
+    const account = await this.prisma.account.findFirst({
+      where: { user_id: userId, provider: 'facebook' },
+    });
+    if (!account) return { success: false, message: 'Facebook not connected' };
+
+    const accessToken = account.access_token;
+    await axios.post(
+      `https://graph.facebook.com/v19.0/${body.conversationId}/messages`,
+      { message: body.text, access_token: accessToken }
+    );
+    return { success: true, message: 'Message sent' };
+  }
 }

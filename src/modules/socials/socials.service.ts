@@ -16,7 +16,7 @@ export class SocialsService {
     private readonly twitterService: TwitterService,
     private readonly linkedinService: LinkedInService,
     private readonly providerValidator: ProviderValidatorService,
-  ) {}
+  ) { }
 
   async connectWithCredentials(
     userId: string,
@@ -112,13 +112,16 @@ export class SocialsService {
     return {
       success: true,
       data: channels.map((channel) => {
-        const account = accounts.find(
-          (acc) => acc.provider?.toLowerCase() === channel.name?.toLowerCase(),
+        // Find all accounts for this provider/channel
+        const matchedAccounts = accounts.filter(
+          (acc) => acc.provider?.toLowerCase() === channel.name?.toLowerCase()
         );
         return {
           name: channel.name,
-          status: account ? 'Connected' : 'Not Connected',
-          details: account ? { username: account.provider_account_id } : null,
+          status: matchedAccounts.length > 0 ? 'Connected' : 'Not Connected',
+          details: matchedAccounts.length > 0
+            ? matchedAccounts.map(acc => ({ username: acc.provider_account_id }))
+            : null,
         };
       }),
     };
@@ -557,6 +560,36 @@ export class SocialsService {
       // Add for LinkedIn if needed
       default:
         return { success: false, message: 'Demographics not available for this provider' };
+    }
+  }
+
+  async getMessages(userId: string, provider: string) {
+    switch (provider) {
+      case 'facebook':
+        return this.facebookService.getMessages(userId);
+      case 'twitter':
+        return this.twitterService.getMessages(userId);
+      // case 'instagram':
+      //   return this.instagramService.getMessages(userId);
+      // case 'linkedin':
+      //   return this.linkedinService.getMessages(userId);
+      default:
+        return { success: false, message: 'Provider not supported' };
+    }
+  }
+
+  async sendMessage(userId: string, provider: string, body: { conversationId: string; text: string }) {
+    switch (provider) {
+      case 'facebook':
+        return this.facebookService.sendMessage(userId, body);
+      case 'twitter':
+        return this.twitterService.sendMessage(userId, body);
+      // case 'instagram':
+      //   return this.instagramService.sendMessage(userId, body);
+      // case 'linkedin':
+      //   return this.linkedinService.sendMessage(userId, body);
+      default:
+        return { success: false, message: 'Provider not supported' };
     }
   }
 }

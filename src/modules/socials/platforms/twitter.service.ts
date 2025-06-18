@@ -4,7 +4,7 @@ import axios from 'axios';
 
 @Injectable()
 export class TwitterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async fetchPosts(userId: string) {
     console.log('user id : -----------------', userId);
@@ -16,7 +16,7 @@ export class TwitterService {
 
     const twitterUserId = account.provider_account_id;
     const accessToken = account.access_token;
-  const username = account.provider_account_id; 
+    const username = account.provider_account_id;
     console.log('Fetching tweets for username:', username);
     console.log('Using access token:', accessToken);
 
@@ -258,7 +258,7 @@ export class TwitterService {
       const accessToken = account.access_token;
       const username = account.provider_account_id;
 
-      
+
       // Get user ID from username
       const userResponse = await axios.get(
         `https://api.twitter.com/2/users/by/username/${username}`,
@@ -393,6 +393,71 @@ export class TwitterService {
           message: `Failed to publish to Twitter: ${error.message}`,
         };
       }
+    }
+  }
+
+  // Fetch Twitter DMs for the authenticated user
+  async getMessages(userId: string) {
+    const account = await this.prisma.account.findFirst({
+      where: { user_id: userId, provider: 'twitter' },
+    });
+    if (!account) return { success: false, message: 'Twitter not connected' };
+
+    const accessToken = account.access_token;
+
+    // Twitter API v2 does NOT support DMs for most apps.
+    // If you have access, use the correct endpoint. Otherwise, this is a placeholder.
+    // Replace with the correct endpoint if you have access to Twitter's DM API.
+    try {
+      const response = await axios.get(
+        'https://api.twitter.com/2/dm_conversations/with', // <-- Replace with actual endpoint if you have access
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          // params: { ... }
+        }
+      );
+
+      // Map to unified format
+      const data = (response.data.data || []).map(msg => ({
+        id: msg.id,
+        sender: { name: msg.sender_id, avatar: null }, // You may need to fetch user info for avatar
+        text: msg.text,
+        platform: 'Twitter',
+        type: 'dm',
+        timestamp: msg.created_at,
+      }));
+
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, message: 'Twitter DM API not available or not authorized.' };
+    }
+  }
+
+  // Send a Twitter DM reply
+  async sendMessage(userId: string, body: { conversationId: string; text: string }) {
+    const account = await this.prisma.account.findFirst({
+      where: { user_id: userId, provider: 'twitter' },
+    });
+    if (!account) return { success: false, message: 'Twitter not connected' };
+
+    const accessToken = account.access_token;
+
+    // Twitter API v2 does NOT support DMs for most apps.
+    // If you have access, use the correct endpoint. Otherwise, this is a placeholder.
+    try {
+      await axios.post(
+        'https://api.twitter.com/2/dm_conversations/with', // <-- Replace with actual endpoint if you have access
+        {
+          conversation_id: body.conversationId,
+          text: body.text,
+        },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      return { success: true, message: 'Message sent' };
+    } catch (error) {
+      return { success: false, message: 'Twitter DM API not available or not authorized.' };
     }
   }
 }

@@ -18,7 +18,7 @@ import { PublishPostDto } from './dto/publish-post.dto';
 // todo: reolace req.user.userId
 @Controller('socials')
 export class SocialsController {
-  constructor(private readonly socialsService: SocialsService) {}
+  constructor(private readonly socialsService: SocialsService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post('connect/manual')
@@ -39,7 +39,8 @@ export class SocialsController {
   @UseGuards(JwtAuthGuard)
   @Delete('disconnect/:provider')
   async disconnect(@Req() req, @Param('provider') provider: string) {
-    return this.socialsService.disconnect(req.user.userId, provider);
+    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+    return this.socialsService.disconnect(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -168,5 +169,22 @@ export class SocialsController {
   @Get('audience-demographics/:provider')
   async getAudienceDemographics(@Req() req, @Param('provider') provider: string) {
     return this.socialsService.getAudienceDemographics(req.user.userId, provider);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('messages/:provider')
+  async getMessages(@Req() req, @Param('provider') provider: string) {
+    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+    return this.socialsService.getMessages(userId, provider);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('messages/:provider/reply')
+  async sendMessage(
+    @Req() req,
+    @Param('provider') provider: string,
+    @Body() body: { conversationId: string; text: string }
+  ) {
+    return this.socialsService.sendMessage(req.user.userId, provider, body);
   }
 }
