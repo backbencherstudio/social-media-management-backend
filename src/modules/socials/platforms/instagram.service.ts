@@ -4,7 +4,7 @@ import axios from 'axios';
 
 @Injectable()
 export class InstagramService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async fetchPosts(userId: string) {
     const account = await this.prisma.account.findFirst({
@@ -115,19 +115,31 @@ export class InstagramService {
       // Format for heatmap: [ [hour0, hour1, ...], ... ]
       const data = insightsRes.data.data?.[0]?.values?.[0]?.value;
       // Instagram returns an object with keys 0-6 (Sun-Sat), each an array of 24 numbers
-      const activity = [0,1,2,3,4,5,6].map(day => data?.[day] || Array(24).fill(0));
+      const activity = [0, 1, 2, 3, 4, 5, 6].map(day => data?.[day] || Array(24).fill(0));
       return {
         success: true,
         data: {
           activity,
           labels: {
-            days: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
-            hours: Array.from({length:24}, (_,i)=>i)
+            days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            hours: Array.from({ length: 24 }, (_, i) => i)
           }
         }
       };
     } catch (error) {
       return { success: false, message: error.response?.data?.error?.message || error.message };
     }
+  }
+  async getAudienceDemographics(accessToken: string, pageId: string) {
+    const response = await axios.get(
+      `https://graph.facebook.com/v19.0/${pageId}/insights`,
+      {
+        params: {
+          metric: 'audience_gender_age,audience_country',
+          access_token: accessToken,
+        },
+      }
+    );
+    return response.data;
   }
 }

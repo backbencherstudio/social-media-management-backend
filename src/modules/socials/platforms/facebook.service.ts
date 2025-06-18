@@ -131,4 +131,17 @@ export class FacebookService {
       return { success: false, message: error.response?.data?.error?.message || error.message };
     }
   }
+
+  async getAudienceDemographics(accessToken: string, pageId: string) {
+    const response = await axios.get(
+      `https://graph.facebook.com/v19.0/${pageId}/insights`,
+      {
+        params: {
+          metric: 'audience_gender_age,audience_country',
+          access_token: accessToken,
+        },
+      }
+    );
+    return response.data;
+  }
 }

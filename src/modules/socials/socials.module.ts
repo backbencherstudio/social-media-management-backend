@@ -6,6 +6,7 @@ import { InstagramService } from './platforms/instagram.service';
 import { TwitterService } from './platforms/twitter.service';
 import { LinkedInService } from './platforms/linkedin.service';
 import { SocialsService } from './socials.service';
+import { ProviderValidatorService } from './providers/provider-validator.service';
 
 @Module({
   imports: [PrismaModule],
@@ -16,6 +17,7 @@ import { SocialsService } from './socials.service';
     InstagramService,
     TwitterService,
     LinkedInService,
+    ProviderValidatorService,
   ],
   exports: [
     SocialsService,
@@ -23,6 +25,7 @@ import { SocialsService } from './socials.service';
     InstagramService,
     TwitterService,
     LinkedInService,
+    ProviderValidatorService,
   ],
 })
-export class SocialsModule {}
+export class SocialsModule { }

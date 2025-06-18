@@ -5,6 +5,7 @@ import { InstagramService } from './platforms/instagram.service';
 import { TwitterService } from './platforms/twitter.service';
 import { LinkedInService } from './platforms/linkedin.service';
 import { CreateCredentialDto } from './dto/createCredentialDto';
+import { ProviderValidatorService } from './providers/provider-validator.service';
 
 @Injectable()
 export class SocialsService {
@@ -14,64 +15,9 @@ export class SocialsService {
     private readonly instagramService: InstagramService,
     private readonly twitterService: TwitterService,
     private readonly linkedinService: LinkedInService,
+    private readonly providerValidator: ProviderValidatorService,
   ) {}
 
-  async getConnections(userId: string) {
-    const channels = await this.prisma.channel.findMany();
-    const accounts = await this.prisma.account.findMany({
-      where: { user_id: userId },
-    });
-
-    return {
-      success: true,
-      data: channels.map((channel) => {
-        const account = accounts.find(
-          (acc) => acc.provider?.toLowerCase() === channel.name?.toLowerCase(),
-        );
-        return {
-          name: channel.name,
-          status: account ? 'Connected' : 'Not Connected',
-          details: account ? { username: account.provider_account_id } : null,
-        };
-      }),
-    };
-  }
-
-  async disconnect(userId: string, provider: string) {
-    await this.prisma.account.deleteMany({
-      where: { user_id: userId, provider },
-    });
-    return { success: true, message: `${provider} disconnected` };
-  }
-
-  async fetchPostsByProvider(userId: string, provider: string) {
-    switch (provider) {
-      case 'facebook':
-        return {
-          success: true,
-          data: await this.facebookService.fetchPosts(userId),
-        };
-      case 'instagram':
-        return {
-          success: true,
-          data: await this.instagramService.fetchPosts(userId),
-        };
-      case 'twitter':
-        return {
-          success: true,
-          data: await this.twitterService.fetchPosts(userId),
-        };
-      case 'linkedin':
-        return {
-          success: true,
-          data: await this.linkedinService.fetchPosts(userId),
-        };
-      default:
-        return { success: false, message: 'Provider not supported' };
-    }
-  }
-
-  // New methods for manual credential management
   async connectWithCredentials(
     userId: string,
     credentials: CreateCredentialDto,
@@ -106,6 +52,16 @@ export class SocialsService {
         return {
           success: false,
           message: 'User not found',
+        };
+      }
+
+      // Validate provider account using the new service
+      try {
+        await this.providerValidator.validateAccount(credentials.provider, credentials);
+      } catch (err) {
+        return {
+          success: false,
+          message: `Invalid provider account: ${err?.message || 'Unknown error'}`,
         };
       }
 
@@ -144,6 +100,180 @@ export class SocialsService {
         success: false,
         message: `Failed to connect ${credentials.provider}: ${error.message}`,
       };
+    }
+  }
+
+  async getConnections(userId: string) {
+    const channels = await this.prisma.channel.findMany();
+    const accounts = await this.prisma.account.findMany({
+      where: { user_id: userId },
+    });
+
+    return {
+      success: true,
+      data: channels.map((channel) => {
+        const account = accounts.find(
+          (acc) => acc.provider?.toLowerCase() === channel.name?.toLowerCase(),
+        );
+        return {
+          name: channel.name,
+          status: account ? 'Connected' : 'Not Connected',
+          details: account ? { username: account.provider_account_id } : null,
+        };
+      }),
+    };
+  }
+
+  async disconnect(userId: string, provider: string) {
+    await this.prisma.account.deleteMany({
+      where: { user_id: userId, provider },
+    });
+    return { success: true, message: `${provider} disconnected` };
+  }
+
+  // Utility: Safely get array from API response
+  private safeArray(data: any): any[] {
+    return (data && Array.isArray(data.data)) ? data.data : [];
+  }
+
+  // --- Formatting Helpers for Recent Posts Performance ---
+
+  // Facebook
+  private formatFacebookPostsForPerformance(postsData: any): any[] {
+    return this.safeArray(postsData).map((post: any) => {
+      const insights = post.insights?.data || [];
+      const reactions = insights.find((d: any) => d.name === 'post_reactions_by_type_total')?.values?.[0]?.value || {};
+      const likes = reactions.like || 0;
+      const comments = post.comments?.summary?.total_count || 0;
+      const shares = post.shares?.count || 0;
+      const reach = insights.find((d: any) => d.name === 'post_impressions')?.values?.[0]?.value || null;
+      const engagementRate = reach ? (((likes + comments + shares) / reach) * 100).toFixed(1) + '%' : '0.0%';
+      return {
+        post: post.message,
+        platform: 'Facebook',
+        date: post.created_time,
+        likes,
+        comments,
+        shares,
+        reach,
+        engagementRate,
+        actions: {},
+      };
+    });
+  }
+
+  // Instagram
+  private formatInstagramPostsForPerformance(postsData: any): any[] {
+    return this.safeArray(postsData).map((post: any) => {
+      const likes = post.like_count || 0;
+      const comments = post.comments_count || 0;
+      const shares = 0; // Not available
+      const reach = null; // Not available
+      const engagementRate = (((likes + comments) / 1000) * 100).toFixed(1) + '%';
+      return {
+        post: post.caption,
+        platform: 'Instagram',
+        date: post.timestamp,
+        likes,
+        comments,
+        shares,
+        reach,
+        engagementRate,
+        actions: {},
+      };
+    });
+  }
+
+  // Twitter
+  private formatTwitterPostsForPerformance(tweetsData: any): any[] {
+    return this.safeArray(tweetsData).map((tweet: any) => {
+      const metrics = tweet.public_metrics || {};
+      const likes = metrics.like_count || 0;
+      const comments = metrics.reply_count || 0;
+      const shares = metrics.retweet_count || 0;
+      const reach = null; // Not available
+      const engagementRate = (((likes + comments + shares) / 1000) * 100).toFixed(1) + '%';
+      return {
+        post: tweet.text,
+        platform: 'Twitter',
+        date: tweet.created_at,
+        likes,
+        comments,
+        shares,
+        reach,
+        engagementRate,
+        actions: {},
+      };
+    });
+  }
+
+  // LinkedIn
+  private formatLinkedInPostsForPerformance(postsData: any): any[] {
+    return this.safeArray(postsData).map((post: any) => {
+      const likes = post.likes || 0;
+      const comments = post.comments || 0;
+      const shares = post.shares || 0;
+      const reach = post.reach || null;
+      const engagementRate = reach ? (((likes + comments + shares) / reach) * 100).toFixed(1) + '%' : '0.0%';
+      return {
+        post: post.text,
+        platform: 'LinkedIn',
+        date: post.created,
+        likes,
+        comments,
+        shares,
+        reach,
+        engagementRate,
+        actions: {},
+      };
+    });
+  }
+
+  // --- Fetch and format posts from all providers ---
+  async fetchPostsPerformanceAllProviders(userId: string) {
+    const [fb, ig, tw, li] = await Promise.all([
+      this.facebookService.fetchPosts(userId).catch(() => null),
+      this.instagramService.fetchPosts(userId).catch(() => null),
+      this.twitterService.fetchPosts(userId).catch(() => null),
+      this.linkedinService.fetchPosts(userId).catch(() => null),
+    ]);
+    const allPosts = [
+      ...this.formatFacebookPostsForPerformance(fb),
+      ...this.formatInstagramPostsForPerformance(ig),
+      ...this.formatTwitterPostsForPerformance(tw),
+      ...this.formatLinkedInPostsForPerformance(li),
+    ];
+    // Sort by date descending
+    allPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return { success: true, data: allPosts };
+  }
+
+  async fetchPostsByProvider(userId: string, provider: string) {
+    switch (provider) {
+      case 'facebook':
+        return {
+          success: true,
+          data: await this.facebookService.fetchPosts(userId),
+        };
+      case 'instagram':
+        return {
+          success: true,
+          data: await this.instagramService.fetchPosts(userId),
+        };
+      case 'twitter': {
+        const tweetsData = await this.twitterService.fetchPosts(userId);
+        return {
+          success: true,
+          data: this.formatTwitterPostsForPerformance(tweetsData),
+        };
+      }
+      case 'linkedin':
+        return {
+          success: true,
+          data: await this.linkedinService.fetchPosts(userId),
+        };
+      default:
+        return { success: false, message: 'Provider not supported' };
     }
   }
 
@@ -410,6 +540,23 @@ export class SocialsService {
         return { success: false, message: 'LinkedIn posting not implemented yet' };
       default:
         return { success: false, message: 'Provider not supported for posting' };
+    }
+  }
+
+  async getAudienceDemographics(userId: string, provider: string) {
+    const account = await this.prisma.account.findFirst({
+      where: { user_id: userId, provider },
+    });
+    if (!account) return { success: false, message: `${provider} not connected` };
+
+    switch (provider) {
+      case 'facebook':
+        return this.facebookService.getAudienceDemographics(account.access_token, account.provider_account_id);
+      case 'instagram':
+        return this.instagramService.getAudienceDemographics(account.access_token, account.provider_account_id);
+      // Add for LinkedIn if needed
+      default:
+        return { success: false, message: 'Demographics not available for this provider' };
     }
   }
 }

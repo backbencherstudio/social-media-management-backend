@@ -16,8 +16,7 @@ export class TwitterService {
 
     const twitterUserId = account.provider_account_id;
     const accessToken = account.access_token;
-    const username = account.provider_account_id; // This should be the username
-
+  const username = account.provider_account_id; 
     console.log('Fetching tweets for username:', username);
     console.log('Using access token:', accessToken);
 

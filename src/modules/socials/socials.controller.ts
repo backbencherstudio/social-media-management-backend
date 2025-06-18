@@ -59,7 +59,8 @@ export class SocialsController {
   @UseGuards(JwtAuthGuard)
   @Get('posts/:provider')
   async getSocialPosts(@Req() req, @Param('provider') provider: string) {
-    return this.socialsService.fetchPostsByProvider(req.user.userId, provider);
+    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+    return this.socialsService.fetchPostsByProvider(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -155,5 +156,17 @@ export class SocialsController {
   ) {
     const userId = 'cmc0017yi0000ws5cqy5qybiy';
     return this.socialsService.publishPost(userId, provider, postData);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('posts/performance/all')
+  async getAllProvidersRecentPosts(@Req() req) {
+    return this.socialsService.fetchPostsPerformanceAllProviders(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('audience-demographics/:provider')
+  async getAudienceDemographics(@Req() req, @Param('provider') provider: string) {
+    return this.socialsService.getAudienceDemographics(req.user.userId, provider);
   }
 }
