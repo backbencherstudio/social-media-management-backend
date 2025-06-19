@@ -7,6 +7,7 @@ import { UpdateEmailSettingsDto } from './dto/update-email_setting.dto';
 
 @Injectable()
 export class EmailSettingsService {
+
   constructor(private readonly prisma: PrismaService) {}
 
   // Create new email settings
@@ -16,29 +17,15 @@ export class EmailSettingsService {
     });
   }
 
-async findAll(): Promise<any> {
-  try {
-    const emailSettings = await this.prisma.emailSettings.findMany();
+  //find all email_settings 
+  async getEmailSettings(): Promise<EmailSettings> {
+    const emailSettings = await this.prisma.emailSettings.findFirst();  // Retrieve first record
 
-    if (emailSettings.length === 0) {
-      return {
-        message: "Currently, this is empty",
-        data: []
-      };
+    if (!emailSettings) {
+      throw new NotFoundException('No email settings found in the database.');
     }
-
-    return {
-      message: "Email settings fetched successfully",
-      data: emailSettings
-    };
-  } catch (error) {
-    console.error("Error fetching email settings:", error);
-    return {
-      message: "An error occurred while fetching email settings.",
-      data: []
-    };
+    return emailSettings;
   }
-}
 
 
   // Find one email setting by ID
@@ -72,6 +59,9 @@ async findAll(): Promise<any> {
       data: updateEmailSettingsDto,
     });
   }
+
+
+
 
   // Delete email settings
   async remove(id: number): Promise<void> {

@@ -2,12 +2,29 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import { PrismaService } from 'src/prisma/prisma.service';
 
-@Processor('mail2-queue')
+@Processor('mail3-queue')
 export class MailProcessor extends WorkerHost {
   private readonly logger = new Logger(MailProcessor.name);
-  constructor(private mailerService: MailerService) {
+  constructor(private mailerService: MailerService, private prisma: PrismaService) {
     super();
+  }
+
+  async setMailTransport() {
+    const emailSettings = await this.prisma.emailSettings.findFirst();
+    console.log("from mail processor", emailSettings);
+
+    this.mailerService.addTransporter("mail", {
+      host: emailSettings.smtpHost,
+      port: emailSettings.smtpPort,
+      auth: {
+        user: emailSettings.smtpUsername,
+        pass: emailSettings.smtpPassword,
+      },
+      from: emailSettings.smtpFrom,
+    })
+
   }
 
   @OnWorkerEvent('active')
@@ -23,12 +40,14 @@ export class MailProcessor extends WorkerHost {
   }
 
   async process(job: Job): Promise<any> {
+    await this.setMailTransport()
     this.logger.log(`Processing job ${job.id} with name ${job.name}`);
     try {
       switch (job.name) {
         case 'sendMemberInvitation':
           this.logger.log('Sending member invitation email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from,
             subject: job.data.subject,
@@ -39,6 +58,7 @@ export class MailProcessor extends WorkerHost {
         case 'sendOtpCodeToEmail':
           this.logger.log('Sending OTP code to email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from,
             subject: job.data.subject,
@@ -49,6 +69,7 @@ export class MailProcessor extends WorkerHost {
         case 'sendSupportEmail':
           this.logger.log('Sending support email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from || 'support@example.com',
             subject: job.data.subject || 'Support Request Received',
@@ -62,6 +83,7 @@ export class MailProcessor extends WorkerHost {
         case 'applicationSubmittedSuccess':
           this.logger.log('Sending success email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from || 'support@example.com',
             subject: job.data.subject || 'Success',
@@ -75,6 +97,7 @@ export class MailProcessor extends WorkerHost {
         case 'sendAccept':
           this.logger.log('Sending success email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from || 'support@example.com',
             subject: job.data.subject || 'Support Request Received',
@@ -88,6 +111,7 @@ export class MailProcessor extends WorkerHost {
         case 'sendReject':
           this.logger.log('Sending success email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from || 'support@example.com',
             subject: job.data.subject || 'Support Request Received',
@@ -102,6 +126,7 @@ export class MailProcessor extends WorkerHost {
         case 'sendInviteSuccess':
           this.logger.log('Sending success email');
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from || 'support@example.com',
             subject: job.data.subject || 'Congratualtions',
@@ -114,8 +139,11 @@ export class MailProcessor extends WorkerHost {
           break;
         case 'confirmAdminMail':
           this.logger.log('Sending success email');
+          console.log("job.data.to", job.data.to);
+
 
           await this.mailerService.sendMail({
+            transporterName: "mail",
             to: job.data.to,
             from: job.data.from || 'support@example.com',
             subject: job.data.subject || 'Congratualtions',
