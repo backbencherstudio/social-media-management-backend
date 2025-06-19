@@ -23,7 +23,7 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
     private _chatLog: any;
     private _blogCategory: any;
-  hashtags: any;
+    hashtags: any;
   
   public get blogCategory(): any {
     return this._blogCategory;

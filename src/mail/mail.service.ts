@@ -1,90 +1,72 @@
 import { Injectable } from '@nestjs/common';
-import appConfig from '../config/app.config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { MailerService } from '@nestjs-modules/mailer';
+import { EmailSettingsService } from 'src/modules/admin/email_settings/email_settings.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MailService {
   constructor(
-    @InjectQueue('mail2-queue') private queue: Queue,
-    private mailerService: MailerService,
-  ) { }
+    @InjectQueue('mail3-queue') private readonly queue: Queue,
+    private readonly emailSettingsService: EmailSettingsService,
+        private readonly prisma: PrismaService,
+  ) {}
 
-  async sendMemberInvitation({ user, member, url }) {
-    try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
-      const subject = `${user.fname} is inviting you to ${appConfig().app.name}`;
 
-      // add to queue
-      await this.queue.add('sendMemberInvitation', {
-        to: member.email,
-        from: from,
-        subject: subject,
-        template: 'member-invitation',
-        context: {
-          user: user,
-          member: member,
-          url: url,
-        },
-      });
-    } catch (error) {
-      console.log(error);
+  private async getFromAddress(): Promise<string> {
+    const emailSettings = await this.prisma.emailSettings.findUnique({
+      where: { id: 1 },  
+    });; 
+    if (!emailSettings) {
+      throw new Error('Email settings not found in the database.');
     }
+
+    return `${process.env.APP_NAME || 'Support'} <${emailSettings.smtpUsername}>`;
   }
 
-  // send otp code for email verification
   async sendOtpCodeToEmail({ name, email, otp }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = await this.getFromAddress();
       const subject = 'Email Verification';
 
-      // add to queue
       await this.queue.add('sendOtpCodeToEmail', {
         to: email,
-        from: from,
-        subject: subject,
+        from,
+        subject,
         template: 'email-verification',
-        context: {
-          name: name,
-          otp: otp,
-        },
+        context: { name, otp },
       });
     } catch (error) {
-      console.log(error);
+      console.error('Failed to queue OTP email:', error);
     }
   }
 
-  async sendVerificationLink(params: {
-    email: string;
-    name: string;
-    link: string;
-  }) {
+  async sendVerificationLink(params: { email: string; name: string; link: string }) {
+    try {
+      const from = await this.getFromAddress();
 
-    await this.mailerService.sendMail({
-      to: params.email,
-      subject: 'Verify Your Email',
-      template: './verification-link',
-      context: {
-        link: params.link,
-        name: params.name  // Add this line to pass the name to the template
-      },
-    });
+      await this.queue.add('sendVerificationLink', {
+        to: params.email,
+        from,
+        subject: 'Verify Your Email',
+        template: 'verification-link',
+        context: {
+          name: params.name,
+          link: params.link,
+        },
+      });
+    } catch (error) {
+      console.error(' Failed to queue verification link email:', error);
+    }
   }
 
-  async supportEmail(params: {
-    email: string;
-    name: string;
-    subject: string;
-    message: string;
-  }) {
+  async supportEmail(params: { email: string; name: string; subject: string; message: string }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = await this.getFromAddress();
 
-      //add queue
       await this.queue.add('sendSupportEmail', {
         to: params.email,
-        from: from,
+        from,
         subject: params.subject,
         template: 'support-email',
         context: {
@@ -92,90 +74,74 @@ export class MailService {
           message: params.message,
         },
       });
+
+      console.log(`Support email queued to: ${params.email}`);
     } catch (error) {
-      console.error('Failed to add support email to queue:', error);
+      console.error(' Failed to queue support email:', error);
+      throw error;
     }
   }
 
-
-  async submitSuccessEmail(params: {
-    email: string;
-    name: string;
-  }) {
+  async submitSuccessEmail(params: { email: string; name: string }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = await this.getFromAddress();
 
       await this.queue.add('applicationSubmittedSuccess', {
         to: params.email,
-        from: from,
+        from,
         subject: 'Your Application has been submitted successfully',
         template: 'submitted-success',
-        context: {
-          name: params.name,
-        },
+        context: { name: params.name },
       });
     } catch (error) {
-      console.error('Failed to queue application rejected email:', error);
+      console.error(' Failed to queue application submitted email:', error);
     }
   }
 
-
-  async applicationAcceptedEmail(params: {
-    email: string;
-    name: string;
-  }) {
+  async applicationAcceptedEmail(params: { email: string; name: string }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = await this.getFromAddress();
 
       await this.queue.add('sendAccept', {
         to: params.email,
-        from: from,
+        from,
         subject: 'Your Reseller Application Has Been Accepted!',
         template: 'accepted',
-        context: {
-          name: params.name,
-        },
+        context: { name: params.name },
       });
     } catch (error) {
-      console.error('Failed to queue application accepted email:', error);
+      console.error(' Failed to queue application accepted email:', error);
     }
   }
 
-  async applicationRejectedEmail(params: {
-    email: string;
-    name: string;
-    reason?: string;
-  }) {
+  async applicationRejectedEmail(params: { email: string; name: string; reason?: string }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = await this.getFromAddress();
 
       await this.queue.add('sendReject', {
         to: params.email,
-        from: from,
+        from,
         subject: 'Your Reseller Application Was Not Approved',
         template: 'rejected',
         context: {
           name: params.name,
-          reason: params.reason || 'We appreciate your interest, but your application did not meet our criteria at this time.',
+          reason:
+            params.reason ||
+            'We appreciate your interest, but your application did not meet our criteria at this time.',
         },
       });
     } catch (error) {
-      console.error('Failed to queue application rejected email:', error);
+      console.error(' Failed to queue application rejected email:', error);
     }
   }
 
-
-  async confirmAdminMail(params: {
-    email: string;
-    name: string;
-    password: string;
-  }) {
+  async confirmAdminMail(params: { email: string; name: string; password: string }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = await this.getFromAddress();
 
       await this.queue.add('confirmAdminMail', {
         to: params.email,
-        from: from,
+        from,
         subject: 'Congratulations! Now You are also an Admin',
         template: 'sendAdminReqEmai',
         context: {
@@ -185,10 +151,7 @@ export class MailService {
         },
       });
     } catch (error) {
-      console.error('Failed to queue admin email:', error);
+      console.error('Failed to queue admin confirmation email:', error);
     }
   }
-
-
-
 }

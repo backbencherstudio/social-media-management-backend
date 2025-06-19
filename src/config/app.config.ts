@@ -39,13 +39,6 @@ export default () => ({
     expiry: process.env.JWT_EXPIRY,
   },
 
-  mail: {
-    host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    user: process.env.MAIL_USERNAME,
-    password: process.env.MAIL_PASSWORD,
-    from: process.env.MAIL_FROM_NAME,
-  },
-
   auth: {
     google: {
       app_id: process.env.GOOGLE_APP_ID,

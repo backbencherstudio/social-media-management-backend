@@ -1,43 +1,64 @@
-import { MailerModule } from '@nestjs-modules/mailer';
 import { Global, Module } from '@nestjs/common';
+import { AdminModule } from 'src/modules/admin/admin.module';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
-import { MailService } from './mail.service';
-import appConfig from 'src/config/app.config';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { BullModule } from '@nestjs/bullmq';
 import { MailProcessor } from './processors/mail.processor';
+import { MailService } from './mail.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Global()
 @Module({
   imports: [
-    MailerModule.forRoot({
-      // transport: 'smtps://user@example.com:topsecret@smtp.example.com',
-      // or
-      transport: {
-        host: appConfig().mail.host,
-        secure: false,
-        auth: {
-          user: appConfig().mail.user,
-          pass: appConfig().mail.password,
-        },
-      },
-      defaults: {
-        from: appConfig().mail.from,
-      },
-      template: {
-        // dir: join(__dirname, 'templates'),
-        dir: process.cwd() + '/dist/mail/templates/',
-        // adapter: new HandlebarsAdapter(), // or new PugAdapter() or new EjsAdapter()
-        adapter: new EjsAdapter(),
-        options: {
-          // strict: true,
-        },
+    AdminModule,
+    MailerModule.forRootAsync({
+      imports: [AdminModule],
+      inject: [PrismaService],
+      useFactory: async (prismaService: PrismaService) => {
+        const emailSettings = await prismaService.emailSettings.findFirst();
+        console.log(emailSettings);
+
+        if (!emailSettings) {
+          throw new Error('Email settings not found in the database.');
+        }
+
+        console.log("emailSettings.smtpHost", emailSettings.smtpHost);
+
+
+        return {
+          transport: {
+            host: emailSettings.smtpHost,
+            port: emailSettings.smtpPort,
+            auth: {
+              user: emailSettings.smtpUsername,
+              pass: emailSettings.smtpPassword,
+            },
+            from: emailSettings.smtpFrom,
+          },
+          defaults: {
+            from: `"No Reply" <${emailSettings.smtpUsername}>`,
+          },
+          template: {
+            dir: process.cwd() + '/dist/mail/templates/',
+            adapter: new EjsAdapter(),
+            options: {
+
+            },
+          },
+        };
       },
     }),
+
+
     BullModule.registerQueue({
-      name: 'mail2-queue',
+      name: 'mail3-queue',
     }),
   ],
-  providers: [MailService, MailProcessor],
+  providers: [
+    MailService,
+    MailProcessor,
+  ],
+
   exports: [MailService],
 })
-export class MailModule {}
+export class MailModule { }

@@ -964,34 +964,6 @@ enum OrderStatus {
   pending
   canceled
 }
-
-// model Order {
-//    id             String    @id
-//    created_at     DateTime  @default(now())       
-   
-//    order_status     OrderStatus @default(progress)   
-//    subscription_id String?  
-//    subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
-//    user_id        String?  
-//    user           User?    @relation(fields: [user_id], references: [id]) 
-  
-//   service_tier_id String?
-//   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
-  
-//   ammount        Float?
-//   user_name      String?   
-//   user_email     String?
-//   role_name      String?   //this will be the role id's role name
-
-//   role_id          String?  
-//   role             Role? @relation(fields: [role_id], references: [id])
-  
-//   pakage_name   String? // this will be the service id's service name
-//   assignees       User[]       @relation("TaskAssaingees") 
-   
-//    @@map("orders") 
-// }
-
 enum clintStatus {
  active
  inactive
@@ -1027,6 +999,7 @@ model Order {
 
   @@map("orders") 
   order_assigns TaskAssign[]
+
 }
 
 
@@ -1038,12 +1011,14 @@ enum Status {
   pending
   canceled
   Clint_review
+  pending_review
 }
 
 model TaskAssign {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
 
+  assigned_by String? @default("Admin")
   user_id    String?
   user       User?     @relation(fields: [user_id], references: [id])
   reseller_id String?
@@ -1063,11 +1038,12 @@ model TaskAssign {
   status     Status @default(In_progress)
 
   assignees  Reseller[] @relation("TaskAssaingees")
-  
+
 
   @@map("task_assign")
 
 }
+//Reseller Task
 
 // user application for reseller role 
 enum applicationStatus {
@@ -1145,10 +1121,6 @@ model ResellerPayments {
 
 
   // admin dashboard TEAM
-
-
-
-
   model Team{
     id  String @id
     full_name  String?
