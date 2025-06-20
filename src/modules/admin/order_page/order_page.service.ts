@@ -16,6 +16,7 @@ async getAllOrders() {
     const orders = await this.prisma.order.findMany({
       select: {
         id: true, 
+        created_at:true,
         order_status: true, 
         subscription_id: true,
         ammount:true,

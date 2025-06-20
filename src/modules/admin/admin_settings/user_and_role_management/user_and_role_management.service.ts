@@ -62,7 +62,7 @@ export class UserAndRoleManagementService {
       });
 
       const updatedUser = await this.prisma.user.findUnique({
-        where: { id: user.id },
+        where: { email: user.email },
         select: {
           id: true,
           email: true,
