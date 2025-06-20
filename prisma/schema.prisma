@@ -9,9 +9,12 @@ datasource db {
 }
 
 model Account {
-  id                  String    @id @default(cuid())
-  expires_at          DateTime?
-  user_id             String
+  id         String    @id @default(cuid())
+  expires_at DateTime?
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   type                String?
   provider            String?
   provider_account_id String?
@@ -21,118 +24,149 @@ model Account {
   scope               String?
   id_token            String?
   session_state       String?
-  access_secret       String?
-  api_key             String?
-  api_secret          String?
-  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([provider, provider_account_id])
   @@map("accounts")
 }
 
 model User {
-  id                        String                  @id @default(cuid())
-  created_at                DateTime                @default(now())
-  updated_at                DateTime                @default(now())
-  deleted_at                DateTime?
-  status                    Int?                    @default(1) @db.SmallInt
-  approved_at               DateTime?
-  availability              String?
-  username                  String?                 @unique
-  first_name                String?                 @db.VarChar(255)
-  last_name                 String?                 @db.VarChar(255)
-  password                  String?                 @db.VarChar(255)
-  domain                    String?                 @unique
-  avatar                    String?
-  email                     String?                 @unique
-  name                      String?                 @db.VarChar(300)
-  phone_number              String?
-  location                  String?
-  position                  String?
-  experience_year           Int?
-  portfolio_url             String?
-  skills                    String?
-  cover_letter              String?
-  agreed_terms              Boolean                 @default(false)
-  country                   String?
-  state                     String?
-  city                      String?
-  address                   String?
-  zip_code                  String?
-  gender                    String?
-  date_of_birth             DateTime?               @db.Date
-  billing_id                String?
-  type                      String?                 @default("user")
-  email_verified_at         DateTime?
-  is_two_factor_enabled     Int?                    @default(0)
-  two_factor_secret         String?
-  creator_conversations     Conversation[]          @relation("creator")
-  participant_conversations Conversation[]          @relation("participant")
-  receiver_messages         Message[]               @relation("receiver")
-  sender_messages           Message[]               @relation("sender")
-  accounts                  Account[]
-  email_history_recipients  EmailHistoryRecipient[]
-  receiver_notifications    Notification[]          @relation("receiver")
-  sender_notifications      Notification[]          @relation("sender")
-  orders                    Order[]
-  payment_transactions      PaymentTransaction[]
-  ResellerApplication       ResellerApplication[]
-  Reseller                  Reseller[]
-  role_users                RoleUser[]
-  roles                     Role[]
-  services                  Service[]
-  subscriptions             Subscription[]
-  TaskAssign                TaskAssign[]
-  ucodes                    Ucode[]
-  user_payment_methods      UserPaymentMethod[]
-  user_settings             UserSetting[]
-
-  @@map("users")
-}
-
-model Ucode {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
+  deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
-  user_id    String?
+
+  approved_at  DateTime?
+  availability String?
+
+
+  username   String? @unique
+  first_name String? @db.VarChar(255)
+  last_name  String? @db.VarChar(255)
+  password   String? @db.VarChar(255)
+  domain     String? @unique
+  avatar     String?
+
+  email           String? @unique
+  name            String? @db.VarChar(300)
+  phone_number    String?
+  location        String?
+  position        String?
+  experience_year Int?
+  portfolio_url   String?
+  skills          String?
+  cover_letter    String?
+  agreed_terms    Boolean @default(false)
+
+
+  country       String?
+  state         String?
+  city          String?
+  address       String?
+  zip_code      String?
+  gender        String?
+  date_of_birth DateTime? @db.Date
+
+  // billing id. e.g. stripe customer id
+  billing_id String?
+
+  type              String?   @default("user") // user, admin, superadmin
+  email_verified_at DateTime?
+
+  is_two_factor_enabled Int?    @default(0)
+  two_factor_secret     String? // secret key for two factor authentication
+
+  accounts                  Account[]
+  
+  //message
+  creator_conversations     Conversation[] @relation("creator")
+  participant_conversations Conversation[] @relation("participant")
+  receiver_messages         Message[]      @relation("receiver")
+  sender_messages           Message[]      @relation("sender")
+
+  //notification
+  receiver_notifications    Notification[] @relation("receiver")
+  sender_notifications      Notification[] @relation("sender")
+
+  user_payment_methods     UserPaymentMethod[]
+  user_settings            UserSetting[]
+  ucodes                   Ucode[]
+  roles                    Role[]
+  role_users               RoleUser[]
+  payment_transactions     PaymentTransaction[]
+  services                 Service[]
+  subscriptions            Subscription[]
+  email_history_recipients EmailHistoryRecipient[]
+  orders                   Order[]
+
+
+  ResellerApplication ResellerApplication[]
+  Reseller Reseller[]
+  TaskAssign TaskAssign[]
+
+
+  @@map("users")
+
+
+
+
+
+}
+
+
+
+
+model Ucode {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  status     Int?     @default(1) @db.SmallInt
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
   token      String?
   email      String?
   expired_at DateTime?
-  user       User?     @relation(fields: [user_id], references: [id])
 
   @@map("ucodes")
 }
 
 model Role {
-  id               String           @id @default(cuid())
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @default(now())
-  deleted_at       DateTime?
-  status           Int?             @default(1) @db.SmallInt
-  title            String?          @default("user")
-  name             String?          @default("user")
-  user_id          String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int?    @default(1) @db.SmallInt
+  title  String? @default("user")
+  name   String? @default("user")
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   permission_roles PermissionRole[]
   role_users       RoleUser[]
-  user             User?            @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  TaskAssign       TaskAssign[]
   permissions      Permission[]     @relation("PermissionToRole")
 
   @@map("roles")
+  TaskAssign TaskAssign[]
 }
 
 model Permission {
-  id               String           @id @default(cuid())
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @default(now())
-  deleted_at       DateTime?
-  status           Int?             @default(1) @db.SmallInt
-  title            String?
-  action           String?
-  subject          String?
-  conditions       String?
-  fields           String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int? @default(1) @db.SmallInt
+
+  title      String?
+  action     String?
+  subject    String?
+  conditions String?
+  fields     String?
+
   permission_roles PermissionRole[]
   roles            Role[]           @relation("PermissionToRole")
 
@@ -140,12 +174,14 @@ model Permission {
 }
 
 model PermissionRole {
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
   permission_id String
-  role_id       String
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-  role          Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  role_id String
+  role    Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
 
   @@id([permission_id, role_id])
   @@map("permission_roles")
@@ -154,130 +190,170 @@ model PermissionRole {
 model RoleUser {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
-  role_id    String
-  user_id    String
-  role       Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  role_id String
+  role    Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, user_id])
   @@map("role_users")
 }
 
 model NotificationEvent {
-  id            String         @id @default(cuid())
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @default(now())
-  deleted_at    DateTime?
-  status        Int?           @default(1) @db.SmallInt
-  type          String?
-  text          String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int?    @default(1) @db.SmallInt
+  type   String?
+  text   String?
+
   notifications Notification[]
 
   @@map("notification_events")
 }
 
 model Notification {
-  id                    String             @id @default(cuid())
-  created_at            DateTime           @default(now())
-  updated_at            DateTime           @default(now())
-  deleted_at            DateTime?
-  status                Int?               @default(1) @db.SmallInt
-  sender_id             String?
-  receiver_id           String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int? @default(1) @db.SmallInt
+
+  sender_id String?
+  sender    User?   @relation("sender", fields: [sender_id], references: [id])
+
+  receiver_id String?
+  receiver    User?   @relation("receiver", fields: [receiver_id], references: [id])
+
   notification_event_id String?
-  entity_id             String?
-  read_at               DateTime?
   notification_event    NotificationEvent? @relation(fields: [notification_event_id], references: [id])
-  receiver              User?              @relation("receiver", fields: [receiver_id], references: [id])
-  sender                User?              @relation("sender", fields: [sender_id], references: [id])
+
+  entity_id String?
+  read_at   DateTime?
 
   @@map("notifications")
 }
 
 model UserPaymentMethod {
-  id                String    @id @default(cuid())
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @default(now())
-  deleted_at        DateTime?
-  user_id           String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
   payment_method_id String?
   checkout_id       String?
-  user              User?     @relation(fields: [user_id], references: [id])
 
   @@map("user_payment_methods")
 }
 
 model PaymentTransaction {
-  id               String        @id @default(cuid())
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @default(now())
-  deleted_at       DateTime?
-  status           String?       @default("pending")
-  user_id          String?
-  subscription_id  String?
-  type             String?       @default("order")
-  withdraw_via     String?       @default("wallet")
-  provider         String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     String?   @default("pending")
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  subscription_id String?
+  subscription    Subscription? @relation(fields: [subscription_id], references: [id])
+
+  type         String? @default("order")
+  withdraw_via String? @default("wallet")
+
+  provider String? // stripe, paypal, etc.
+
   reference_number String?
   raw_status       String?
   amount           Decimal?
   currency         String?
   paid_amount      Decimal?
   paid_currency    String?
-  subscription     Subscription? @relation(fields: [subscription_id], references: [id])
-  user             User?         @relation(fields: [user_id], references: [id])
 
   @@map("payment_transactions")
 }
 
+
 model Conversation {
-  id             String    @id @default(cuid())
-  creator_id     String
-  participant_id String
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @default(now())
-  creator        User      @relation("creator", fields: [creator_id], references: [id])
-  participant    User      @relation("participant", fields: [participant_id], references: [id])
-  messages       Message[]
+  id              String    @id @default(cuid())
+  creator_id      String
+  participant_id  String
+  creator         User      @relation("creator", fields: [creator_id], references: [id])
+  participant     User      @relation("participant", fields: [participant_id], references: [id])
+  messages        Message[]
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
 }
 
 model Message {
-  id                  String                @id @default(cuid())
-  sender_id           String
-  receiver_id         String
-  conversation_id     String
-  message             String
-  status              MessageStatus         @default(PENDING)
-  created_at          DateTime              @default(now())
-  updated_at          DateTime              @default(now())
-  conversation        Conversation          @relation(fields: [conversation_id], references: [id])
-  receiver            User                  @relation("receiver", fields: [receiver_id], references: [id])
-  sender              User                  @relation("sender", fields: [sender_id], references: [id])
-  AttachmentToMessage AttachmentToMessage[]
+  id              String    @id @default(cuid())
+  sender_id       String
+  receiver_id     String
+  conversation_id String
+  message         String
+  status          MessageStatus @default(PENDING)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+
+  sender          User      @relation("sender", fields: [sender_id], references: [id])
+  receiver        User      @relation("receiver", fields: [receiver_id], references: [id])
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+
+  Attachment Attachment[]
 }
 
+
+
+
+
+
+
+
+
 model Attachment {
-  id                  String                @id @default(cuid())
-  created_at          DateTime              @default(now())
-  updated_at          DateTime              @default(now())
-  deleted_at          DateTime?
-  name                String?
-  type                String?
-  size                Int?
-  file                String?
-  file_alt            String?
-  AttachmentToMessage AttachmentToMessage[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  name String?
+  type String?
+
+  size     Int?
+  file     String?
+  file_alt String?
+
+  messages Message[]
 
   @@map("attachments")
 }
+
+
 
 model Faq {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
-  sort_order Int?      @default(0)
+
+  status     Int?    @default(1) @db.SmallInt
+  sort_order Int?    @default(0)
   question   String?
   answer     String?
 
@@ -285,10 +361,11 @@ model Faq {
 }
 
 model Contact {
-  id           String    @id @default(cuid())
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @default(now())
-  deleted_at   DateTime?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
   first_name   String?
   last_name    String?
   email        String?
@@ -298,13 +375,16 @@ model Contact {
   @@map("contacts")
 }
 
+//reseller
+
 model SocialMedia {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
-  sort_order Int?      @default(0)
+
+  status     Int?    @default(1) @db.SmallInt
+  sort_order Int?    @default(0)
   name       String?
   url        String?
   icon       String?
@@ -313,16 +393,18 @@ model SocialMedia {
 }
 
 model WebsiteInfo {
-  id                  String    @id @default(cuid())
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @default(now())
-  deleted_at          DateTime?
-  site_name           String?
-  site_description    String?
-  time_zone           String
-  phone_number        String?
-  email               String?
-  address             String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  site_name        String?
+  site_description String?
+  time_zone        String
+  phone_number     String?
+  email            String?
+  address          String?
+
   logo                String?
   favicon             String?
   copyright           String?
@@ -332,15 +414,18 @@ model WebsiteInfo {
 }
 
 model Setting {
-  id            String        @id @default(cuid())
-  created_at    DateTime      @default(now())
-  updated_at    DateTime      @default(now())
-  deleted_at    DateTime?
-  category      String?
-  label         String?
-  description   String?
-  key           String?       @unique
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  category    String?
+  label       String?
+  description String?
+
+  key           String? @unique
   default_value String?
+
   user_settings UserSetting[]
 
   @@map("settings")
@@ -351,216 +436,281 @@ model UserSetting {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  user_id    String?
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
   setting_id String?
-  value      String?
-  setting    Setting?  @relation(fields: [setting_id], references: [id])
-  user       User?     @relation(fields: [user_id], references: [id])
+  setting    Setting? @relation(fields: [setting_id], references: [id])
+
+  value String?
 
   @@map("user_settings")
 }
 
+// this table stores service category
 model Category {
-  id                 String            @id @default(cuid())
-  created_at         DateTime          @default(now())
-  updated_at         DateTime          @default(now())
-  deleted_at         DateTime?
-  status             Int?              @default(1) @db.SmallInt
-  name               String?
-  slug               String?           @unique
-  service_categories ServiceCategory[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String? // values: Post, Videos, Email, Blogs
+  slug String? @unique
+
   services           Service[]
+  service_categories ServiceCategory[]
 
   @@map("categories")
 }
 
+// this table stores service category relation
 model ServiceCategory {
-  created_at  DateTime @default(now())
-  updated_at  DateTime @default(now())
-  service_id  String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id])
+
   category_id String
-  category    Category @relation(fields: [category_id], references: [id])
-  service     Service  @relation(fields: [service_id], references: [id])
+  category    Category? @relation(fields: [category_id], references: [id])
 
   @@id([service_id, category_id])
   @@map("service_categories")
 }
 
+// this table stores service
 model Service {
-  id                 String            @id @default(cuid())
-  created_at         DateTime          @default(now())
-  updated_at         DateTime          @default(now())
-  deleted_at         DateTime?
-  status             Int?              @default(1) @db.SmallInt
-  name               String?
-  description        String?
-  user_id            String?
-  category_id        String?
-  addons             Addon[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name        String?
+  description String?
+
+  // seller id
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  category_id String?
+  category    Category? @relation(fields: [category_id], references: [id])
+
   service_categories ServiceCategory[]
-  service_features   ServiceFeature[]
-  service_tiers      ServiceTier[]
-  category           Category?         @relation(fields: [category_id], references: [id])
-  user               User?             @relation(fields: [user_id], references: [id])
   subscriptions      Subscription[]
+  service_tiers      ServiceTier[]
+  service_features   ServiceFeature[]
+  addons             Addon[]
 
   @@map("services")
 }
 
+// this table stores features
 model Feature {
-  id               String           @id @default(cuid())
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @default(now())
-  deleted_at       DateTime?
-  status           Int?             @default(1) @db.SmallInt
-  name             String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String?
+
   service_features ServiceFeature[]
 
   @@map("features")
 }
 
+// this table stores service feature relation
 model ServiceFeature {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
+
   service_id String
+  service    Service? @relation(fields: [service_id], references: [id])
+
   feature_id String
-  feature    Feature  @relation(fields: [feature_id], references: [id])
-  service    Service  @relation(fields: [service_id], references: [id])
+  feature    Feature? @relation(fields: [feature_id], references: [id])
 
   @@id([service_id, feature_id])
   @@map("service_features")
 }
 
+// this table stores service tier
 model ServiceTier {
-  id            String         @id @default(cuid())
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @default(now())
-  deleted_at    DateTime?
-  status        Int?           @default(1) @db.SmallInt
-  name          String?
-  service_id    String
-  price         Float?
-  max_post      Int?
-  orders        Order[]
-  service       Service        @relation(fields: [service_id], references: [id], onDelete: Cascade)
-  subscriptions Subscription[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String? // "Basic", "Pro" or just Post count: "10", "15", "20"
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  // price per month
+  price Float?
+
+  max_post Int?
+
+subscriptions Subscription[]
+orders        Order[]
 
   @@map("service_tiers")
 }
 
+// this table stores Addon
 model Addon {
-  id                  String              @id @default(cuid())
-  created_at          DateTime            @default(now())
-  updated_at          DateTime            @default(now())
-  deleted_at          DateTime?
-  status              Int?                @default(1) @db.SmallInt
-  name                String?
-  description         String?
-  price               Float?
-  max_count           Int?
-  service_id          String
-  service             Service             @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name        String? // e.g., "Instagram Story", "Carousel Post"
+  description String?
+  // e.g. $10 per unit per month
+  price       Float?
+  max_count   Int? // how many can be used in a month (optional)
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
   subscription_addons SubscriptionAddon[]
 
   @@map("addons")
 }
 
+// this table stores Channel
 model Channel {
-  id                    String                @id @default(cuid())
-  created_at            DateTime              @default(now())
-  updated_at            DateTime              @default(now())
-  deleted_at            DateTime?
-  status                Int?                  @default(1) @db.SmallInt
-  name                  String?               @unique
-  post_channels         PostChannel[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String? @unique // e.g., "Instagram", "Facebook", "TikTok"
+
   subscription_channels SubscriptionChannel[]
+  post_channels         PostChannel[]
 
   @@map("channels")
 }
 
+// user subscription
+enum SubscriptionStatus {
+  active
+  canceled
+  expired
+  pending
+  deactive
+}
 model Subscription {
-  id                    String                @id @default(cuid())
-  created_at            DateTime              @default(now())
-  updated_at            DateTime              @default(now())
-  status                SubscriptionStatus    @default(active)
-  service_tier_id       String
-  service_id            String
-  start_at              DateTime
-  end_at                DateTime
-  user_id               String?
-  posts_used            Int?                  @default(0)
-  orders                Order[]
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  status SubscriptionStatus @default(active)
+
+
+  service_tier_id String
+  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
+
+  service_id String
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  start_at DateTime
+  end_at   DateTime
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  posts_used Int? @default(0) // track usage
+
   payment_transactions  PaymentTransaction[]
   subscription_addons   SubscriptionAddon[]
   subscription_channels SubscriptionChannel[]
-  service               Service               @relation(fields: [service_id], references: [id], onDelete: Cascade)
-  service_tier          ServiceTier           @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
-  user                  User?                 @relation(fields: [user_id], references: [id])
+    orders                   Order[]
 
   @@map("subscriptions")
 }
 
+// this table stores Subscription and Addon relation
 model SubscriptionAddon {
-  id              String       @id @default(cuid())
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @default(now())
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
   subscription_id String
-  addon_id        String
-  quantity        Int          @default(1)
-  used_count      Int          @default(0)
-  addon           Addon        @relation(fields: [addon_id], references: [id], onDelete: Cascade)
-  subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+  subscription    Subscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  addon_id String
+  addon    Addon? @relation(fields: [addon_id], references: [id], onDelete: Cascade)
+
+  quantity   Int @default(1) // number of units purchased (e.g. 5 stories)
+  used_count Int @default(0)
 
   @@map("subscription_addons")
 }
 
+// this table stores Subscription and channel relation
 model SubscriptionChannel {
-  id              String       @id @default(cuid())
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @default(now())
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
   subscription_id String
-  channel_id      String
-  is_free         Int?         @default(1)
-  price           Float?
-  channel         Channel      @relation(fields: [channel_id], references: [id], onDelete: Cascade)
-  subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+  subscription    Subscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  channel_id String
+  channel    Channel? @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+
+  is_free Int?   @default(1) //  1 if included in base tier, 0 if paid
+  price   Float? // only applies if is_free = 0
 
   @@map("subscription_channel")
 }
 
+// social media schedule post
 model Post {
-  id                String            @id @default(cuid())
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @default(now())
-  deleted_at        DateTime?
-  status            Int?              @default(0) @db.SmallInt
-  schedule_at       DateTime?
-  content           String?
-  hashtags          String[]
-  feedback          String?
-  task_id           String?
-  post_channels     PostChannel[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  schedule_at DateTime?
+
+  content String? @db.Text
+
+  hashtags String[]
+
   post_files        PostFile[]
+  post_channels     PostChannel[]
   post_performances PostPerformance[]
-  task              TaskAssign?       @relation(fields: [task_id], references: [id])
 
   @@map("posts")
 }
 
+// this table stores schedule post channel
 model PostChannel {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
-  post_id    String
+
+  post_id String
+  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
   channel_id String
-  channel    Channel   @relation(fields: [channel_id], references: [id], onDelete: Cascade)
-  post       Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  channel    Channel? @relation(fields: [channel_id], references: [id], onDelete: Cascade)
 
   @@map("post_channels")
 }
 
+// this table stores post media
 model PostFile {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -568,95 +718,119 @@ model PostFile {
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
   sort_order Int?      @default(0)
-  post_id    String?
-  name       String?
-  type       String?
-  size       Int?
-  file_path  String?
-  file_alt   String?
-  post       Post?     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  post_id String?
+  post    Post?   @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  // metadata
+  name String?
+  type String? // e.g. image, video
+
+  size      Int?
+  file_path String?
+  file_alt  String?
 
   @@map("post_files")
 }
 
+// this table stores blog
 model Blog {
-  id                   String             @id @default(cuid())
-  created_at           DateTime           @default(now())
-  updated_at           DateTime           @default(now())
-  deleted_at           DateTime?
-  status               Boolean?           @default(false)
-  title                String?
-  hashtags             String[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Boolean?   @default(false)
+
+  title    String?
+  hashtags String[]
+
   blog_blog_categories BlogBlogCategory[]
   blog_contents        BlogContent[]
 
   @@map("blogs")
 }
 
+// this table stores blog content
 model BlogContent {
-  id           String     @id @default(cuid())
-  created_at   DateTime   @default(now())
-  updated_at   DateTime   @default(now())
-  deleted_at   DateTime?
-  status       Int?       @default(1) @db.SmallInt
-  blog_id      String?
-  content_type String?
-  content      String?
-  blog         Blog?      @relation(fields: [blog_id], references: [id], onDelete: Cascade)
-  blog_files   BlogFile[]
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  blog_id String?
+  blog    Blog?   @relation(fields: [blog_id], references: [id], onDelete: Cascade)
+
+  content_type String? // text, media
+  content      String? @db.Text
+
+  blog_files BlogFile[]
 
   @@map("blog_contents")
 }
 
+// this table stores blog category
 model BlogCategory {
-  id                   String             @id @default(cuid())
-  created_at           DateTime           @default(now())
-  updated_at           DateTime           @default(now())
-  deleted_at           DateTime?
-  status               Int?               @default(1) @db.SmallInt
-  name                 String?
-  slug                 String?            @unique
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
+  name String? // values: Post, Videos, Email, Blogs
+  slug String? @unique
+
   blog_blog_categories BlogBlogCategory[]
 
   @@map("blog_categories")
 }
 
+// this table stores blog and blog category
 model BlogBlogCategory {
-  created_at       DateTime     @default(now())
-  updated_at       DateTime     @default(now())
-  blog_id          String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  blog_id String
+  blog    Blog?  @relation(fields: [blog_id], references: [id])
+
   blog_category_id String
-  blog_category    BlogCategory @relation(fields: [blog_category_id], references: [id])
-  blog             Blog         @relation(fields: [blog_id], references: [id])
+  blog_category    BlogCategory? @relation(fields: [blog_category_id], references: [id])
 
   @@id([blog_id, blog_category_id])
   @@map("blog_blog_categories")
 }
 
+// this table stores post media
 model BlogFile {
-  id              String       @id @default(cuid())
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @default(now())
-  deleted_at      DateTime?
-  status          Int?         @default(1) @db.SmallInt
-  sort_order      Int?         @default(0)
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+  sort_order Int?      @default(0)
+
   blog_content_id String?
-  name            String?
-  type            String?
-  size            Int?
-  file_path       String?
-  file_alt        String?
   blog_content    BlogContent? @relation(fields: [blog_content_id], references: [id], onDelete: Cascade)
+
+  // metadata
+  name String?
+  type String? // e.g. image, video
+
+  size      Int?
+  file_path String?
+  file_alt  String?
 
   @@map("blog_files")
 }
 
+//admin_settings 
 model WithdrawalSettings {
-  id                          String    @id @default(cuid())
-  created_at                  DateTime  @default(now())
-  updated_at                  DateTime  @default(now())
-  deleted_at                  DateTime?
-  status                      Int?      @default(1) @db.SmallInt
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
   minimum_withdrawal_amount   Float
   withdrawal_processing_fee   Float
   withdrawal_processing_time  String
@@ -669,11 +843,12 @@ model WithdrawalSettings {
 }
 
 model SecuritySettings {
-  id                    String    @id @default("1")
-  created_at            DateTime  @default(now())
-  updated_at            DateTime  @default(now())
-  deleted_at            DateTime?
-  status                Int?      @default(1) @db.SmallInt
+  id         String    @id @default("1")
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+
   data_export_backup    Int
   session_timeout       Int
   failed_login_attempts Int
@@ -682,62 +857,78 @@ model SecuritySettings {
   @@map("security_settings")
 }
 
+// chat_bot
 model ChatLog {
   id         Int      @id @default(autoincrement())
   created_at DateTime @default(now())
-  message    String
-  response   String
+
+  message  String
+  response String
 
   @@map("chat_log")
 }
 
+// this table stores Email history
 model EmailHistory {
-  id                       String                  @id @default(cuid())
-  created_at               DateTime                @default(now())
-  updated_at               DateTime                @default(now())
-  deleted_at               DateTime?
-  status                   Int?                    @default(1) @db.SmallInt
-  sort_order               Int?                    @default(0)
-  type                     String?
-  subject                  String?
-  body                     String?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
+  sort_order Int?      @default(0)
+
+  type    String? // Password Reset, Email Verification, etc.
+  subject String?
+  body    String? @db.Text
+
   email_history_recipients EmailHistoryRecipient[]
 
   @@map("email_histories")
 }
 
+// this table stores Email history recipient
 model EmailHistoryRecipient {
-  id               String       @id @default(cuid())
-  created_at       DateTime     @default(now())
-  updated_at       DateTime     @default(now())
-  deleted_at       DateTime?
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
   email_history_id String
-  recipient_id     String
-  email_history    EmailHistory @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
-  recipient        User         @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+  email_history    EmailHistory? @relation(fields: [email_history_id], references: [id], onDelete: Cascade)
+
+  recipient_id String
+  recipient    User?  @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
 
   @@map("email_history_recipients")
 }
 
+//EMAIL settings 
+
 model EmailSettings {
-  id           Int      @id @default(autoincrement())
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  smtpHost     String
-  smtpPort     Int
-  smtpUsername String
-  smtpPassword String
-  smtpFrom     String
+  id             Int    @id @default(autoincrement())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  smtpHost       String
+  smtpPort       Int
+  smtpUsername   String
+  smtpPassword   String
+  smtpFrom       String
 
   @@map("email_settings")
+
 }
 
+
+// this table stores Post performance
 model PostPerformance {
-  id              String    @id @default(cuid())
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @default(now())
-  deleted_at      DateTime?
-  post_id         String
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  post_id String
+  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
   platform        String?
   likes           Int?
   comments        Int?
@@ -746,189 +937,74 @@ model PostPerformance {
   impressions     Int?
   clicks          Int?
   engagement_rate Float?
-  post            Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
 
   @@map("post_performances")
 }
 
-model Order {
-  id              String        @id
-  created_at      DateTime      @default(now())
-  order_status    OrderStatus   @default(progress)
-  subscription_id String?
-  user_id         String?
-  status          clintStatus   @default(active)
-  service_tier_id String?
-  ammount         Float?
-  user_name       String?
-  user_email      String?
-  pakage_name     String?
-  payment_status  paymentStatus @default(pending)
-  service_tier    ServiceTier?  @relation(fields: [service_tier_id], references: [id])
-  subscription    Subscription? @relation(fields: [subscription_id], references: [id])
-  user            User?         @relation(fields: [user_id], references: [id])
-  order_assigns   TaskAssign[]
+// this table stores example
+// model Note {
+//   id                String  @id @default(cuid())
+//   created_at DateTime  @default(now())
+//   updated_at DateTime  @default(now())
+//   deleted_at DateTime?
+//   status     Int?      @default(1) @db.SmallInt
 
-  @@map("orders")
-}
+//   title String?
+//   body  String? @db.Text
 
-model TaskAssign {
-  id          String     @id @default(cuid())
-  created_at  DateTime   @default(now())
-  user_id     String?
-  reseller_id String?
-  order_id    String?
-  role_name   String?
-  role_id     String?
-  ammount     Float?
-  note        String?
-  user_name   String?
-  due_date    String?
-  status      Status     @default(In_progress)
-  assigned_by String?    @default("Admin")
-  posts       Post[]
-  order       Order?     @relation(fields: [order_id], references: [id])
-  role        Role?      @relation(fields: [role_id], references: [id])
-  user        User?      @relation(fields: [user_id], references: [id])
-  assignees   Reseller[] @relation("TaskAssaingees")
+//   tenant_id Int?
+//   tenant    Organization? @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+//   @@map("notes")
+// }
 
-  @@map("task_assign")
-}
-
-model ResellerApplication {
-  applicationId String            @id @default(cuid())
-  created_at    DateTime          @default(now())
-  user_id       String
-  full_name     String?
-  user_email    String?
-  phone_number  Int?
-  location      String?
-  position      String?
-  experience    Int?
-  cover_letter  String?
-  portfolio     String?
-  skills        String[]
-  status        applicationStatus
-  resellers     resellers[]
-  user          User              @relation(fields: [user_id], references: [id])
-
-  @@map("reseller_application")
-}
-
-model Reseller {
-  reseller_id      String             @id
-  user_id          String?
-  user_type        String?
-  full_name        String?
-  user_email       String?
-  skills           String[]
-  total_task       Int                @default(0)
-  complete_tasks   Int                @default(0)
-  total_earnings   Float              @default(0)
-  status           ResellerStatus     @default(active)
-  resellers        resellers[]
-  user             User?              @relation(fields: [user_id], references: [id])
-  ResellerPayments ResellerPayments[]
-  TaskAssign       TaskAssign[]       @relation("TaskAssaingees")
-
-  @@map("resellers")
-}
-
-model ResellerPayments {
-  id           String              @id @default(cuid())
-  reseller_id  String?
-  status       ResellerPayemntStat
-  task_ammount Float?
-  reseller     Reseller?           @relation(fields: [reseller_id], references: [reseller_id])
-
-  @@map("resellers_payment")
-}
-
-model DesignFile {
-  id         String            @id @default(cuid())
-  created_at DateTime          @default(now())
-  updated_at DateTime          @default(now())
-  deleted_at DateTime?
-  content    String?
-  status     Int?              @default(1)
-  assets     DesignFileAsset[]
-}
-
-model DesignFileAsset {
-  id             String      @id @default(cuid())
-  created_at     DateTime    @default(now())
-  updated_at     DateTime    @default(now())
-  name           String
-  type           String
-  file_path      String
-  size           Int?
-  design_file_id String?
-  design_file    DesignFile? @relation(fields: [design_file_id], references: [id])
-}
-
-model Team {
-  id        String  @id
-  full_name String?
-  email     String? @unique
-  role      String?
-  password  String?
-}
-
-model AttachmentToMessage {
-  A           String
-  B           String
-  attachments Attachment @relation(fields: [A], references: [id], onDelete: Cascade)
-  Message     Message    @relation(fields: [B], references: [id], onDelete: Cascade)
-
-  @@id([A, B], map: "_AttachmentToMessage_AB_pkey")
-  @@index([B], map: "_AttachmentToMessage_B_index")
-  @@map("_AttachmentToMessage")
-}
-
-model resellers {
-  A                    String
-  B                    String
-  resellers            Reseller            @relation(fields: [A], references: [reseller_id], onDelete: Cascade)
-  reseller_application ResellerApplication @relation(fields: [B], references: [applicationId], onDelete: Cascade)
-
-  @@id([A, B], map: "_resellers_AB_pkey")
-  @@index([B], map: "_resellers_B_index")
-  @@map("_resellers")
-}
-
-enum MessageStatus {
-  PENDING
-  SENT
-  DELIVERED
-  READ
-}
-
-enum SubscriptionStatus {
-  active
-  canceled
-  expired
-  pending
-  deactive
-}
-
+//admin_order
 enum OrderStatus {
   progress
   completed
   pending
   canceled
 }
-
 enum clintStatus {
-  active
-  inactive
+ active
+ inactive
 }
-
 enum paymentStatus {
-  paid
-  pending
-  due
+ paid
+ pending
+ due
+}
+model Order {
+  id               String    @id
+  created_at       DateTime  @default(now())       
+
+  order_status     OrderStatus @default(progress)   
+
+  subscription_id  String?  
+  subscription     Subscription? @relation(fields: [subscription_id], references: [id]) 
+
+  user_id          String?  
+  user             User?    @relation(fields: [user_id], references: [id]) 
+
+  status           clintStatus  @default(active) 
+  
+  service_tier_id  String?
+  service_tier     ServiceTier? @relation(fields: [service_tier_id], references: [id])
+
+  ammount          Float?
+  user_name        String?   
+  user_email       String?   
+  pakage_name      String?   
+  payment_status   paymentStatus @default(pending)
+ 
+
+  @@map("orders") 
+  order_assigns TaskAssign[]
+
 }
 
+
+
+//admisn_dashboard_assign_tasks and Task management
 enum Status {
   In_progress
   completed
@@ -938,18 +1014,118 @@ enum Status {
   pending_review
 }
 
-enum applicationStatus {
-  accepted
-  pending
-  rejected
+model TaskAssign {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+
+  assigned_by String? @default("Admin")
+  user_id    String?
+  user       User?     @relation(fields: [user_id], references: [id])
+  reseller_id String?
+
+  order_id   String?  
+  order      Order?    @relation(fields: [order_id], references: [id])
+
+  role_name        String?   
+  role_id          String?  
+  role             Role?     @relation(fields: [role_id], references: [id]) 
+
+  ammount          Float?
+  note             String?
+  post_count      Int? @default(0)
+  post_type       String? // e.g. "Instagram", "Facebook", "TikTok"
+  user_name  String?
+  due_date   String?
+  status     Status @default(In_progress)
+
+  assignees  Reseller[] @relation("TaskAssaingees")
+
+
+  @@map("task_assign")
+
 }
+//Reseller Task
+
+// user application for reseller role 
+enum applicationStatus {
+accepted
+pending
+rejected
+}
+model ResellerApplication{
+    applicationId  String  @id @default(cuid())
+    created_at DateTime  @default(now())
+    user_id String 
+    user    User?   @relation(fields: [user_id], references: [id])
+    full_name       String?
+    user_email      String?
+    phone_number    Int?
+    location        String?
+    position        String?
+    experience      Int?
+    cover_letter    String?
+    portfolio       String?
+    skills          String[]
+    status          applicationStatus 
+
+    
+    @@map("reseller_application")
+    
+    Reseller Reseller[] @relation("resellers")
+}
+
+//admin dashboard reseller
 
 enum ResellerStatus {
-  active
-  deactive
+active
+deactive
 }
 
-enum ResellerPayemntStat {
-  pending
-  paid
+model Reseller {
+    reseller_id  String @id
+    user_id  String?
+    user    User?   @relation(fields: [user_id], references: [id])
+    user_type  String?
+    full_name  String?
+    user_email  String?
+    skills       String[] 
+    total_task  Int @default(0)
+    complete_tasks Int @default(0)
+    total_earnings Float @default(0)
+    status  ResellerStatus @default(active)
+
+    reseller_application ResellerApplication[]  @relation("resellers")
+    TaskAssign TaskAssign[] @relation("TaskAssaingees")
+    
+
+    @@map("resellers")
+
+      
+   
+    ResellerPayments ResellerPayments[]
 }
+
+
+enum ResellerPayemntStat {
+pending
+paid
+}
+model ResellerPayments {
+  id                String  @id @default(cuid())
+  reseller_id       String?          
+  reseller          Reseller?          @relation(fields: [reseller_id], references: [reseller_id]) 
+  status           ResellerPayemntStat
+  task_ammount      Float?
+
+  @@map("resellers_payment")
+}
+
+
+  // admin dashboard TEAM
+  model Team{
+    id  String @id
+    full_name  String?
+    email      String? @unique
+    role      String?
+    password  String?
+  }
