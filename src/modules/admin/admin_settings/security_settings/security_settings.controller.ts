@@ -6,7 +6,7 @@ import { UpdateSecuritySettingsDto } from './dto/update-security_setting.dto';
 export class SecuritySettingsController {
   constructor(private readonly service: SecuritySettingsService) {}
 
-  @Get()
+  @Get('all')
   async getSettings() {
     try {
       const response = await this.service.get();

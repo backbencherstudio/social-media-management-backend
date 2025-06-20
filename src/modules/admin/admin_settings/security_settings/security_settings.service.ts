@@ -46,8 +46,43 @@ async get() {
 }
 
 // PATCH: Update security settings
-async update(data: UpdateSecuritySettingsDto) {
+// async update(data: UpdateSecuritySettingsDto) {
+//   try {
+//     const {
+//       dataExportBackup,
+//       sessionTimeout,
+//       failedLoginAttempts,
+//       passwordExpiry,
+//     } = data;
+
+//     if (!this.SecuritySettingsOptions.data_export_backup.includes(dataExportBackup)) {
+//       throw new BadRequestException('Invalid dataExportBackup');
+//     }
+//     if (!this.SecuritySettingsOptions.session_timeout.includes(sessionTimeout)) {
+//       throw new BadRequestException('Invalid sessionTimeout');
+//     }
+//     if (!this.SecuritySettingsOptions.failed_login_attempts.includes(failedLoginAttempts)) {
+//       throw new BadRequestException('Invalid failedLoginAttempts');
+//     }
+//     if (!this.SecuritySettingsOptions.password_expiry.includes(passwordExpiry)) {
+//       throw new BadRequestException('Invalid passwordExpiry');
+//     }
+
+//     const updated = await this.prisma.securitySettings.update({
+//       where: { id: "1" },
+//       data,
+//     });
+
+//     return updated;
+//   } catch (error) {
+//     throw new InternalServerErrorException(
+//       error.message || 'Failed to update security settings.',
+//     );
+//   }
+// }
+  async update(data: UpdateSecuritySettingsDto) {
   try {
+    // Destructure and validate the values from the DTO
     const {
       dataExportBackup,
       sessionTimeout,
@@ -55,6 +90,7 @@ async update(data: UpdateSecuritySettingsDto) {
       passwordExpiry,
     } = data;
 
+    // Ensure the values are valid by checking predefined options (if necessary)
     if (!this.SecuritySettingsOptions.data_export_backup.includes(dataExportBackup)) {
       throw new BadRequestException('Invalid dataExportBackup');
     }
@@ -68,9 +104,15 @@ async update(data: UpdateSecuritySettingsDto) {
       throw new BadRequestException('Invalid passwordExpiry');
     }
 
+    // Map the DTO field names to Prisma schema field names
     const updated = await this.prisma.securitySettings.update({
-      where: { id: "1" },
-      data,
+      where: { id: "1" },  // Ensure that you're updating the correct record
+      data: {
+        data_export_backup: dataExportBackup,  // Map to the Prisma schema field
+        session_timeout: sessionTimeout,        // Map to the Prisma schema field
+        failed_login_attempts: failedLoginAttempts, // Map to the Prisma schema field
+        password_expiry: passwordExpiry,        // Map to the Prisma schema field
+      },
     });
 
     return updated;
@@ -78,9 +120,7 @@ async update(data: UpdateSecuritySettingsDto) {
     throw new InternalServerErrorException(
       error.message || 'Failed to update security settings.',
     );
-  }
-}
-  
+  }}
 // PATCH: Reset to default (seeded) settings
 async reset() {
   try {

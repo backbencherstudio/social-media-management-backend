@@ -825,7 +825,7 @@ model WithdrawalSettings {
 }
 
 model SecuritySettings {
-  id         String    @id @default(cuid())
+  id         String    @id @default("1")
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
@@ -944,34 +944,6 @@ enum OrderStatus {
   pending
   canceled
 }
-
-// model Order {
-//    id             String    @id
-//    created_at     DateTime  @default(now())       
-
-//    order_status     OrderStatus @default(progress)   
-//    subscription_id String?  
-//    subscription    Subscription? @relation(fields: [subscription_id], references: [id]) 
-//    user_id        String?  
-//    user           User?    @relation(fields: [user_id], references: [id]) 
-
-//   service_tier_id String?
-//   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
-
-//   ammount        Float?
-//   user_name      String?   
-//   user_email     String?
-//   role_name      String?   //this will be the role id's role name
-
-//   role_id          String?  
-//   role             Role? @relation(fields: [role_id], references: [id])
-
-//   pakage_name   String? // this will be the service id's service name
-//   assignees       User[]       @relation("TaskAssaingees") 
-
-//    @@map("orders") 
-// }
-
 enum clintStatus {
   active
   inactive
@@ -1007,7 +979,9 @@ model Order {
   payment_status paymentStatus @default(pending)
   order_assigns  TaskAssign[]
 
-  @@map("orders")
+  @@map("orders") 
+  order_assigns TaskAssign[]
+
 }
 
 //admisn_dashboard_assign_tasks and Task management
@@ -1017,14 +991,16 @@ enum Status {
   pending
   canceled
   Clint_review
+  pending_review
 }
 
 model TaskAssign {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
 
-  user_id     String?
-  user        User?   @relation(fields: [user_id], references: [id])
+  assigned_by String? @default("Admin")
+  user_id    String?
+  user       User?     @relation(fields: [user_id], references: [id])
   reseller_id String?
 
   order_id String?
@@ -1041,11 +1017,12 @@ model TaskAssign {
   due_date  String?
   status    Status  @default(In_progress)
 
-  assignees Reseller[] @relation("TaskAssaingees")
-  posts     Post[]
+  assignees  Reseller[] @relation("TaskAssaingees")
+
 
   @@map("task_assign")
 }
+//Reseller Task
 
 // user application for reseller role 
 enum applicationStatus {
@@ -1118,34 +1095,11 @@ model ResellerPayments {
   @@map("resellers_payment")
 }
 
-// admin dashboard TEAM
-
-model Team {
-  id        String  @id
-  full_name String?
-  email     String? @unique
-  role      String?
-  password  String?
-}
-
-// reseller dashboard assets
-model DesignFile {
-  id         String   @id @default(cuid())
-  created_at DateTime @default(now())
-
-  status   Int?              @default(0) @db.SmallInt
-  feedback String?
-  content  String?
-  files    DesignFileAsset[]
-}
-
-model DesignFileAsset {
-  id           String     @id @default(cuid())
-  designFileId String
-  name         String
-  type         String
-  file_path    String
-  size         Int?
-  created_at   DateTime   @default(now())
-  designFile   DesignFile @relation(fields: [designFileId], references: [id], onDelete: Cascade)
-}
+  // admin dashboard TEAM
+  model Team{
+    id  String @id
+    full_name  String?
+    email      String? @unique
+    role      String?
+    password  String?
+  }

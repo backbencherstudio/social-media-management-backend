@@ -30,7 +30,7 @@ export class PaymentAndTransactionService {
     }
   }
 
-  async updateSettings(dto: UpdateWithdrawalSettingsDto) {
+ async updateSettings(dto: UpdateWithdrawalSettingsDto) {
     try {
       const existing = await this.prisma.withdrawalSettings.findFirst();
 
