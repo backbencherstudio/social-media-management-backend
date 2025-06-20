@@ -956,34 +956,33 @@ enum paymentStatus {
 }
 
 model Order {
-  id         String   @id
-  created_at DateTime @default(now())
+  id               String    @id
+  created_at       DateTime  @default(now())       
 
-  order_status OrderStatus @default(progress)
+  order_status     OrderStatus @default(progress)   
 
-  subscription_id String?
-  subscription    Subscription? @relation(fields: [subscription_id], references: [id])
+  subscription_id  String?  
+  subscription     Subscription? @relation(fields: [subscription_id], references: [id]) 
 
-  user_id String?
-  user    User?   @relation(fields: [user_id], references: [id])
+  user_id          String?  
+  user             User?    @relation(fields: [user_id], references: [id]) 
 
-  status clintStatus @default(active)
+  status           clintStatus  @default(active) 
+  
+  service_tier_id  String?
+  service_tier     ServiceTier? @relation(fields: [service_tier_id], references: [id])
 
-  service_tier_id String?
-  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
-
-  ammount        Float?
-  user_name      String?
-  user_email     String?
-  pakage_name    String?
-  payment_status paymentStatus @default(pending)
-  order_assigns  TaskAssign[]
+  ammount          Float?
+  user_name        String?   
+  user_email       String?   
+  pakage_name      String?   
+  payment_status   paymentStatus @default(pending)
+ 
 
   @@map("orders") 
   order_assigns TaskAssign[]
 
 }
-
 //admisn_dashboard_assign_tasks and Task management
 enum Status {
   In_progress
@@ -995,32 +994,34 @@ enum Status {
 }
 
 model TaskAssign {
-  id         String   @id @default(cuid())
-  created_at DateTime @default(now())
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
 
   assigned_by String? @default("Admin")
   user_id    String?
   user       User?     @relation(fields: [user_id], references: [id])
   reseller_id String?
 
-  order_id String?
-  order    Order?  @relation(fields: [order_id], references: [id])
+  order_id   String?  
+  order      Order?    @relation(fields: [order_id], references: [id])
 
-  role_name String?
-  role_id   String?
-  role      Role?   @relation(fields: [role_id], references: [id])
+  role_name        String?   
+  role_id          String?  
+  role             Role?     @relation(fields: [role_id], references: [id]) 
 
-  ammount Float?
-  note    String?
+  ammount          Float?
+  note             String?
 
-  user_name String?
-  due_date  String?
-  status    Status  @default(In_progress)
+  user_name  String?
+  due_date   String?
+  status     Status @default(In_progress)
 
   assignees  Reseller[] @relation("TaskAssaingees")
 
 
   @@map("task_assign")
+
+  Post Post[]
 }
 //Reseller Task
 
