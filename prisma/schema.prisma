@@ -317,15 +317,6 @@ model Message {
 
   Attachment Attachment[]
 }
-
-
-
-
-
-
-
-
-
 model Attachment {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
