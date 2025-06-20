@@ -220,9 +220,7 @@ export class TaskManagementService {
       task: updatedTask,
     };
   }
-
-
-  // get all taks 
+  // get all tasks      
   async getAllTasks() {
     const tasks = await this.prisma.taskAssign.findMany({
       orderBy: {
@@ -265,7 +263,6 @@ export class TaskManagementService {
       }
     };
   }
-
   //get One reseller task
   async getOneResellerTask(resellerId: string) {
     const tasks = await this.prisma.taskAssign.findMany({
