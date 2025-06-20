@@ -24,8 +24,7 @@ export class PostService {
           schedule_at: createPostDto.schedule_at, // schedule input here
           hashtags: createPostDto.hashtags,
           task_id: createPostDto.task_id,
-          status: 0,
-          user_id: createPostDto.user_id
+          status: createPostDto.status ?? 0, // allow status to be set on creation
         },
       });
 
@@ -66,27 +65,28 @@ export class PostService {
         }
       }
 
-      // After saving post and files
-      let twitterResult = null;
-      try {
-        // Only post to Twitter if required (add your own condition if needed)
-        twitterResult = await this.twitterService.publishPost(
-          createPostDto.user_id,
-          {
-            content: createPostDto.content,
-            hashtags: createPostDto.hashtags,
-            // add mediaFiles if needed
+      // If post is created as approved (status = 1), schedule for publishing
+      if (post.status === 1) {
+        if (post.schedule_at) {
+          const scheduleDate = new Date(post.schedule_at);
+          const delay = scheduleDate.getTime() - Date.now();
+          if (delay > 0) {
+            await this.postQueue.add(
+              'publish-post',
+              { postId: post.id },
+              { delay },
+            );
+          } else {
+            await this.postQueue.add('publish-post', { postId: post.id });
           }
-        );
-      } catch (twitterError) {
-        // Optionally handle/log Twitter errors
-        console.error('Twitter post failed:', twitterError);
+        } else {
+          await this.postQueue.add('publish-post', { postId: post.id });
+        }
       }
 
       return {
         success: true,
         data: await this.findOne(post.id),
-        twitter: twitterResult, // include Twitter result in response
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -103,6 +103,7 @@ export class PostService {
             },
           },
           post_files: true,
+          task: true
         },
       });
       return { success: true, data: posts };
@@ -118,6 +119,7 @@ export class PostService {
         include: {
           post_channels: true,
           post_files: true,
+          task: true
         },
       });
       return { success: true, data: post };

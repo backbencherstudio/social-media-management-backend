@@ -37,12 +37,7 @@ export class CreatePostDto {
   hashtags?: string[];
 
   @IsString()
-  @IsOptional()
   task_id?: string;
-
-  @IsString()
-  @IsOptional()
-  user_id?: string;
 
   @IsArray()
   @Type(() => CreatePostChannelDto)
@@ -53,4 +48,7 @@ export class CreatePostDto {
   @Type(() => CreatePostFileDto)
   @IsOptional()
   post_files?: CreatePostFileDto[];
+
+  @IsOptional()
+  status?: number;
 }

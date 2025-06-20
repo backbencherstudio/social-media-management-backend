@@ -99,7 +99,6 @@ model User {
   subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
   orders                   Order[]
-  posts                    Post[]
 
   ResellerApplication ResellerApplication[]
   Reseller            Reseller[]
@@ -662,16 +661,12 @@ model Post {
   status     Int?      @default(0) @db.SmallInt
 
   schedule_at DateTime?
-  platform    String[] // e.g., "twitter", "facebook"
   content     String?   @db.Text
   feedback    String?   @db.Text
   hashtags    String[]
 
   task_id String? // Optional if not every post has a task
   task    TaskAssign? @relation(fields: [task_id], references: [id])
-
-  user_id String
-  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   post_files        PostFile[]
   post_channels     PostChannel[]

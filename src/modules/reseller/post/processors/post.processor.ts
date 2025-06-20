@@ -55,7 +55,7 @@ export class PostProcessor extends WorkerHost {
       // Update post status to indicate it's being processed
       await this.prisma.post.update({
         where: { id: postId },
-        data: { status: 2 }, // 2 = processing
+        data: { status: 1 }, // 2 = processing
       });
 
       // Check if post is approved (status = 1)
@@ -98,7 +98,7 @@ export class PostProcessor extends WorkerHost {
               channel: 'twitter',
               success: twitterResult.success,
               message: twitterResult.message,
-              // data: twitterResult.detais
+              data: twitterResult.data,
             });
 
             this.logger.log(`Twitter publish result:`, twitterResult);

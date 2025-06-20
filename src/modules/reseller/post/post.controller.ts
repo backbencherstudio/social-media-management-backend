@@ -47,13 +47,6 @@ export class PostController {
     return this.postService.create(createPostDto, files?.files || []);
   }
 
-  @Post('for-user/:userId/:taskId')
-  @UseInterceptors(
-    FileFieldsInterceptor([{ name: 'files', maxCount: 10 }], {
-      storage: memoryStorage(),
-    }),
-  )
-
   @Get()
   findAll() {
     return this.postService.findAll();
