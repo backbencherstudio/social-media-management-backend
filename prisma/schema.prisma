@@ -1032,7 +1032,8 @@ model TaskAssign {
 
   ammount          Float?
   note             String?
-
+  post_count      Int? @default(0)
+  post_type       String? // e.g. "Instagram", "Facebook", "TikTok"
   user_name  String?
   due_date   String?
   status     Status @default(In_progress)
