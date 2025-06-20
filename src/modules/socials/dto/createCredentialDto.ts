@@ -12,6 +12,10 @@ export class CreateCredentialDto {
 
   @IsOptional()
   @IsString()
+  accessSecret: string;
+
+  @IsOptional()
+  @IsString()
   refreshToken?: string;
 
   @IsOptional()
@@ -25,4 +29,12 @@ export class CreateCredentialDto {
   @IsOptional()
   @IsString()
   username?: string; // For Instagram, Twitter, etc.
+
+  @IsOptional()
+  @IsString()
+  apiKey?: string; // Twitter API key
+
+  @IsOptional()
+  @IsString()
+  apiSecret?: string; // Twitter API secret
 }

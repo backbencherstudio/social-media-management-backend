@@ -1,127 +1,65 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import axios from 'axios';
+import { Account } from '@prisma/client';
+import { createTwitterClient } from './twitter.client';
 
 @Injectable()
 export class TwitterService {
   constructor(private readonly prisma: PrismaService) { }
 
   async fetchPosts(userId: string) {
-    console.log('user id : -----------------', userId);
     const account = await this.prisma.account.findFirst({
       where: { user_id: userId, provider: 'twitter' },
-    });
+    }) as Account | null;
     if (!account) throw new Error('Twitter not connected');
-    console.log('account --------------', account);
-
-    const twitterUserId = account.provider_account_id;
-    const accessToken = account.access_token;
-    const username = account.provider_account_id;
-    console.log('Fetching tweets for username:', username);
-    console.log('Using access token:', accessToken);
-
-    try {
-      // First, get the user ID from username
-      const userResponse = await axios.get(
-        `https://api.twitter.com/2/users/by/username/${username}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
-      );
-
-      console.log('User response:', userResponse.data);
-
-      if (!userResponse.data.data || !userResponse.data.data.id) {
-        throw new Error('Could not find Twitter user');
-      }
-
-      const userId = userResponse.data.data.id;
-      console.log('Twitter user ID:', userId);
-
-      // Now get tweets using the user ID
-      const tweetsRes = await axios.get(
-        `https://api.twitter.com/2/users/${userId}/tweets`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: {
-            'tweet.fields': 'created_at,public_metrics,author_id',
-            max_results: 10,
-          },
-        },
-      );
-
-      console.log('Tweets response:', tweetsRes.data);
-      return tweetsRes.data;
-    } catch (error) {
-      console.error(
-        'Twitter API Error:',
-        error.response?.data || error.message,
-      );
-      console.error('Error status:', error.response?.status);
-      console.error('Error URL:', error.config?.url);
-
-      if (error.response?.status === 404) {
-        throw new Error(
-          `Twitter user '${username}' not found or account is private`,
-        );
-      } else if (error.response?.status === 403) {
-        throw new Error(
-          'Twitter API access denied. Check your API permissions.',
-        );
-      } else if (error.response?.status === 401) {
-        throw new Error(
-          'Twitter API authentication failed. Check your access token.',
-        );
-      } else {
-        throw new Error(
-          `Twitter API error: ${error.response?.data?.detail || error.message}`,
-        );
-      }
+    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
+      throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
     }
+    const client = createTwitterClient(account);
+    // Get user by username
+    const user = await client.v2.userByUsername(account.provider_account_id);
+    if (!user?.data?.id) throw new Error('Could not find Twitter user');
+    // Fetch tweets
+    const tweets = await client.v2.userTimeline(user.data.id, {
+      'tweet.fields': ['created_at', 'public_metrics', 'author_id'],
+      max_results: 10,
+    });
+    return tweets.data;
   }
 
   async getProfile(accessToken: string, provider_account_id: string) {
-    try {
-      console.log('Fetching Twitter profile with access token:', accessToken);
-
-      // Use the username from the stored account
-      const response = await axios.get(
-        `https://api.twitter.com/2/users/by/username/${provider_account_id}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: {
-            'user.fields':
-              'id,name,username,profile_image_url,public_metrics,description,created_at',
-          },
-        },
-      );
-
-      console.log('Profile response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(
-        'Twitter API Error:',
-        error.response?.data || error.message,
-      );
-      throw new Error(`Failed to fetch Twitter profile: ${error.message}`);
+    // Find the account by provider_account_id
+    const account = await this.prisma.account.findFirst({
+      where: { provider: 'twitter', provider_account_id },
+    }) as Account | null;
+    if (!account) throw new Error('Twitter not connected');
+    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
+      throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
     }
+    const client = createTwitterClient(account);
+    // Get user profile by username
+    const user = await client.v2.userByUsername(provider_account_id, {
+      'user.fields': ['id', 'name', 'username', 'profile_image_url', 'public_metrics', 'description', 'created_at'],
+    });
+    return user.data;
   }
 
   async getAnalytics(accessToken: string, provider_account_id: string) {
-    try {
-      const response = await axios.get(
-        `https://api.twitter.com/2/users/by/username/${provider_account_id}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: {
-            'user.fields': 'public_metrics',
-          },
-        },
-      );
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to fetch Twitter analytics: ${error.message}`);
+    // Find the account by provider_account_id
+    const account = await this.prisma.account.findFirst({
+      where: { provider: 'twitter', provider_account_id },
+    }) as Account | null;
+    if (!account) throw new Error('Twitter not connected');
+    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
+      throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
     }
+    const client = createTwitterClient(account);
+    // Get user analytics (public_metrics)
+    const user = await client.v2.userByUsername(provider_account_id, {
+      'user.fields': ['public_metrics'],
+    });
+    return user.data;
   }
 
   async testConnection(accessToken: string) {
@@ -161,72 +99,49 @@ export class TwitterService {
   }
 
   async getFollowerActivity(userId: string, start?: string, end?: string) {
-    // Find the user's Twitter account
     const account = await this.prisma.account.findFirst({
       where: { user_id: userId, provider: 'twitter' },
-    });
+    }) as Account | null;
     if (!account) return { success: false, message: 'Twitter not connected' };
-    const username = account.provider_account_id;
-    const accessToken = account.access_token;
-
-    try {
-      // Get user ID from username
-      const userResponse = await axios.get(
-        `https://api.twitter.com/2/users/by/username/${username}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
-      );
-      if (!userResponse.data.data || !userResponse.data.data.id) {
-        throw new Error('Could not find Twitter user');
-      }
-      const twitterUserId = userResponse.data.data.id;
-
-      // Fetch recent tweets
-      const tweetsRes = await axios.get(
-        `https://api.twitter.com/2/users/${twitterUserId}/tweets`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: {
-            'tweet.fields': 'created_at,public_metrics',
-            max_results: 100,
-            start_time: start,
-            end_time: end,
-          },
-        },
-      );
-      const tweets = tweetsRes.data.data || [];
-
-      // Aggregate engagement by day/hour
-      const activity = Array(7)
-        .fill(0)
-        .map(() => Array(24).fill(0));
-      for (const tweet of tweets) {
-        const date = new Date(tweet.created_at);
-        const day = date.getUTCDay(); // 0=Sun
-        const hour = date.getUTCHours();
-        const engagement =
-          (tweet.public_metrics?.like_count || 0) +
-          (tweet.public_metrics?.retweet_count || 0) +
-          (tweet.public_metrics?.reply_count || 0);
-        activity[day][hour] += engagement;
-      }
-      return {
-        success: true,
-        data: {
-          activity,
-          labels: {
-            days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            hours: Array.from({ length: 24 }, (_, i) => i),
-          },
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.detail || error.message,
-      };
+    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
+      return { success: false, message: 'Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model' };
     }
+    const client = createTwitterClient(account);
+    // Get user by username
+    const user = await client.v2.userByUsername(account.provider_account_id);
+    if (!user?.data?.id) return { success: false, message: 'Could not find Twitter user' };
+    // Fetch recent tweets
+    const tweetsRes = await client.v2.userTimeline(user.data.id, {
+      'tweet.fields': ['created_at', 'public_metrics'],
+      max_results: 100,
+      start_time: start,
+      end_time: end,
+    });
+    const tweets = tweetsRes.data || [];
+    // Aggregate engagement by day/hour
+    const activity = Array(7).fill(0).map(() => Array(24).fill(0));
+    // Ensure tweets is always an array
+    const tweetArray = Array.isArray(tweets) ? tweets : (tweets?.data ?? []);
+    for (const tweet of tweetArray) {
+      const date = new Date(tweet.created_at);
+      const day = date.getUTCDay(); // 0=Sun
+      const hour = date.getUTCHours();
+      const engagement =
+        (tweet.public_metrics?.like_count || 0) +
+        (tweet.public_metrics?.retweet_count || 0) +
+        (tweet.public_metrics?.reply_count || 0);
+      activity[day][hour] += engagement;
+    }
+    return {
+      success: true,
+      data: {
+        activity,
+        labels: {
+          days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          hours: Array.from({ length: 24 }, (_, i) => i),
+        },
+      },
+    };
   }
 
   async publishPost(
@@ -241,12 +156,11 @@ export class TwitterService {
       }>;
     },
   ) {
-    console.log("twitter post data : ", postData);
     try {
       // Get user's Twitter account
       const account = await this.prisma.account.findFirst({
         where: { user_id: userId, provider: 'twitter' },
-      });
+      }) as Account | null;
 
       if (!account) {
         return {
@@ -255,23 +169,13 @@ export class TwitterService {
         };
       }
 
-      const accessToken = account.access_token;
-      const username = account.provider_account_id;
-
-
-      // Get user ID from username
-      const userResponse = await axios.get(
-        `https://api.twitter.com/2/users/by/username/${username}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
-      );
-
-      if (!userResponse.data.data || !userResponse.data.data.id) {
-        throw new Error('Could not find Twitter user');
+      // Ensure all required credentials are present
+      if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
+        return {
+          success: false,
+          message: 'Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model',
+        };
       }
-
-      const twitterUserId = userResponse.data.data.id;
 
       // Prepare tweet text with hashtags
       let tweetText = postData.content;
@@ -290,109 +194,22 @@ export class TwitterService {
         };
       }
 
-      let mediaIds: string[] = [];
+      // Use twitter-api-v2 for posting, using credentials from the account model
+      const client = createTwitterClient(account);
 
-      // Handle media uploads if present
-      if (postData.mediaFiles && postData.mediaFiles.length > 0) {
-        for (const mediaFile of postData.mediaFiles) {
-          try {
-            // For now, we'll skip media upload as it requires additional setup
-            // In a real implementation, you would:
-            // 1. Download the file from storage
-            // 2. Upload to Twitter's media endpoint
-            // 3. Get media_id and add to mediaIds array
-            console.log(`Media file ${mediaFile.name} would be uploaded here`);
-          } catch (mediaError) {
-            console.error('Error uploading media:', mediaError);
-            // Continue without media if upload fails
-          }
-        }
-      }
-
-      // Create the tweet
-      const tweetData: any = {
-        text: tweetText,
-      };
-
-      if (mediaIds.length > 0) {
-        tweetData.media = {
-          media_ids: mediaIds,
-        };
-      }
-
-      // For now, we'll return a success message indicating the authentication issue
-      // In a real implementation, you would use proper OAuth 1.0a or OAuth 2.0 User Context
-      console.log('Tweet data prepared:', tweetData);
-      console.log('Note: Actual posting requires OAuth 1.0a or OAuth 2.0 User Context authentication');
-
-      return {
-        success: false,
-        message: 'Twitter posting requires OAuth 1.0a or OAuth 2.0 User Context authentication',
-        details: {
-          current_authentication: 'Bearer Token (Application-Only)',
-          required_authentication: 'OAuth 1.0a or OAuth 2.0 User Context',
-          tweet_data: tweetData,
-          action_required: 'Implement proper OAuth authentication flow for posting'
-        }
-      };
-
-      // The actual posting code would be:
-      /*
-      const tweetResponse = await axios.post(
-        'https://api.twitter.com/2/tweets',
-        tweetData,
-        {
-          headers: { 
-            // OAuth 1.0a headers would go here
-            // or OAuth 2.0 User Context headers
-          },
-        },
-      );
-
-      console.log('Tweet published successfully:', tweetResponse.data);
+      const tweet = await client.v2.tweet(tweetText);
 
       return {
         success: true,
         message: 'Post published to Twitter successfully',
-        data: {
-          tweet_id: tweetResponse.data.data.id,
-          tweet_text: tweetText,
-          published_at: new Date().toISOString(),
-        },
+        data: tweet,
       };
-      */
     } catch (error) {
-      console.error(
-        'Error publishing to Twitter:',
-        error.response?.data || error.message,
-      );
-
-      if (error.response?.status === 401) {
-        return {
-          success: false,
-          message:
-            'Twitter authentication failed. Please reconnect your account.',
-        };
-      } else if (error.response?.status === 403) {
-        return {
-          success: false,
-          message: 'Twitter API access denied. Check your API permissions.',
-          details: {
-            error: error.response?.data,
-            solution: 'Reconnect Twitter account with posting permissions'
-          }
-        };
-      } else if (error.response?.status === 400) {
-        return {
-          success: false,
-          message: `Twitter API error: ${error.response.data?.detail || 'Invalid request'}`,
-        };
-      } else {
-        return {
-          success: false,
-          message: `Failed to publish to Twitter: ${error.message}`,
-        };
-      }
+      console.error('Error publishing to Twitter:', error);
+      return {
+        success: false,
+        message: `Failed to publish to Twitter: ${error.message}`,
+      };
     }
   }
 

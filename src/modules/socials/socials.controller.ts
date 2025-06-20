@@ -9,13 +9,14 @@ import {
   Body,
   Put,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SocialsService } from './socials.service';
 import { CreateCredentialDto } from './dto/createCredentialDto';
 import { PublishPostDto } from './dto/publish-post.dto';
+import { SupportedProvider, ConnectionResult } from './types';
 
-// todo: reolace req.user.userId
 @Controller('socials')
 export class SocialsController {
   constructor(private readonly socialsService: SocialsService) { }
@@ -23,84 +24,131 @@ export class SocialsController {
   @UseGuards(JwtAuthGuard)
   @Post('connect/manual')
   async connectWithCredentials(
-    @Req() req,
+    @Req() req: any,
     @Body() credentials: CreateCredentialDto,
-  ) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+  ): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     return this.socialsService.connectWithCredentials(userId, credentials);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('connections')
-  async getSocialConnections(@Req() req) {
-    return this.socialsService.getConnections(req.user.userId);
+  async getSocialConnections(@Req() req: any): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.getConnections(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('disconnect/:provider')
-  async disconnect(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+  async disconnect(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     return this.socialsService.disconnect(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('publish/:provider')
+  async publishPost(
+    @Req() req: any,
+    @Param('provider') provider: SupportedProvider,
+    @Body() postData: PublishPostDto,
+  ): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.publishPost(userId, provider, postData);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('pages/:provider')
-  async getPages(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+  async getPages(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     return this.socialsService.getPages(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile/:provider')
-  async getProfile(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+  async getProfile(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     return this.socialsService.getProfile(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('posts/:provider')
-  async getSocialPosts(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+  async getSocialPosts(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    console.log("user from twitter", req.user)
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     return this.socialsService.fetchPostsByProvider(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('analytics/:provider')
-  async getAnalytics(@Req() req, @Param('provider') provider: string) {
-    return this.socialsService.getAnalytics(req.user.userId, provider);
+  async getAnalytics(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.getAnalytics(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('credentials/:provider')
   async updateCredentials(
-    @Req() req,
-    @Param('provider') provider: string,
+    @Req() req: any,
+    @Param('provider') provider: SupportedProvider,
     @Body()
     credentials: {
       accessToken: string;
       refreshToken?: string;
       providerAccountId?: string;
     },
-  ) {
-    return this.socialsService.updateCredentials(
-      req.user.userId,
-      provider,
-      credentials,
-    );
+  ): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.updateCredentials(userId, provider, credentials);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('test-connection/:provider')
-  async testConnection(@Req() req, @Param('provider') provider: string) {
-    return this.socialsService.testConnection(req.user.userId, provider);
+  async testConnection(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.testConnection(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('test-twitter-api')
-  async testTwitterApi(@Req() req) {
+  async testTwitterApi(@Req() req: any): Promise<any> {
     try {
+      const userId = "cmc0017yi0000ws5cqy5qybiy";
+      if (!userId) {
+        throw new BadRequestException('User ID not found in request');
+      }
+
       const account = await this.socialsService['prisma'].account.findFirst({
-        where: { user_id: req.user.userId, provider: 'twitter' },
+        where: { user_id: userId, provider: 'twitter' },
       });
 
       if (!account) {
@@ -122,12 +170,12 @@ export class SocialsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('test-auth')
-  async testAuth(@Req() req) {
+  async testAuth(@Req() req: any): Promise<any> {
     return {
       success: true,
       message: 'JWT token is valid',
       user: req.user,
-      userId: req.user?.userId,
+      userId: "cmc0017yi0000ws5cqy5qybiy",
       email: req.user?.email,
     };
   }
@@ -135,56 +183,59 @@ export class SocialsController {
   @UseGuards(JwtAuthGuard)
   @Get('follower-activity/:provider')
   async getFollowerActivity(
-    @Req() req,
-    @Param('provider') provider: string,
-    @Query('start') start: string,
-    @Query('end') end: string,
-  ) {
-    return this.socialsService.getFollowerActivity(
-      req.user.userId,
-      provider,
-      start,
-      end,
-    );
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('publish/:provider')
-  async publishPost(
-    @Req() req,
-    @Param('provider') provider: string,
-    @Body() postData: PublishPostDto,
-  ) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
-    return this.socialsService.publishPost(userId, provider, postData);
+    @Req() req: any,
+    @Param('provider') provider: SupportedProvider,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+  ): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.getFollowerActivity(userId, provider, start, end);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('posts/performance/all')
-  async getAllProvidersRecentPosts(@Req() req) {
-    return this.socialsService.fetchPostsPerformanceAllProviders(req.user.userId);
+  async getAllProvidersRecentPosts(@Req() req: any): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.fetchPostsPerformanceAllProviders(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('audience-demographics/:provider')
-  async getAudienceDemographics(@Req() req, @Param('provider') provider: string) {
-    return this.socialsService.getAudienceDemographics(req.user.userId, provider);
+  async getAudienceDemographics(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.getAudienceDemographics(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('messages/:provider')
-  async getMessages(@Req() req, @Param('provider') provider: string) {
-    const userId = 'cmc0017yi0000ws5cqy5qybiy';
+  async getMessages(@Req() req: any, @Param('provider') provider: SupportedProvider): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     return this.socialsService.getMessages(userId, provider);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('messages/:provider/reply')
   async sendMessage(
-    @Req() req,
-    @Param('provider') provider: string,
+    @Req() req: any,
+    @Param('provider') provider: SupportedProvider,
     @Body() body: { conversationId: string; text: string }
-  ) {
-    return this.socialsService.sendMessage(req.user.userId, provider, body);
+  ): Promise<ConnectionResult> {
+    const userId = "cmc0017yi0000ws5cqy5qybiy";
+    if (!userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.socialsService.sendMessage(userId, provider, body);
   }
 }

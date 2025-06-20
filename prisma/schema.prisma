@@ -18,8 +18,11 @@ model Account {
   type                String?
   provider            String?
   provider_account_id String?
+  api_key             String?
+  api_secret          String?
   refresh_token       String?
   access_token        String?
+  access_secret       String?
   token_type          String?
   scope               String?
   id_token            String?
@@ -96,6 +99,7 @@ model User {
   subscriptions            Subscription[]
   email_history_recipients EmailHistoryRecipient[]
   orders                   Order[]
+  posts                    Post[]
 
   ResellerApplication ResellerApplication[]
   Reseller            Reseller[]
@@ -658,13 +662,16 @@ model Post {
   status     Int?      @default(0) @db.SmallInt
 
   schedule_at DateTime?
-
-  content  String?  @db.Text
-  feedback String?  @db.Text
-  hashtags String[]
+  platform    String[] // e.g., "twitter", "facebook"
+  content     String?   @db.Text
+  feedback    String?   @db.Text
+  hashtags    String[]
 
   task_id String? // Optional if not every post has a task
   task    TaskAssign? @relation(fields: [task_id], references: [id])
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   post_files        PostFile[]
   post_channels     PostChannel[]

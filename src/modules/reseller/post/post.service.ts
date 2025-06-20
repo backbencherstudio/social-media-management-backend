@@ -5,13 +5,15 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
+import { TwitterService } from '../../socials/platforms/twitter.service';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('post-schedule') private postQueue: Queue,
-  ) {}
+    private twitterService: TwitterService,
+  ) { }
 
   async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
     console.log('Creating post with data:', createPostDto);
@@ -23,6 +25,7 @@ export class PostService {
           hashtags: createPostDto.hashtags,
           task_id: createPostDto.task_id,
           status: 0,
+          user_id: createPostDto.user_id
         },
       });
 
@@ -63,7 +66,28 @@ export class PostService {
         }
       }
 
-      return { success: true, data: await this.findOne(post.id) };
+      // After saving post and files
+      let twitterResult = null;
+      try {
+        // Only post to Twitter if required (add your own condition if needed)
+        twitterResult = await this.twitterService.publishPost(
+          createPostDto.user_id,
+          {
+            content: createPostDto.content,
+            hashtags: createPostDto.hashtags,
+            // add mediaFiles if needed
+          }
+        );
+      } catch (twitterError) {
+        // Optionally handle/log Twitter errors
+        console.error('Twitter post failed:', twitterError);
+      }
+
+      return {
+        success: true,
+        data: await this.findOne(post.id),
+        twitter: twitterResult, // include Twitter result in response
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }

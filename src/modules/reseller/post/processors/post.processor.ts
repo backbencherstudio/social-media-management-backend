@@ -74,10 +74,10 @@ export class PostProcessor extends WorkerHost {
 
       // Process each channel
       const publishResults = [];
-      
+
       for (const postChannel of post.post_channels) {
         const channelName = postChannel.channel.name?.toLowerCase();
-        
+
         if (channelName === 'twitter') {
           try {
             // Prepare post data for Twitter
@@ -93,12 +93,12 @@ export class PostProcessor extends WorkerHost {
 
             // Publish to Twitter
             const twitterResult = await this.twitterService.publishPost(userId, postData);
-            
+
             publishResults.push({
               channel: 'twitter',
               success: twitterResult.success,
               message: twitterResult.message,
-              data: twitterResult.details,
+              // data: twitterResult.detais
             });
 
             this.logger.log(`Twitter publish result:`, twitterResult);
@@ -123,14 +123,14 @@ export class PostProcessor extends WorkerHost {
 
       // Check if any channel was successfully published
       const hasSuccessfulPublish = publishResults.some(result => result.success);
-      
+
       if (hasSuccessfulPublish) {
         // Update post status to published
         await this.prisma.post.update({
           where: { id: postId },
           data: { status: 3 }, // 3 = published
         });
-        
+
         this.logger.log(`Post ${postId} published successfully to at least one channel`);
       } else {
         // Update post status to failed
@@ -138,7 +138,7 @@ export class PostProcessor extends WorkerHost {
           where: { id: postId },
           data: { status: 4 }, // 4 = failed
         });
-        
+
         this.logger.error(`Post ${postId} failed to publish to any channel`);
       }
 
@@ -152,7 +152,7 @@ export class PostProcessor extends WorkerHost {
         `Error processing job ${job.id} with name ${job.name}`,
         error,
       );
-      
+
       // Update post status to failed
       try {
         await this.prisma.post.update({
@@ -162,7 +162,7 @@ export class PostProcessor extends WorkerHost {
       } catch (updateError) {
         this.logger.error('Failed to update post status to failed:', updateError);
       }
-      
+
       throw error;
     }
   }

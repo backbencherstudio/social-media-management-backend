@@ -16,10 +16,14 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { TwitterService } from '../../socials/platforms/twitter.service';
 
 @Controller('post')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly twitterService: TwitterService,
+  ) { }
 
   @Post()
   @UseInterceptors(
@@ -49,28 +53,6 @@ export class PostController {
       storage: memoryStorage(),
     }),
   )
-  async createForUser(
-    @Param('userId') userId: string,
-    @Param('taskId') taskId: string,
-    @Body() body: any,
-    @UploadedFiles() files: { files?: Express.Multer.File[] },
-  ) {
-    let createPostDto: CreatePostDto;
-
-    // If data is sent as JSON string inside `body.data`, parse it
-    if (body?.data) {
-      createPostDto = JSON.parse(body.data);
-    } else {
-      createPostDto = body;
-    }
-
-    return this.postService.createForUser(
-      createPostDto,
-      userId,
-      taskId,
-      files?.files || [],
-    );
-  }
 
   @Get()
   findAll() {
