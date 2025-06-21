@@ -325,7 +325,7 @@ export class AuthService {
   }
 
   // service part
-  async login({ email, password }) {
+  async login({ email, password }) { // if need social log-in (need to modefy)
     try {
       const existingUser = await this.prisma.user.findUnique({
         where: { email },
@@ -1020,7 +1020,7 @@ export class AuthService {
       });
   
       // Return JWT token
-      return this.login({ email: user.email, userId: user.id });
+      return this.login({ email: user.email, password: user.id });
     } catch (error) {
       return {
         success: false,
@@ -1074,7 +1074,7 @@ export class AuthService {
         }
       });
   
-      return this.login({ email: profile.email, userId: user.id });
+      return this.login({ email: profile.email, password: user.id });
     } catch (error) {
       return {
         success: false,
@@ -1133,7 +1133,7 @@ export class AuthService {
         },
       });
   
-      return this.login({ email: user.email, userId: user.id });
+      return this.login({ email: user.email, password: user.id });
     } catch (error) {
       return {
         success: false,
@@ -1193,7 +1193,7 @@ export class AuthService {
       });
   
       // 3. Generate JWT and return
-      return this.login({ email: user.email, userId: user.id });
+      return this.login({ email: user.email, password: user.id });
     } catch (error) {
       return {
         success: false,
@@ -1251,7 +1251,7 @@ export class AuthService {
         },
       });
   
-      return this.login({ email: profile.email, userId: user.id });
+      return this.login({ email: profile.email, password: user.id });
     } catch (error) {
       return {
         success: false,
