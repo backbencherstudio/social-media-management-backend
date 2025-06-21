@@ -10,10 +10,10 @@ export class DesignFileService {
 
   async create(
     createDesignFileDto: CreateDesignFileDto,
-    files?: Express.Multer.File[],
+    assets?: Express.Multer.File[],
   ) {
     console.log('Creating design file with data:', createDesignFileDto);
-    console.log('Files:', files);
+    console.log('assets:', assets);
     try {
       // Create DesignFile record
       const designFile = await this.prisma.designFile.create({
@@ -24,10 +24,10 @@ export class DesignFileService {
       });
 
       // Handle file uploads
-      if (files && files.length > 0) {
+      if (assets && assets.length > 0) {
         const fileAssets = [];
 
-        for (const file of files) {
+        for (const file of assets) {
           // Generate random filename
           const randomName = Array(32)
             .fill(null)
@@ -37,7 +37,7 @@ export class DesignFileService {
           const fileName = `${randomName}${file.originalname}`;
           console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
           // Upload file using SojebStorage
-          await SojebStorage.put('design-files/' + fileName, file.buffer);
+          await SojebStorage.put('design-assets/' + fileName, file.buffer);
 
           fileAssets.push({
             designFileId: designFile.id,
@@ -68,25 +68,25 @@ export class DesignFileService {
   async findAll() {
    
     try {
-      const designFiles = await this.prisma.designFile.findMany({
-        include: { files: true },
+      const designassets = await this.prisma.designFile.findMany({
+        include: { assets: true },
         orderBy: { created_at: 'desc' },
       });
-      console.log('designFiles', designFiles);
-      // Add public URLs to files
-      const designFilesWithUrls = designFiles.map((designFile) => ({
+      console.log('designassets', designassets);
+      // Add public URLs to assets
+      const designassetsWithUrls = designassets.map((designFile) => ({
         ...designFile,
-        files: designFile.files.map((file) => ({
+        assets: designFile.assets.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path,
+            appConfig().storageUrl.rootUrl + '/design-assets/' + file.file_path,
           ),
         })),
       }));
 
       return {
         success: true,
-        data: designFilesWithUrls,
+        data: designassetsWithUrls,
       };
     } catch (error) {
       return {
@@ -100,7 +100,7 @@ export class DesignFileService {
     try {
       const designFile = await this.prisma.designFile.findUnique({
         where: { id },
-        include: { files: true },
+        include: { assets: true },
       });
 
       if (!designFile) {
@@ -110,13 +110,13 @@ export class DesignFileService {
         };
       }
 
-      // Add public URLs to files
+      // Add public URLs to assets
       const designFileWithUrls = {
         ...designFile,
-        files: designFile.files.map((file) => ({
+        assets: designFile.assets.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path,
+            appConfig().storageUrl.rootUrl + '/design-assets/' + file.file_path,
           ),
         })),
       };
@@ -160,28 +160,28 @@ export class DesignFileService {
   async approveFile() {
    
     try {
-      const designFiles = await this.prisma.designFile.findMany({
+      const designassets = await this.prisma.designFile.findMany({
         where:{
           status:1
         },
-        include: { files: true },
+        include: { assets: true },
         orderBy: { created_at: 'desc' },
       });
      
-      // Add public URLs to files
-      const designFilesWithUrls = designFiles.map((designFile) => ({
+      // Add public URLs to assets
+      const designassetsWithUrls = designassets.map((designFile) => ({
         ...designFile,
-        files: designFile.files.map((file) => ({
+        assets: designFile.assets.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-files/' + file.file_path,
+            appConfig().storageUrl.rootUrl + '/design-assets/' + file.file_path,
           ),
         })),
       }));
 
       return {
         success: true,
-        data: designFilesWithUrls,
+        data: designassetsWithUrls,
       };
     } catch (error) {
       return {

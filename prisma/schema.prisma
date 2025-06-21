@@ -658,7 +658,7 @@ model Post {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
-  status     Int?      @default(1) @db.SmallInt
+  status     Int?      @default(0) @db.SmallInt
 
   schedule_at DateTime?
   content     String?     @db.Text
@@ -1020,6 +1020,7 @@ model TaskAssign {
   posts     Post[]
 
   @@map("task_assign")
+  files DesignFile[]
 }
 
 //Reseller Task
@@ -1103,8 +1104,11 @@ model DesignFile {
   updated_at DateTime          @default(now())
   deleted_at DateTime?
   content    String?
-  status     Int?              @default(1)
-  assets     DesignFileAsset[] // Relation to assets/files
+  status     Int?              @default(0)
+  feedback   String?
+  task_id    String?
+  task       TaskAssign?       @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  assets     DesignFileAsset[] 
 }
 
 model DesignFileAsset {
