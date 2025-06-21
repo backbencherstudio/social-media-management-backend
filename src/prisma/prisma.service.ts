@@ -1,21 +1,17 @@
-
 import {
   Logger,
   Injectable,
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, Account } from '@prisma/client';
 import { SoftdeleteMiddleware } from './middleware/softdelete.middleware';
 
 @Injectable()
 export class PrismaService
   extends PrismaClient<Prisma.PrismaClientOptions, 'query'>
-  implements OnModuleInit, OnModuleDestroy
+  implements OnModuleInit, OnModuleDestroy {
 
-  
-{
-    
   hastags: any;
   blogTag: any;
   blogBlock: any;

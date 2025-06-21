@@ -4,10 +4,12 @@ import { PostController } from './post.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { PostProcessor } from './processors/post.processor';
 import { PrismaModule } from '../../../prisma/prisma.module';
+import { SocialsModule } from '../../socials/socials.module';
 
 @Module({
   imports: [
     PrismaModule,
+    SocialsModule,
     BullModule.registerQueue({
       name: 'post-schedule',
     }),

@@ -45,6 +45,28 @@ export default () => ({
       app_secret: process.env.GOOGLE_APP_SECRET,
       callback: process.env.GOOGLE_CALLBACK_URL,
     },
+    facebook: {
+      app_id: process.env.FACEBOOK_APP_ID,
+      app_secret: process.env.FACEBOOK_APP_SECRET,
+      callback: process.env.FACEBOOK_CALLBACK_URL,
+    },
+    instagram: {
+      app_id: process.env.INSTAGRAM_CLIENT_ID,
+      app_secret: process.env.INSTAGRAM_CLIENT_SECRET,
+      callback: process.env.INSTAGRAM_CALLBACK_URL,
+    },
+    twitter: {
+      app_id: process.env.TWITTER_API_KEY,
+      app_secret: process.env.TWITTER_API_SECRET,
+      callback: process.env.TWITTER_CALLBACK_URL,
+      access_token: process.env.TWITTER_ACCESS_TOKEN,
+      access_secret: process.env.TWITTER_ACCESS_SECRET
+    },
+    linkedin: {
+      app_id: process.env.LINKEDIN_CLIENT_ID,
+      app_secret: process.env.LINKEDIN_CLIENT_SECRET,
+      callback: process.env.LINKEDIN_CALLBACK_URL,
+    },
   },
 
   payment: {
