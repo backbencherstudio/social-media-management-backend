@@ -247,6 +247,8 @@ user_id: string,
       task_id: task.id,
       task_status: task.status,
       task_amount: task.ammount,
+      post_count: task.post_count,
+      post_type: task.post_type,
       created_at: task.created_at,
       due_date: task.due_date,
       note: task.note,
@@ -263,67 +265,6 @@ user_id: string,
         total: formattedTasks.length,
         tasks: formattedTasks,
       }
-    };
-  }
-  //get One reseller task
-  async getOneResellerTask(resellerId: string) {
-    const tasks = await this.prisma.taskAssign.findMany({
-      where: {
-        assignees: {
-          some: {
-            reseller_id: resellerId,
-          },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-      include: {
-        assignees: {
-          select: {
-            reseller_id: true,
-            full_name: true,
-            user_email: true,
-          },
-        },
-        order: {
-          select: {
-            user_name: true,
-            user_email: true,
-          },
-        },
-      },
-    });
-
-    if (!tasks.length) {
-      return { message: 'No tasks found for this reseller', tasks: [] };
-    }
-
-
-    const activeTasksCount = tasks.filter(task => task.status === Status.In_progress).length;
-
-    const formattedTasks = tasks.map((task) => ({
-      task_id: task.id,
-      task_status: task.status,
-      task_amount: task.ammount,
-      Assign_Date: task.created_at,
-      Assigned_by: task.assigned_by,
-      due_date: task.due_date,
-      note: task.note,
-      YourInfo: task.assignees.map((a) => ({
-        reseller_id: a.reseller_id,
-        full_name: a.full_name,
-        email: a.user_email,
-      })),
-      clint_name: task.order?.user_name,
-      clint_email: task.order?.user_email,
-    }));
-
-    return {
-      message: 'Reseller tasks fetched successfully',
-      data: {
-        total: formattedTasks.length,
-        active_tasks: activeTasksCount,
-        tasks: formattedTasks,
-      },
     };
   }
 }

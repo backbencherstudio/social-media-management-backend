@@ -36,10 +36,6 @@ export class TaskManagementController {
     return this.taskManagementService.unassignUserFromOrder(orderId, dto);
   }
 
-  @Get('reseller/:resellerId')
-  async getResellerTasks(@Param('resellerId') resellerId: string) {
-    const result = await this.taskManagementService.getOneResellerTask(resellerId);
-    return result;
-  }
+
 
 }
