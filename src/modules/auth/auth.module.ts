@@ -22,7 +22,6 @@ import { LinkedInStrategy } from './strategies/linkedin.strategy';
     }),
     PrismaModule,
     MailModule,
-    UserModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, FacebookStrategy, InstagramStrategy,LinkedInStrategy],
