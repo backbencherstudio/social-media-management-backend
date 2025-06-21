@@ -32,6 +32,7 @@ import { DesignFileModule } from './modules/reseller/design-file/design-file.mod
 import { SocialsModule } from './modules/socials/socials.module';
 import { ClientModule } from './modules/reseller/client/client.module';
 import { ActiveServiceModule } from './modules/reseller/active-service/active-service.module';
+import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
 
 
 @Module({
@@ -68,6 +69,7 @@ import { ActiveServiceModule } from './modules/reseller/active-service/active-se
     SocialsModule,
     ClientModule,
     ActiveServiceModule,
+    DashboardModule,
    
   ],
   controllers: [AppController],

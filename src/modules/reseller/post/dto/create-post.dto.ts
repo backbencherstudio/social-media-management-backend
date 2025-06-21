@@ -37,6 +37,7 @@ export class CreatePostDto {
   hashtags?: string[];
 
   @IsString()
+  @IsOptional()
   task_id?: string;
 
   @IsArray()
