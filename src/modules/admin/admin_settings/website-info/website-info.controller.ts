@@ -39,6 +39,53 @@ export class WebsiteInfoController {
     }
   }
 
+    @Get('task-inside')
+  async getTaskInside() {
+    try {
+      const result = await this.websiteInfoService.getTaskInside();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  @Get('top-performing-services')
+  async getTopPerformingServices() {
+    try {
+      const result = await this.websiteInfoService.getTopPerformingServices();
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+    //get all resellers
+   @Get('all') 
+  async getAllResellers() {
+    try {
+      const resellers = await this.websiteInfoService.getTopResellers();
+      return {
+        success: true,
+        data: resellers,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error fetching resellers',
+      };
+    }
+  }
+
+    @Get('recent-orders')
+  async findAll() {
+    try {
+      return await this.websiteInfoService.getRecentOrders();
+    } catch (error) {
+      console.error('Error fetching all orders:', error);
+      throw error;
+    }
+  }
+
   @ApiOperation({ summary: 'Update website info' })
   @Patch()
   @UseInterceptors(
@@ -89,4 +136,6 @@ export class WebsiteInfoController {
       return { success: false, message: error.message };
     }
   }
+
+
 }

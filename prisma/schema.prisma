@@ -8,6 +8,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//----------------------------------------------------
+
 model Account {
   id         String    @id @default(cuid())
   expires_at DateTime?
@@ -45,7 +47,7 @@ model User {
   username   String? @unique
   first_name String? @db.VarChar(255)
   last_name  String? @db.VarChar(255)
-  password   String? @db.VarChar(255)
+  password   String? @db.VarChar(255) //----------------------------------------------------
   domain     String? @unique
   avatar     String?
 
