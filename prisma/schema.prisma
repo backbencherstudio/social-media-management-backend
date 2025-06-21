@@ -1018,9 +1018,9 @@ model TaskAssign {
 
   assignees Reseller[] @relation("TaskAssaingees")
   posts     Post[]
+  files DesignFile[]
 
   @@map("task_assign")
-  files DesignFile[]
 }
 
 //Reseller Task

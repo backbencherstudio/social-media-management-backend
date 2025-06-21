@@ -20,8 +20,8 @@ export class TaskManagementController {
     @Param('orderId') orderId: string,
     @Body() dto: AssignUserDto
   ) {
-    const user_id = req.user.userId;
-    return this.taskManagementService.assignUserToOrder(user_id, orderId, dto);
+    // const user_id = req.user.userId;
+    return this.taskManagementService.assignUserToOrder( orderId, dto);
   }
   // -----------------assign-order-to-the-resellers-----------------\\
   @Post('unassign/:orderId')

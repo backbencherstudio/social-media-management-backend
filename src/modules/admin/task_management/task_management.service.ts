@@ -18,11 +18,11 @@ export class TaskManagementService {
   }
   // ---------------------assign order to the reseller--------------------\\
   async assignUserToOrder(
-    user_id: string,
+    // user_id: string,
     orderId: string,
-    dto: { res_id: string; note: string; roleId: string; ammount: number }
+    dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }
   ) {
-    const { res_id, note, roleId, ammount } = dto;
+    const { res_id, note, roleId, ammount, post_count, post_type } = dto;   
 
 
     const reseller = await this.prisma.reseller.findUnique({
@@ -94,6 +94,8 @@ export class TaskManagementService {
       data: {
         id: `TASK_${createId()}`,
         user_id: user.id,
+        post_count: dto.post_count,
+        post_type: dto.post_type,
         reseller_id: reseller.reseller_id,
         user_name: reseller.full_name ?? '',
         order_id: order.id,
@@ -128,18 +130,18 @@ export class TaskManagementService {
       }
     })
 
-    // send notification to assined user (reseller)
-    const notificationPayload: any = {
-      sender_id: user_id,
-      receiver_id: reseller.reseller_id,
-      text: 'You have been assigned to this task',
-      type: 'post',
-      entity_id: task.id
-    }
+    // // send notification to assined user (reseller)
+    // const notificationPayload: any = {
+    //   sender_id: user_id,
+    //   receiver_id: reseller.reseller_id,
+    //   text: 'You have been assigned to this task',
+    //   type: 'post',
+    //   entity_id: task.id
+    // }
 
-    NotificationRepository.createNotification(notificationPayload);
-    this.messageGateway.server.emit("notification", notificationPayload)
-    // End sending notification
+    // NotificationRepository.createNotification(notificationPayload);
+    // this.messageGateway.server.emit("notification", notificationPayload)
+    // // End sending notification
 
 
     return {
@@ -149,6 +151,8 @@ export class TaskManagementService {
         task_amount: task.ammount ?? 0,
         task_assignee_details: {
           assignee_id: task.id,
+          post_count: task.post_count,
+          post_type: task.post_type,
           assignee_name: task.user_name,
           task_status: task.status,
           role_id: task.role_id,

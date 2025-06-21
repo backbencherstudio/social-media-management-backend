@@ -10,6 +10,12 @@ export class AssignUserDto {
   res_id: string;
 
   @IsString()
+  post_type: string;
+
+  @IsInt()
+  post_count: number;
+
+  @IsString()
   roleId: string;
 
   @IsNumber()
