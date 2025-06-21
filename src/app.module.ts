@@ -20,8 +20,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { PostModule } from './modules/reseller/post/post.module';
-import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
-import {BlogModule} from './modules/admin/blog/blog.module'
+import { ServiceManagementModule } from './modules/admin/sevice-management/service-management.module'
+import { BlogModule } from './modules/admin/blog/blog.module'
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
 import { CategoryModule } from './modules/admin/sevice-management/category/category.module';
@@ -30,8 +30,6 @@ import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/w
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
-import { ClientModule } from './modules/reseller/client/client.module';
-import { ActiveServiceModule } from './modules/reseller/active-service/active-service.module';
 import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
 
 
@@ -67,10 +65,8 @@ import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
     AiChatbotModule,
     DesignFileModule,
     SocialsModule,
-    ClientModule,
-    ActiveServiceModule,
     DashboardModule,
-   
+
   ],
   controllers: [AppController],
   providers: [AppService],
