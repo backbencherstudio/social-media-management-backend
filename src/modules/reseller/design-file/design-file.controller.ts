@@ -15,7 +15,7 @@ import { CreateDesignFileDto } from './dto/create-design-file.dto';
 
 @Controller('design-file')
 export class DesignFileController {
-  constructor(private readonly designFileService: DesignFileService) {}
+  constructor(private readonly designFileService: DesignFileService) { }
 
   @Post()
   @UseInterceptors(
@@ -47,10 +47,10 @@ export class DesignFileController {
   }
 
   @Patch(':id/review')
-    reviewPost(
-      @Param('id') id: string,
-      @Body() body: { action: 1 | 2; feedback?: string },
-    ) {
-      return this.designFileService.reviewDesignFile(id, body.action, body.feedback);
-    }
+  reviewPost(
+    @Param('id') id: string,
+    @Body() body: { action: 1 | 2; feedback?: string },
+  ) {
+    return this.designFileService.reviewDesignFile(id, body.action, body.feedback);
+  }
 }
