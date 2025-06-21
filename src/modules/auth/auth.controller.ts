@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -32,22 +33,29 @@ import appConfig from '../../config/app.config';
 import { AuthGuard } from '@nestjs/passport';
 import { Role } from 'src/common/guard/role/role.enum';
 import { ResellerApplicationDto } from './dto/apply_for_reseller.dto';
+import { UserService } from './user/user.service';
+import { VerifyRegistrationDto } from './dto/verify-registration.dto';
+import { ForgotPasswordDto } from './dto/forgot-pass-email.dto';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService
+  ) { }
 
   @ApiOperation({ summary: 'Get user details' })
   @ApiBearerAuth()
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: Request) {
     try {
       const user_id = req.user.userId;
-
+      console.log(user_id);
+      
       const response = await this.authService.me(user_id);
-
+      
       return response;
     } catch (error) {
       return {
@@ -78,15 +86,20 @@ export class AuthController {
     }
   }
 
-  @Get('verify-registration')
-  async verifyRegistration(@Query() data: { token: string }) {
+  @Post('verify-registration')
+  async verifyRegistration(
+    @Query() data: { token: string },
+    @Body(new ValidationPipe()) verifyRegistrationDto: VerifyRegistrationDto,
+    @Req() req: Request
+  ) {
     try {
       const { token } = data;
-
+      const { password } = req.body;
+      // console.log(`${password}, ${token}`);
       if (!token) {
         throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
       }
-      return await this.authService.verifyRegistrationToken(token);
+      return await this.authService.verifyRegistrationToken(password, token);
     } catch (error) {
       return {
         success: false,
@@ -179,25 +192,21 @@ export class AuthController {
   }
 
   // login user
+  // controller part
   @ApiOperation({ summary: 'Login user' })
-  @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Req() req: Request) {
     try {
-      const user_id = req.user.id;
-
-      const user_email = req.user.email;
-
+      const { email, password: loginPassword } = req.body;
       const response = await this.authService.login({
-        userId: user_id,
-        email: user_email,
+        email: email,
+        password: loginPassword
       });
-
       return response;
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: `${error.message}`,
       };
     }
   }
@@ -259,9 +268,10 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Forgot password' })
   @Post('forgot-password')
-  async forgotPassword(@Body() data: { email: string }) {
+  async forgotPassword(@Body(new ValidationPipe()) data: ForgotPasswordDto,) {
     try {
       const email = data.email;
+      console.log(email);
       if (!email) {
         throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
       }
@@ -327,6 +337,7 @@ export class AuthController {
       const email = data.email;
       const token = data.token;
       const password = data.password;
+      // console.log(`${email},${token}, ${password} `);
       if (!email) {
         throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
       }
@@ -364,9 +375,9 @@ export class AuthController {
     try {
       // const email = data.email;
       const user_id = req.user.userId;
-
       const oldPassword = data.old_password;
       const newPassword = data.new_password;
+      console.log(`id:${user_id}, old:${oldPassword}, new:${newPassword}`);
       // if (!email) {
       //   throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
       // }
@@ -527,14 +538,14 @@ export class AuthController {
 
   //// application
 
-  @Post('apply/:userId') 
+  @Post('apply/:userId')
   async apply(
-    @Param('userId') userId: string,  
-    @Body() data: ResellerApplicationDto  
+    @Param('userId') userId: string,
+    @Body() data: ResellerApplicationDto
   ) {
-    
+
     const result = await this.authService.applyForReseller(data, userId);
-    
+
     return result;
   }
 }

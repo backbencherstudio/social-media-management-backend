@@ -1,5 +1,5 @@
 // external imports
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 //internal imports
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,6 +12,7 @@ import { SojebStorage } from '../../common/lib/Disk/SojebStorage';
 import { DateHelper } from '../../common/helper/date.helper';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 import { ResellerApplicationDto } from './dto/apply_for_reseller.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +20,7 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async me(userId: string) {
     try {
@@ -323,11 +324,57 @@ export class AuthService {
     }
   }
 
-  async login({ email, userId }) {
+  // service part
+  async login({ email, password }) {
     try {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      const { id: userId } = existingUser;
+      // console.log("existingUser: ", existingUser);
+
+      if (!existingUser?.password) {
+        const token = this.jwtService.sign(
+          { email },
+          {
+            expiresIn: '24h',
+          },
+        );
+
+        // Send verification email with full URL
+        const verificationLink = `${process.env.APP_URL}/api/auth/verify-registration?token=${token}`;
+        this.mailService.sendVerificationLink({
+          email,
+          link: verificationLink,
+          name: email,
+        });
+        return {
+          success: true,
+          message: `Please set your account Password. A link sent to email: ${email}`,
+          // token: token
+        };
+      }
+
+      const hashedPassword = existingUser?.password;
+      // console.log(hashedPassword);
+      const isPasswordMatch = await bcrypt.compare(password, hashedPassword);
+
+      console.log(isPasswordMatch);
+      if (!isPasswordMatch) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid credentials',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+
       const payload = { email: email, sub: userId };
       const token = this.jwtService.sign(payload);
       const user = await UserRepository.getUserDetails(userId);
+      // console.log("Successfully LogIn: ", user);
 
       return {
         success: true,
@@ -352,7 +399,7 @@ export class AuthService {
         where: { email },
       });
 
-      console.log('existingUser: ', existingUser);
+      // console.log('existingUser: ', existingUser);
 
       if (existingUser?.password) {
         return {
@@ -379,7 +426,7 @@ export class AuthService {
 
       return {
         success: true,
-        message: 'Registration link sent to email',
+        message: `Registration link sent to email: ${email}`,
       };
     } catch (error) {
       return {
@@ -389,28 +436,32 @@ export class AuthService {
     }
   }
 
-  async verifyRegistrationToken(token: string) {
+  async verifyRegistrationToken(password: string, token: string) {
     try {
       const decoded = this.jwtService.verify(token);
       const { email } = decoded;
-  
+
       console.log('decoded: ', decoded);
-  
+
       // 🔍 Step 1: Check if the user already exists BEFORE upsert
       const existingUser = await this.prisma.user.findUnique({
         where: { email },
       });
-  
-  
+
+      const hashedPassword = await bcrypt.hash(password, appConfig().security.salt);
+
+
       const user = await this.prisma.user.upsert({
         where: {
           email,
         },
         update: {
           status: 1,
+          password: hashedPassword,  // Save the hashed password
         },
         create: {
           email,
+          password: hashedPassword,  // Save the hashed password
           status: 1,
         },
         select: {
@@ -428,10 +479,9 @@ export class AuthService {
           avatar: true,
         },
       });
-  
+
 
       if (!existingUser) {
-        
         const stripeCustomer = await StripePayment.createCustomer({
           user_id: user.id,
           email: email,
@@ -449,15 +499,15 @@ export class AuthService {
           });
         }
       }
-  
+
       console.log('user: ', user);
-  
+
       // 🔑 Step 4: Generate access token
       const accessToken = this.jwtService.sign({
         userId: user.id,
         email: user.email,
       });
-  
+
       return {
         success: true,
         message: 'Registration successful',
@@ -473,7 +523,7 @@ export class AuthService {
       };
     }
   }
-  
+
 
   //forget passs
   async forgotPassword(email) {
@@ -860,57 +910,57 @@ export class AuthService {
   // --------- end 2FA ---------
 
   // Apply for reseller
-  async applyForReseller(data: ResellerApplicationDto,userId: string) {
-      
-      try {
-        if (!userId) {
-          throw new Error('User ID is required to apply for reseller.');
-        }
-        
-        const existingApplication = await this.prisma.resellerApplication.findFirst({
-          where: {
-            user_id: userId,
-            status: 'pending',  
-          },
-        });
-    
-        
-        if (existingApplication) {
-          throw new Error('You have already applied for reseller status.');
-        }
-    
-        
-        const application = await this.prisma.resellerApplication.create({
-          data: {
-            user_id: userId,
-            full_name: data.full_name,
-            user_email: data.user_email,
-            phone_number: data.phone_number,
-            location: data.location,
-            position: data.position,
-            experience: data.experience,
-            cover_letter: data.cover_letter,
-            portfolio: data.portfolio,
-            skills: data.skills,
-            status: 'pending',  
-          },
-        });
+  async applyForReseller(data: ResellerApplicationDto, userId: string) {
 
-        await this.mailService.submitSuccessEmail({
-          email: application.user_email,
-          name: application.full_name ,
-        });
-    
-        return {
-          success: true,
-          message: 'Application for reseller successfully submitted.',
-          data: application,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: `Error applying for reseller: ${error.message}`,
-        };
+    try {
+      if (!userId) {
+        throw new Error('User ID is required to apply for reseller.');
       }
+
+      const existingApplication = await this.prisma.resellerApplication.findFirst({
+        where: {
+          user_id: userId,
+          status: 'pending',
+        },
+      });
+
+
+      if (existingApplication) {
+        throw new Error('You have already applied for reseller status.');
+      }
+
+
+      const application = await this.prisma.resellerApplication.create({
+        data: {
+          user_id: userId,
+          full_name: data.full_name,
+          user_email: data.user_email,
+          phone_number: data.phone_number,
+          location: data.location,
+          position: data.position,
+          experience: data.experience,
+          cover_letter: data.cover_letter,
+          portfolio: data.portfolio,
+          skills: data.skills,
+          status: 'pending',
+        },
+      });
+
+      await this.mailService.submitSuccessEmail({
+        email: application.user_email,
+        name: application.full_name,
+      });
+
+      return {
+        success: true,
+        message: 'Application for reseller successfully submitted.',
+        data: application,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error applying for reseller: ${error.message}`,
+      };
+    }
   }
 }
