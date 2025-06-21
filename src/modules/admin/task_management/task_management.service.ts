@@ -18,10 +18,8 @@ export class TaskManagementService {
   }
   // ---------------------assign order to the reseller--------------------\\
   async assignUserToOrder(
-    // user_id: string,
-    orderId: string,
-    dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }
-  ) {
+user_id: string,
+ orderId: string, dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }  ) {
     const { res_id, note, roleId, ammount, post_count, post_type } = dto;   
 
 
@@ -130,18 +128,18 @@ export class TaskManagementService {
       }
     })
 
-    // // send notification to assined user (reseller)
-    // const notificationPayload: any = {
-    //   sender_id: user_id,
-    //   receiver_id: reseller.reseller_id,
-    //   text: 'You have been assigned to this task',
-    //   type: 'post',
-    //   entity_id: task.id
-    // }
+    // send notification to assined user (reseller)
+    const notificationPayload: any = {
+      sender_id: user_id,
+      receiver_id: reseller.reseller_id,
+      text: 'You have been assigned to this task',
+      type: 'post',
+      entity_id: task.id
+    }
 
-    // NotificationRepository.createNotification(notificationPayload);
-    // this.messageGateway.server.emit("notification", notificationPayload)
-    // // End sending notification
+    NotificationRepository.createNotification(notificationPayload);
+    this.messageGateway.server.emit("notification", notificationPayload)
+    // End sending notification
 
 
     return {
