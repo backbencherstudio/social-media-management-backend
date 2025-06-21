@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDate, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsDate, IsArray, IsNumber, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdatePostChannelDto {
@@ -23,6 +23,7 @@ export class UpdatePostFileDto {
   @IsString()
   @IsOptional()
   file_alt?: string;
+
 }
 
 export class UpdatePostDto {
@@ -41,8 +42,13 @@ export class UpdatePostDto {
   hashtags?: string[];
 
   @IsNumber()
+  @IsIn([0, 1, 2])
   @IsOptional()
   status?: number;
+
+  @IsString()
+  @IsOptional()
+  feedback?: string;
 
   @IsArray()
   @Type(() => UpdatePostChannelDto)

@@ -913,4 +913,302 @@ export class AuthService {
         };
       }
   }
+
+  // --------- Google Login ---------
+  async handleGoogleLogin(profile: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    picture: string;
+    accessToken: string;
+    refreshToken: string;
+    provider: string;
+    id: string;
+  }) {
+    try {
+      // Check for existing user
+      let user = await this.prisma.user.findUnique({
+        where: { email: profile.email },
+      });
+  
+      // Create new user if not found
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            first_name: profile.firstName,
+            last_name: profile.lastName,
+            avatar: profile.picture,
+            name: `${profile.firstName} ${profile.lastName}`,
+            email_verified_at: new Date(),
+          },
+        });
+      }
+  
+      // Upsert into Account table
+      await this.prisma.account.upsert({
+        where: {
+          provider_provider_account_id: {
+            provider: profile.provider,
+            provider_account_id: profile.id,
+          },
+        },
+        update: {
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+        create: {
+          provider: profile.provider,
+          provider_account_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          user_id: user.id,
+          type: 'oauth',
+        },
+      });
+  
+      // Return JWT token
+      return this.login({ email: user.email, userId: user.id });
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  // facebook login
+  async handleFacebookLogin(profile: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    picture: string;
+    accessToken: string;
+    refreshToken: string;
+    provider: string;
+    id: string;
+  }) {
+    try {
+      let user = await this.prisma.user.findUnique({ where: { email: profile.email } });
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            first_name: profile.firstName,
+            last_name: profile.lastName,
+            avatar: profile.picture,
+          },
+        });
+      }
+  
+      await this.prisma.account.upsert({
+        where: {
+          provider_provider_account_id: {
+            provider: 'facebook',
+            provider_account_id: profile.id,
+          }
+        },
+        update: {
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+        create: {
+          provider: 'facebook',
+          provider_account_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        }
+      });
+  
+      return this.login({ email: profile.email, userId: user.id });
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+  // instagram
+  async handleInstagramLogin(profile: {
+    username: string;
+    id: string;
+    accessToken: string;
+    refreshToken: string;
+    provider: string;
+  }) {
+    try {
+      // Instagram API often does not provide email, so use username or some other unique id
+      // Try to find user by username or linked Instagram ID
+      let user = await this.prisma.user.findUnique({
+        where: { username: profile.username },
+      });
+  
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            username: profile.username,
+            // You can map more fields here if available
+            // email might not be provided by Instagram, handle accordingly
+            // e.g. email: profile.email ?? null,
+            // avatar or profile picture is usually from Instagram API, map if you have it
+          },
+        });
+      }
+  
+      // Upsert Instagram account
+      await this.prisma.account.upsert({
+        where: {
+          provider_provider_account_id: {
+            provider: 'instagram',
+            provider_account_id: profile.id,
+          },
+        },
+        update: {
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+        create: {
+          provider: 'instagram',
+          provider_account_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+      });
+  
+      return this.login({ email: user.email, userId: user.id });
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  // twiter
+  async handleTwitterLogin(profile: {
+    id: string;
+    username: string;
+    name: string;
+    email?: string;
+    avatar?: string;
+    accessToken: string;
+    refreshToken: string;
+    provider: string;
+  }) {
+    try {
+      // 1. Find user by email or username (email might be missing in Twitter)
+      let user = await this.prisma.user.findFirst({
+        where: { username: profile.username },
+      });
+  
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            username: profile.username,
+            name: profile.name,
+            email: profile.email,
+            avatar: profile.avatar,
+          },
+        });
+      }
+  
+      // 2. Upsert account
+      await this.prisma.account.upsert({
+        where: {
+          provider_provider_account_id: {
+            provider: 'twitter',
+            provider_account_id: profile.id,
+          },
+        },
+        update: {
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+        create: {
+          provider: 'twitter',
+          provider_account_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+      });
+  
+      // 3. Generate JWT and return
+      return this.login({ email: user.email, userId: user.id });
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async handleLinkedinLogin(profile: {
+    id: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    accessToken: string;
+    refreshToken: string;
+    provider: string;
+  }) {
+    try {
+      let user = await this.prisma.user.findFirst({
+        where: {
+          email: profile.email,
+        },
+      });
+  
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            first_name: profile.firstName,
+            last_name: profile.lastName,
+            avatar: profile.avatar,
+          },
+        });
+      }
+  
+      await this.prisma.account.upsert({
+        where: {
+          provider_provider_account_id: {
+            provider: 'linkedin',
+            provider_account_id: profile.id,
+          },
+        },
+        update: {
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+        create: {
+          provider: 'linkedin',
+          provider_account_id: profile.id,
+          access_token: profile.accessToken,
+          refresh_token: profile.refreshToken,
+          user_id: user.id,
+        },
+      });
+  
+      return this.login({ email: profile.email, userId: user.id });
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  
+  
 }

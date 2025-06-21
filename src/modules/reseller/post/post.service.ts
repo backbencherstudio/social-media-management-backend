@@ -4,28 +4,30 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
+import { TwitterService } from '../../socials/platforms/twitter.service';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('post-schedule') private postQueue: Queue,
+    private twitterService: TwitterService,
   ) { }
 
-  async create(createPostDto: CreatePostDto) {
-    console.log("post_channels", createPostDto);
+  async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
+    console.log('Creating post with data:', createPostDto);
     try {
-      // Create the post
       const post = await this.prisma.post.create({
         data: {
           content: createPostDto.content,
-          schedule_at: createPostDto.schedule_at,
+          schedule_at: createPostDto.schedule_at, // schedule input here
           hashtags: createPostDto.hashtags,
-          status: 1, // 1 = scheduled
+          task_id: createPostDto.task_id,
+          status: createPostDto.status ?? 0, // allow status to be set on creation
         },
       });
 
-      // Create post channels if provided
       if (createPostDto.post_channels?.length) {
         await this.prisma.postChannel.createMany({
           data: createPostDto.post_channels.map((channel) => ({
@@ -35,74 +37,94 @@ export class PostService {
         });
       }
 
-      // Create post files if provided
-      if (createPostDto.post_files?.length) {
-        await this.prisma.postFile.createMany({
-          data: createPostDto.post_files.map((file) => ({
+      if (files && files.length > 0) {
+        const postFiles = [];
+
+        for (const file of files) {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          const fileName = `${randomName}-${file.originalname}`;
+          await SojebStorage.put('post-files/' + fileName, file.buffer);
+
+          postFiles.push({
             post_id: post.id,
-            name: file.name,
-            type: file.type,
-            file_path: file.file_path,
-            file_alt: file.file_alt,
-          })),
-        });
+            name: file.originalname,
+            type: file.mimetype.startsWith('image') ? 'image' : 'video',
+            file_path: fileName,
+            size: file.size,
+            file_alt: '',
+          });
+        }
+
+        if (postFiles.length > 0) {
+          await this.prisma.postFile.createMany({
+            data: postFiles,
+          });
+        }
       }
 
-      // If schedule_at is provided, add to queue
-      if (createPostDto.schedule_at) {
-        const delay = createPostDto.schedule_at.getTime() - Date.now();
-        if (delay > 0) {
-          await this.postQueue.add(
-            'publish-post',
-            { postId: post.id },
-            { delay },
-          );
+      // If post is created as approved (status = 1), schedule for publishing
+      if (post.status === 1) {
+        if (post.schedule_at) {
+          const scheduleDate = new Date(post.schedule_at);
+          const delay = scheduleDate.getTime() - Date.now();
+          if (delay > 0) {
+            await this.postQueue.add(
+              'publish-post',
+              { postId: post.id },
+              { delay },
+            );
+          } else {
+            await this.postQueue.add('publish-post', { postId: post.id });
+          }
         } else {
-          // If schedule time is in the past, publish immediately
           await this.postQueue.add('publish-post', { postId: post.id });
         }
-      } else {
-        // If no schedule time, publish immediately
-        await this.postQueue.add('publish-post', { postId: post.id });
       }
 
-      return post;
+      return {
+        success: true,
+        data: await this.findOne(post.id),
+      };
     } catch (error) {
-      console.error('Error creating post:', error);
-      throw new Error('Failed to create post');
+      return { success: false, message: error.message };
     }
   }
 
   async findAll() {
     try {
-      return this.prisma.post.findMany({
+      const posts = await this.prisma.post.findMany({
         include: {
           post_channels: {
             include: {
-              channel: true
-            }
+              channel: true,
+            },
           },
           post_files: true,
+          task: true
         },
       });
+      return { success: true, data: posts };
     } catch (error) {
-      console.error('Error finding all posts:', error);
-      throw new Error('Failed to find all posts');
+      return { success: false, message: error.message };
     }
   }
 
   async findOne(id: string) {
     try {
-      return this.prisma.post.findUnique({
+      const post = await this.prisma.post.findUnique({
         where: { id },
         include: {
           post_channels: true,
           post_files: true,
+          task: true
         },
       });
+      return { success: true, data: post };
     } catch (error) {
-      console.error('Error finding post by ID:', error);
-      throw new Error('Failed to find post by ID');
+      return { success: false, message: error.message };
     }
   }
 
@@ -114,7 +136,7 @@ export class PostService {
 
         if (create?.length) {
           await this.prisma.postChannel.createMany({
-            data: create.map(channel => ({
+            data: create.map((channel) => ({
               post_id: id,
               channel_id: channel.channel_id,
             })),
@@ -132,7 +154,7 @@ export class PostService {
 
         if (remove?.length) {
           await this.prisma.postChannel.deleteMany({
-            where: { id: { in: remove.map(item => item.id) } },
+            where: { id: { in: remove.map((item) => item.id) } },
           });
         }
       }
@@ -143,7 +165,7 @@ export class PostService {
 
         if (create?.length) {
           await this.prisma.postFile.createMany({
-            data: create.map(file => ({
+            data: create.map((file) => ({
               post_id: id,
               name: file.name,
               type: file.type,
@@ -161,21 +183,19 @@ export class PostService {
             });
           }
         }
-        
+
         if (remove?.length) {
           await this.prisma.postFile.deleteMany({
-            where: { id: { in: remove.map(item => item.id) } },
+            where: { id: { in: remove.map((item) => item.id) } },
           });
         }
       }
-
     } catch (error) {
-      console.error('Error updating post:', error);
-      throw new Error('Failed to update post');
+      return { success: false, message: error.message };
     }
     // Update the post itself
     const { post_channels, post_files, ...postData } = updatePostDto;
-    return this.prisma.post.update({
+    const updated = await this.prisma.post.update({
       where: { id },
       data: postData,
       include: {
@@ -183,11 +203,153 @@ export class PostService {
         post_files: true,
       },
     });
+    return { success: true, data: updated };
   }
 
   async remove(id: string) {
-    return this.prisma.post.delete({
-      where: { id },
-    });
+    try {
+      const deleted = await this.prisma.post.delete({
+        where: { id },
+      });
+      return { success: true, data: deleted };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getScheduledPostsForCalendar(start: Date, end: Date) {
+    try {
+      const posts = await this.prisma.post.findMany({
+        where: {
+          schedule_at: {
+            gte: start,
+            lte: end,
+          },
+          status: 1, // Only get scheduled posts
+          deleted_at: null,
+        },
+        include: {
+          post_channels: { include: { channel: true } },
+          post_files: true,
+        },
+        orderBy: { schedule_at: 'asc' },
+      });
+      return { success: true, data: posts };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUpcomingPosts() {
+    try {
+      const now = new Date();
+
+      const posts = await this.prisma.post.findMany({
+        where: {
+          schedule_at: {
+            gt: now,
+          },
+          status: 1,
+          deleted_at: null,
+        },
+        include: {
+          post_channels: { include: { channel: true } },
+          post_files: true,
+        },
+        orderBy: { schedule_at: 'asc' },
+      });
+
+      return { success: true, data: posts };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async reviewPost(
+    postId: string,
+    action: 1 | 2, // 1 = approved, 2 = rejected
+    feedback?: string,
+  ) {
+    try {
+      // Step 1: Update post status
+      const post = await this.prisma.post.update({
+        where: { id: postId },
+        data: {
+          status: action,
+          feedback: feedback || null,
+          updated_at: new Date(),
+        },
+      });
+
+      // Step 2: If post is approved, add to queue for publishing
+      if (action === 1) {
+        if (post.schedule_at) {
+          const scheduleDate = new Date(post.schedule_at);
+          const delay = scheduleDate.getTime() - Date.now();
+
+          if (delay > 0) {
+            await this.postQueue.add(
+              'publish-post',
+              { postId: post.id },
+              { delay },
+            );
+          } else {
+            await this.postQueue.add('publish-post', { postId: post.id });
+          }
+        } else {
+          await this.postQueue.add('publish-post', { postId: post.id });
+        }
+      }
+
+      // Step 3: Get related task via post.task_id
+      const task = await this.prisma.taskAssign.findFirst({
+        where: {
+          posts: { some: { id: postId } }, // or use post.task_id if defined
+        },
+        include: {
+          posts: true,
+          order: {
+            include: { order_assigns: true }, // get all tasks under order
+          },
+        },
+      });
+
+      if (task) {
+        // Step 4: Check if all posts in task are approved
+        const allPostsApproved = task.posts.every((p) => p.status === 1);
+
+        if (allPostsApproved) {
+          // Step 5: Update task status to Completed
+          await this.prisma.taskAssign.update({
+            where: { id: task.id },
+            data: { status: 'completed' }, // or Status.completed enum if using
+          });
+        }
+
+        // Step 6: After task completion, check if all tasks in the order are completed
+        const updatedTasks = await this.prisma.taskAssign.findMany({
+          where: { order_id: task.order_id },
+        });
+
+        const allTasksCompleted = updatedTasks.every(
+          (t) => t.status === 'completed',
+        );
+
+        if (allTasksCompleted) {
+          await this.prisma.order.update({
+            where: { id: task.order_id },
+            data: { order_status: 'completed' }, // Or OrderStatus.completed enum
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Post reviewed and related updates applied.',
+        data: post,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
 }
