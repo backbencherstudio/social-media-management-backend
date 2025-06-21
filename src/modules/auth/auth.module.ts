@@ -9,7 +9,9 @@ import appConfig from '../../config/app.config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { MailModule } from '../../mail/mail.module';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { UserModule } from './user/user.module';
+import { FacebookStrategy } from './strategies/facebook.strategy';
+import { InstagramStrategy } from './strategies/instagram.strategy';
+import { LinkedInStrategy } from './strategies/linkedin.strategy';
 
 @Module({
   imports: [
@@ -23,7 +25,7 @@ import { UserModule } from './user/user.module';
     UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, FacebookStrategy, InstagramStrategy,LinkedInStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

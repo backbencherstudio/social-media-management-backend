@@ -382,9 +382,4 @@ async getResellerById(resellerId: string) {
     throw new Error('Error fetching reseller');
   }
 }
-
-
-
-
-
 }

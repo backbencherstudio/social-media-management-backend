@@ -16,6 +16,8 @@ import { TeamModule } from './team/team.module';
 import { InvoiceModule } from './order_page/invoice/invoice.module';
 import { EmailSettingsModule } from './email_settings/email_settings.module';
 import { BlogCategoryModule } from './blog/blog_category/blog_category.module';
+import { EmailSettingsService } from './email_settings/email_settings.service';
+import { SecuritySettingsModule } from './admin_settings/security_settings/security_settings.module';
 
 
 
@@ -37,8 +39,16 @@ import { BlogCategoryModule } from './blog/blog_category/blog_category.module';
     TeamModule,
     InvoiceModule,
     EmailSettingsModule,
-    BlogCategoryModule
+    BlogCategoryModule,
+    SecuritySettingsModule 
 
+
+  ],
+    providers: [
+    EmailSettingsService, 
+  ],
+  exports: [
+    EmailSettingsService,
   ],
 })
 export class AdminModule {}

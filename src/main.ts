@@ -12,6 +12,8 @@ import { AppModule } from './app.module';
 import { CustomExceptionFilter } from './common/exception/custom-exception.filter';
 import appConfig from './config/app.config';
 import { SojebStorage } from './common/lib/Disk/SojebStorage';
+import * as session from 'express-session';
+import * as passport from 'passport';
 // import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
@@ -23,44 +25,51 @@ async function bootstrap() {
   // Handle raw body for webhooks
   // app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));
   app.use(
-  '/payment/stripe/webhook',
-  bodyParser.raw({ type: 'application/json' })
-);
+    '/payment/stripe/webhook',
+    bodyParser.raw({ type: 'application/json' }),
+  );
 
-app.setGlobalPrefix('api');
-// Configure CORS
-app.enableCors({
-  origin: true, // Add your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  credentials: true,
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-  ],
-});
-app.use(
-  helmet({
-    crossOriginResourcePolicy: false,
-  })
-);
-
-  app.useStaticAssets(join(__dirname, '..', 'public'), {
-    index: false,
-    prefix: '/public',
+  app.setGlobalPrefix('api');
+  // Configure CORS
+  app.enableCors({
+    origin: true, // Add your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+    ],
   });
-  
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: false,
+    }),
+  );
+
+//  app.use(
+//   session({
+//     secret: 'your-secret',
+//     resave: false,
+//     saveUninitialized: false,
+//   }),
+// );
+// app.use(passport.initialize());
+// app.use(passport.session());
+
   app.useStaticAssets(join(__dirname, '..', 'public/storage'), {
     index: false,
     prefix: '/storage',
   });
-  
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true,
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  }));
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
   app.useGlobalFilters(new CustomExceptionFilter());
 
   // storage setup
