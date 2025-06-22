@@ -15,47 +15,14 @@ export class TeamService {
   create(_createTeamDto: CreateTeamDto) {
     return 'This action adds a new team';
   }
-  // async addMember(dto: CreateTeamDto) {
-  //   try {
-
-  //     const existingMember = await this.prisma.team.findUnique({
-  //       where: {
-  //         email: dto.email,
-  //       },
-  //     });
-
-  //     if (existingMember) {
-  //      return {
-  //        message:'Email already exists'
-  //      }
-  //     }
-
-  //     const member = await this.prisma.team.create({
-  //       data: {
-  //         id: `admin_${createId()}`,  
-  //         full_name: dto.fullName,
-  //         email: dto.email,
-  //         role: dto.role,
-  //       },
-  //     });
-
-  //       await this.mailService.confirmAdminMail({
-  //       email: dto.email,
-  //       name: dto.fullName,
-  //       password: password,
-  //     });
-
-  //     return member;
-
-  //   } catch (error) {
-  //     console.error('Error in addMember:', error.message);
-  //     throw new Error(`Failed to add member: ${error.message}`);
-  //   }
-  // }
-
   async addMember(dto: CreateTeamDto) {
     try {
       const existingMember = await this.prisma.team.findUnique({
+        where: {
+          email: dto.email,
+        },
+      });
+      const existingAdminUser = await this.prisma.user.findUnique({
         where: {
           email: dto.email,
         },
@@ -67,6 +34,11 @@ export class TeamService {
         };
       }
 
+      if (existingAdminUser) {
+        return {
+          message: 'Admin user already exists',
+        };
+      }
 
       const rawPassword = randomBytes(6).toString('base64');
       const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -82,30 +54,55 @@ export class TeamService {
       });
 
 
+      const adminUser = await this.prisma.user.create({
+       data:{
+       email:dto.email,
+       password: hashedPassword,
+        type: 'admin',
+       }
+     });
+
+
       await this.mailService.confirmAdminMail({
         email: dto.email,
         name: dto.fullName,
         password: rawPassword,
       });
 
-      return member;
+      return {
+        message: 'Member added successfully',
+        data: member,
+        adminUser: adminUser,
+       
+      };
 
     } catch (error) {
       console.error('Error in addMember:', error.message);
       throw new Error(`Failed to add member: ${error.message}`);
     }
   }
-
-
-
   async updateMember(id: string, dto: UpdateTeamDto) {
-    return this.prisma.team.update({
+    const updatedMember = await this.prisma.team.update({
       where: { id },
       data: {
         full_name: dto.fullName,
         role: dto.role,
       },
     });
+
+    const updatedAdminUser = await this.prisma.user.update({
+      where: { email: updatedMember.email },
+      data: {
+        username: dto.fullName,
+        type: dto.role,
+      },
+    });
+
+    return {
+      message: 'Member updated successfully',
+      data: updatedMember,
+      adminUser: updatedAdminUser,
+    };
   }
   async deleteMember(id: string) {
     if (!id) {

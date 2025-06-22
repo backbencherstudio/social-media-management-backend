@@ -196,7 +196,6 @@ async getTopPerformingServices() {
       },
     });
 
-
     const packageStats: Record<string, { total_sold: number; total_amount: number }> = {};
 
     for (const order of orders) {
@@ -211,12 +210,13 @@ async getTopPerformingServices() {
       packageStats[name].total_amount += amount;
     }
 
- 
-    const result = Object.entries(packageStats).map(([name, stats]) => ({
-      package_name: name,
-      total_sold: stats.total_sold,
-      total_amount: stats.total_amount,
-    }));
+    const result = Object.entries(packageStats)
+      .map(([name, stats]) => ({
+        package_name: name,
+        total_sold: stats.total_sold,
+        total_amount: stats.total_amount,
+      }))
+      .sort((a, b) => b.total_amount - a.total_amount); // 💥 Sorting here
 
     return {
       success: true,
@@ -242,6 +242,7 @@ async getTopResellers() {
     const data = resellers.map((reseller) => ({
       id: reseller.reseller_id,
       full_name: reseller.full_name,
+      completed_tasks: reseller.TaskAssign.filter(task => task.status === 'completed').length,
       user_email: reseller.user_email,
       total_earnings: reseller.total_earnings || 0,
     }));
@@ -270,7 +271,7 @@ async getTopResellers() {
 async getRecentOrders() {
   try {
     const recentOrders = await this.prisma.order.findMany({
-      take: 5, 
+      take: 3, 
       orderBy: {
         created_at: 'desc', 
       },
