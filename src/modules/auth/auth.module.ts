@@ -12,6 +12,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { InstagramStrategy } from './strategies/instagram.strategy';
 import { LinkedInStrategy } from './strategies/linkedin.strategy';
+import { TwitterStrategy } from './strategies/twitter.strategy';
 
 @Module({
   imports: [
@@ -24,7 +25,16 @@ import { LinkedInStrategy } from './strategies/linkedin.strategy';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, FacebookStrategy, InstagramStrategy,LinkedInStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    FacebookStrategy,
+    InstagramStrategy,
+    LinkedInStrategy,
+    TwitterStrategy
+  ],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

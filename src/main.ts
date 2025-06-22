@@ -12,8 +12,8 @@ import { AppModule } from './app.module';
 import { CustomExceptionFilter } from './common/exception/custom-exception.filter';
 import appConfig from './config/app.config';
 import { SojebStorage } from './common/lib/Disk/SojebStorage';
-import * as session from 'express-session';
-import * as passport from 'passport';
+import session from 'express-session';
+import passport from 'passport';
 // import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
@@ -48,15 +48,32 @@ async function bootstrap() {
     }),
   );
 
-//  app.use(
-//   session({
-//     secret: 'your-secret',
-//     resave: false,
-//     saveUninitialized: false,
-//   }),
-// );
-// app.use(passport.initialize());
-// app.use(passport.session());
+  // Configure session middleware for OAuth authentication
+  app.use(
+    session({
+      secret: appConfig().session.secret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+    }),
+  );
+
+  // Initialize Passport and restore authentication state from session
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Configure Passport session serialization
+  passport.serializeUser((user: any, done) => {
+    done(null, user);
+  });
+
+  passport.deserializeUser((user: any, done) => {
+    done(null, user);
+  });
 
   app.useStaticAssets(join(__dirname, '..', 'public/storage'), {
     index: false,

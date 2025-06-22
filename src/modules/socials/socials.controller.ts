@@ -132,15 +132,6 @@ export class SocialsController {
     );
   }
 
-  @Get(':userId/test-connection/:provider')
-  @ApiOperation({ summary: 'Test connection to a provider for a user' })
-  async testConnection(
-    @Param('userId') userId: string,
-    @Param('provider') provider: SupportedProvider,
-  ): Promise<ConnectionResult> {
-    return this.socialsService.testConnection(userId, provider);
-  }
-
   @Get(':userId/follower-activity/:provider')
   @ApiOperation({ summary: 'Get follower activity for a provider for a user' })
   async getFollowerActivity(

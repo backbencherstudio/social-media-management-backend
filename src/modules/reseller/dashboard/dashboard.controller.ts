@@ -7,7 +7,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Reseller')
 @ApiBearerAuth()
-//seGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 @Controller('reseller/dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) { }
@@ -19,14 +19,12 @@ export class DashboardController {
 
   @Get('analysis')
   getDashboardStats(@Req() req) {
-    // Assuming the user ID is on req.user.id from the JWT payload
     const userId = "cmb1qwp4z0000ree0q2ikxruz"
     return this.dashboardService.getDashboardStats(userId)
   }
 
   @Get('clients')
   findAllClients(@Req() req) {
-    // Assuming the user ID is on req.user.id from the JWT payload
     const resellerId = "RES_n461l81lt1q8naigks2170vm"
     return this.dashboardService.findAllClients(resellerId)
   }

@@ -301,35 +301,6 @@ export class SocialsService {
   }
 
   /**
-   * Test connection to a social media platform
-   * @param userId - The user's unique identifier
-   * @param provider - The social media provider
-   * @returns Test result
-   */
-  async testConnection(userId: string, provider: SupportedProvider): Promise<ConnectionResult> {
-    try {
-      const account = await this.getUserAccount(userId, provider);
-
-      const serviceMap = {
-        facebook: () => this.facebookService.testConnection(account.access_token),
-        instagram: () => this.instagramService.testConnection(account.access_token),
-        twitter: () => this.twitterService.testConnection(account.access_token),
-        linkedin: () => this.linkedinService.testConnection(account.access_token),
-      };
-
-      const service = serviceMap[provider];
-      if (!service) {
-        return { success: false, message: 'Provider not supported for testing' };
-      }
-
-      const data = await service();
-      return { success: true, data };
-    } catch (error) {
-      return { success: false, message: `Connection test failed: ${error.message}` };
-    }
-  }
-
-  /**
    * Get follower activity for a provider
    * @param userId - The user's unique identifier
    * @param provider - The social media provider

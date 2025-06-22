@@ -39,6 +39,10 @@ export default () => ({
     expiry: process.env.JWT_EXPIRY,
   },
 
+  session: {
+    secret: process.env.SESSION_SECRET,
+  },
+
   auth: {
     google: {
       app_id: process.env.GOOGLE_APP_ID,
