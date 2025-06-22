@@ -539,6 +539,7 @@ model ServiceTier {
 
   subscriptions Subscription[]
   orders        Order[]
+  Order_Details Order_Details[]
 
   @@map("service_tiers")
 }
@@ -958,6 +959,21 @@ enum paymentStatus {
   due
 }
 
+model Order_Details {
+  id              String       @id
+  order_id        String
+  order           Order        @relation(fields: [order_id], references: [id])
+  service_name    String
+  service_amount  String
+  service_price   Float
+  service_tier_id String?
+  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
+  order_assigns   TaskAssign[]
+  created_at      DateTime     @default(now())
+
+  @@map("order_details")
+}
+
 model Order {
   id         String   @id
   created_at DateTime @default(now())
@@ -979,8 +995,9 @@ model Order {
   user_name      String?
   user_email     String?
   pakage_name    String?
-  payment_status paymentStatus @default(pending)
+  payment_status paymentStatus   @default(pending)
   order_assigns  TaskAssign[]
+  Order_Details  Order_Details[]
 
   @@map("orders")
 }
@@ -1019,9 +1036,11 @@ model TaskAssign {
   due_date   String?
   status     Status  @default(In_progress)
 
-  assignees Reseller[]   @relation("TaskAssaingees")
-  posts     Post[]
-  files     DesignFile[]
+  assignees       Reseller[]     @relation("TaskAssaingees")
+  posts           Post[]
+  files           DesignFile[]
+  Order_Details   Order_Details? @relation(fields: [order_DetailsId], references: [id])
+  order_DetailsId String?
 
   @@map("task_assign")
 }
