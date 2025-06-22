@@ -18,7 +18,7 @@ export class CreatePaymentIntentDto {
 
   @IsString()
   service_id: string;
-  
+
   @IsString()
   status: string;
 
