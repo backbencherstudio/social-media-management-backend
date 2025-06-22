@@ -31,6 +31,7 @@ import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
 import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
+import { AssetsModule } from './modules/reseller/assets/assets.module';
 
 
 @Module({
@@ -66,6 +67,7 @@ import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
     DesignFileModule,
     SocialsModule,
     DashboardModule,
+    AssetsModule,
 
   ],
   controllers: [AppController],

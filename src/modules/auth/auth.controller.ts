@@ -51,9 +51,9 @@ export class AuthController {
     try {
       const user_id = req.user.userId;
       console.log(user_id);
-      
+
       const response = await this.authService.me(user_id);
-      
+
       return response;
     } catch (error) {
       return {
@@ -247,7 +247,7 @@ export class AuthController {
     return HttpStatus.OK; // redirects to Facebook login
   }
 
-  @Get('facebook/redirect')
+  @Get('facebook/callback')
   @UseGuards(AuthGuard('facebook'))
   async facebookLoginRedirect(@Req() req, @Res() res) {
     const user = req.user;
@@ -267,7 +267,7 @@ export class AuthController {
     const user = req.user;
     const result = await this.authService.handleInstagramLogin(user);
     // Redirect user to frontend with JWT token or data
-    return res.redirect(`${process.env.CLIENT_APP_URL}/auth/success?token=${result.authorization.token}`);
+    return res.redirect(`${process.env.CLIENT_APP_URL}/api/auth/success?token=${result.authorization.token}`);
   }
 
   @Get('twitter')
@@ -276,15 +276,15 @@ export class AuthController {
     return HttpStatus.OK; // Redirects to Twitter
   }
 
-  @Get('twitter/redirect')
+  @Get('twitter/callback')
   @UseGuards(AuthGuard('twitter'))
   async twitterLoginCallback(@Req() req, @Res() res) {
     const result = await this.authService.handleTwitterLogin(req.user);
-    return res.redirect(`${process.env.CLIENT_APP_URL}/auth/success?token=${result.authorization.token}`);
+    return res.redirect(`${process.env.CLIENT_APP_URL}/api/auth/success?token=${result.authorization.token}`);
   }
 
   @Get('linkedin')
-   @UseGuards(AuthGuard('linkedin'))
+  @UseGuards(AuthGuard('linkedin'))
   async linkedinLogin(): Promise<any> {
     return HttpStatus.OK;
   }
@@ -293,7 +293,7 @@ export class AuthController {
   @UseGuards(AuthGuard('linkedin'))
   async linkedinCallback(@Req() req, @Res() res) {
     const result = await this.authService.handleLinkedinLogin(req.user);
-    return res.redirect(`${process.env.CLIENT_APP_URL}/auth/success?token=${result.authorization.token}`);
+    return res.redirect(`${process.env.CLIENT_APP_URL}/api/auth/success?token=${result.authorization.token}`);
   }
 
   // update user

@@ -35,8 +35,6 @@ export class DashboardService {
         include: { user: true },
       });
 
-      console.log("reseller id :", reseller)
-
       if (!reseller) {
         return {
           success: false,
@@ -108,10 +106,10 @@ export class DashboardService {
           user: true,
         },
       });
-
       const clients = tasks
         .map((task) => task.user)
-        .filter((user) => user !== null && user.type === 'clint');
+        // todo this .filter((user) => user !== null && user.type === 'clint');
+        .filter((user) => user !== null);
 
       return {
         success: true,

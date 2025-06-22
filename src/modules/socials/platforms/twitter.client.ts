@@ -1,5 +1,6 @@
 import { TwitterApi } from 'twitter-api-v2';
 import { Account } from '@prisma/client';
+import appConfig from 'src/config/app.config';
 
 /**
  * Creates a TwitterApi client instance from account credentials
@@ -8,14 +9,16 @@ import { Account } from '@prisma/client';
  * @throws Error if required credentials are missing
  */
 export function createTwitterClient(account: Account): TwitterApi {
-    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
-        throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
+    // Check for required credentials
+    if (!account.access_token || !account.access_secret) {
+        throw new Error('Missing Twitter API credentials (access_token, access_secret) in account model');
     }
 
+    // Use app credentials from config and user credentials from account
     return new TwitterApi({
-        appKey: account.api_key,
-        appSecret: account.api_secret,
-        accessToken: account.access_token,
-        accessSecret: account.access_secret,
+        appKey: appConfig().auth.twitter.app_id,        // App API Key
+        appSecret: appConfig().auth.twitter.app_secret,  // App API Secret
+        accessToken: account.access_token,               // User Access Token
+        accessSecret: account.access_secret,             // User Access Secret
     });
 } 

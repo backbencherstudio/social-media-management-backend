@@ -12,8 +12,6 @@ export class DesignFileService {
     createDesignFileDto: CreateDesignFileDto,
     assets?: Express.Multer.File[],
   ) {
-    console.log('Creating design file with data:', createDesignFileDto);
-    console.log('assets:', assets);
     try {
       // Create DesignFile record
       const designFile = await this.prisma.designFile.create({
@@ -187,6 +185,117 @@ export class DesignFileService {
         success: false,
         message: error.message,
       };
+    }
+  }
+
+  async update(id: string, updateDesignFileDto: any, assets?: Express.Multer.File[]) {
+    try {
+      // Get existing design file with assets
+      const existingDesignFile = await this.prisma.designFile.findUnique({
+        where: { id },
+        include: { assets: true },
+      });
+
+      if (!existingDesignFile) {
+        return { success: false, message: 'Design file not found' };
+      }
+
+      // Handle new file uploads
+      if (assets && assets.length > 0) {
+        const newFileAssets = [];
+
+        for (const file of assets) {
+          // Generate random filename
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+
+          const fileName = `${randomName}${file.originalname}`;
+          console.log(`Uploading new file: ${fileName} (${file.size} bytes)`);
+
+          // Upload file using SojebStorage
+          await SojebStorage.put('assets/' + fileName, file.buffer);
+
+          newFileAssets.push({
+            design_file_id: id,
+            name: file.originalname,
+            type: file.mimetype.startsWith('image') ? 'image' : 'video',
+            file_path: fileName,
+            size: file.size,
+          });
+        }
+
+        if (newFileAssets.length > 0) {
+          await this.prisma.designFileAsset.createMany({ data: newFileAssets });
+        }
+      }
+
+      // Update the design file
+      const updatedDesignFile = await this.prisma.designFile.update({
+        where: { id },
+        data: {
+          content: updateDesignFileDto.content,
+          status: updateDesignFileDto.status,
+          feedback: updateDesignFileDto.feedback,
+        },
+        include: { assets: true },
+      });
+
+      // Add public URLs to assets
+      const designFileWithUrls = {
+        ...updatedDesignFile,
+        assets: updatedDesignFile.assets.map((file) => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/assets/' + file.file_path,
+          ),
+        })),
+      };
+
+      return { success: true, data: designFileWithUrls };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async remove(id: string) {
+    try {
+      // Get the design file with all assets
+      const designFile = await this.prisma.designFile.findUnique({
+        where: { id },
+        include: { assets: true },
+      });
+
+      if (!designFile) {
+        return { success: false, message: 'Design file not found' };
+      }
+
+      // Delete files from storage
+      for (const asset of designFile.assets) {
+        try {
+          await SojebStorage.delete('assets/' + asset.file_path);
+        } catch (error) {
+          console.warn(`Failed to delete file ${asset.file_path}:`, error);
+        }
+      }
+
+      // Delete all connected records in a transaction
+      await this.prisma.$transaction(async (tx) => {
+        // Delete design file assets
+        await tx.designFileAsset.deleteMany({
+          where: { design_file_id: id },
+        });
+
+        // Finally delete the design file
+        await tx.designFile.delete({
+          where: { id },
+        });
+      });
+
+      return { success: true, message: 'Design file and all connected records deleted successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   }
 }

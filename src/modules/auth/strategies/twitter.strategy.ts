@@ -25,6 +25,7 @@ export class TwitterStrategy extends PassportStrategy(Strategy, 'twitter') {
       avatar: photos?.[0]?.value,
       accessToken: token,
       refreshToken: tokenSecret,
+      tokenSecret: tokenSecret,
       provider: 'twitter',
     };
 

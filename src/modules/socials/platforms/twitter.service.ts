@@ -9,23 +9,65 @@ export class TwitterService {
   constructor(private readonly prisma: PrismaService) { }
 
   async fetchPosts(userId: string) {
-    const account = await this.prisma.account.findFirst({
-      where: { user_id: userId, provider: 'twitter' },
-    }) as Account | null;
-    if (!account) throw new Error('Twitter not connected');
-    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
-      throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
+    try {
+      const account = await this.prisma.account.findFirst({
+        where: { user_id: userId, provider: 'twitter' },
+      }) as Account | null;
+
+      if (!account) {
+        throw new Error('Twitter not connected');
+      }
+
+      const client = createTwitterClient(account);
+
+      // Use the provider_account_id directly as user ID (it's already the Twitter user ID)
+      const twitterUserId = account.provider_account_id;
+
+      // Fetch tweets directly using the user ID
+      const tweetsResponse = await client.v2.userTimeline(twitterUserId, {
+        'tweet.fields': ['created_at', 'public_metrics', 'author_id', 'text'],
+        'exclude': ['retweets', 'replies'], // Exclude retweets and replies
+        max_results: 10,
+      });
+
+      console.log('Twitter API Response:', {
+        hasData: !!tweetsResponse.data,
+        dataType: typeof tweetsResponse.data,
+        isArray: Array.isArray(tweetsResponse.data),
+        dataLength: Array.isArray(tweetsResponse.data) ? tweetsResponse.data.length : 'not array',
+        meta: tweetsResponse.meta,
+        responseKeys: Object.keys(tweetsResponse),
+        dataKeys: tweetsResponse.data ? Object.keys(tweetsResponse.data) : 'no data',
+      });
+
+      // Twitter API v2 returns { data: [...], meta: {...} }
+      // So tweetsResponse.data.data contains the actual tweets array
+      const tweets = tweetsResponse.data?.data || [];
+
+      // Transform tweets to match expected format
+      const transformedTweets = Array.isArray(tweets) ? tweets.map(tweet => ({
+        id: tweet.id,
+        text: tweet.text,
+        created_at: tweet.created_at,
+        author_id: tweet.author_id,
+        public_metrics: tweet.public_metrics || {},
+        platform: 'twitter',
+      })) : [];
+
+      return {
+        success: true,
+        data: transformedTweets,
+        meta: tweetsResponse.meta,
+        count: transformedTweets.length,
+      };
+    } catch (error) {
+      console.error('Error fetching Twitter posts:', error);
+      return {
+        success: false,
+        message: `Failed to fetch twitter posts: ${error.message}`,
+        error: error.response?.data || error.message,
+      };
     }
-    const client = createTwitterClient(account);
-    // Get user by username
-    const user = await client.v2.userByUsername(account.provider_account_id);
-    if (!user?.data?.id) throw new Error('Could not find Twitter user');
-    // Fetch tweets
-    const tweets = await client.v2.userTimeline(user.data.id, {
-      'tweet.fields': ['created_at', 'public_metrics', 'author_id'],
-      max_results: 10,
-    });
-    return tweets.data;
   }
 
   async getProfile(accessToken: string, provider_account_id: string) {
@@ -34,12 +76,11 @@ export class TwitterService {
       where: { provider: 'twitter', provider_account_id },
     }) as Account | null;
     if (!account) throw new Error('Twitter not connected');
-    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
-      throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
-    }
+
     const client = createTwitterClient(account);
-    // Get user profile by username
-    const user = await client.v2.userByUsername(provider_account_id, {
+
+    // Use the provider_account_id directly as user ID
+    const user = await client.v2.user(provider_account_id, {
       'user.fields': ['id', 'name', 'username', 'profile_image_url', 'public_metrics', 'description', 'created_at'],
     });
     return user.data;
@@ -51,51 +92,14 @@ export class TwitterService {
       where: { provider: 'twitter', provider_account_id },
     }) as Account | null;
     if (!account) throw new Error('Twitter not connected');
-    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
-      throw new Error('Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model');
-    }
+
     const client = createTwitterClient(account);
-    // Get user analytics (public_metrics)
-    const user = await client.v2.userByUsername(provider_account_id, {
+
+    // Use the provider_account_id directly as user ID
+    const user = await client.v2.user(provider_account_id, {
       'user.fields': ['public_metrics'],
     });
     return user.data;
-  }
-
-  async testConnection(accessToken: string) {
-    try {
-      // Test with a simple search endpoint
-      const response = await axios.get(
-        'https://api.twitter.com/2/tweets/search/recent',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: {
-            query: 'test',
-            max_results: 1,
-          },
-        },
-      );
-
-      console.log('Test connection response:', response.data);
-
-      return {
-        connected: true,
-        type: 'Bearer Token (Public Access)',
-        message: 'Twitter Bearer token is working',
-        data: response.data,
-      };
-    } catch (error) {
-      console.error(
-        'Test connection error:',
-        error.response?.data || error.message,
-      );
-      return {
-        connected: false,
-        error: error.message,
-        message: 'Twitter connection failed',
-        details: error.response?.data,
-      };
-    }
   }
 
   async getFollowerActivity(userId: string, start?: string, end?: string) {
@@ -103,15 +107,14 @@ export class TwitterService {
       where: { user_id: userId, provider: 'twitter' },
     }) as Account | null;
     if (!account) return { success: false, message: 'Twitter not connected' };
-    if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
-      return { success: false, message: 'Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model' };
-    }
+
     const client = createTwitterClient(account);
-    // Get user by username
-    const user = await client.v2.userByUsername(account.provider_account_id);
-    if (!user?.data?.id) return { success: false, message: 'Could not find Twitter user' };
+
+    // Use the provider_account_id directly as user ID
+    const twitterUserId = account.provider_account_id;
+
     // Fetch recent tweets
-    const tweetsRes = await client.v2.userTimeline(user.data.id, {
+    const tweetsRes = await client.v2.userTimeline(twitterUserId, {
       'tweet.fields': ['created_at', 'public_metrics'],
       max_results: 100,
       start_time: start,

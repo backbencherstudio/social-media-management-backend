@@ -85,6 +85,14 @@ export class PostController {
     return this.postService.findOne(id);
   }
 
+  @Patch(':id/review')
+  reviewPost(
+    @Param('id') id: string,
+    @Body() body: { status: 1 | 2; feedback?: string },
+  ) {
+    return this.postService.reviewPost(id, body.status, body.feedback);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
     return this.postService.update(id, updatePostDto);
@@ -93,13 +101,5 @@ export class PostController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.postService.remove(id);
-  }
-
-  @Patch(':id/review')
-  reviewPost(
-    @Param('id') id: string,
-    @Body() body: { action: 1 | 2; feedback?: string },
-  ) {
-    return this.postService.reviewPost(id, body.action, body.feedback);
   }
 }

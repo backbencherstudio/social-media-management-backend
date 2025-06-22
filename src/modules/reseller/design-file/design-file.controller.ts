@@ -7,6 +7,8 @@ import {
   UseInterceptors,
   UploadedFiles,
   Patch,
+  Put,
+  Delete,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -52,5 +54,25 @@ export class DesignFileController {
     @Body() body: { action: 1 | 2; feedback?: string },
   ) {
     return this.designFileService.reviewDesignFile(id, body.action, body.feedback);
+  }
+
+  @Put(':id')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [{ name: 'files', maxCount: 10 }],
+      { storage: memoryStorage() }
+    )
+  )
+  async update(
+    @Param('id') id: string,
+    @Body() updateDesignFileDto: any,
+    @UploadedFiles() files: { files?: Express.Multer.File[] }
+  ) {
+    return this.designFileService.update(id, updateDesignFileDto, files?.files);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.designFileService.remove(id);
   }
 }

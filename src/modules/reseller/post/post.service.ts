@@ -17,8 +17,6 @@ export class PostService {
   ) { }
 
   async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
-    console.log('Creating post with data:', createPostDto);
-    console.log('Creating post with file:', files);
     try {
       // Validate task_id if provided
       if (createPostDto.task_id) {
@@ -52,7 +50,7 @@ export class PostService {
           })),
         });
       }
-      console.log("files", files)
+
 
       if (files && files.length > 0) {
         const postFiles = [];
@@ -113,14 +111,46 @@ export class PostService {
   async findAll() {
     try {
       const posts = await this.prisma.post.findMany({
-        include: {
+        select: {
+          id: true,
+          content: true,
+          schedule_at: true,
+          hashtags: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          feedback: true,
+          task_id: true,
           post_channels: {
-            include: {
-              channel: true,
-            },
+            select: {
+              id: true,
+              channel: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
           },
-          post_files: true,
-          task: true
+          post_files: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              file_path: true,
+              size: true,
+              file_alt: true,
+            }
+          },
+          task: {
+            select: {
+              id: true,
+              role_name: true,
+              ammount: true,
+              post_count: true,
+              status: true,
+            }
+          }
         },
       });
 
@@ -145,10 +175,46 @@ export class PostService {
     try {
       const post = await this.prisma.post.findUnique({
         where: { id },
-        include: {
-          post_channels: true,
-          post_files: true,
-          task: true
+        select: {
+          id: true,
+          content: true,
+          schedule_at: true,
+          hashtags: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          feedback: true,
+          task_id: true,
+          post_channels: {
+            select: {
+              id: true,
+              channel: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          post_files: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              file_path: true,
+              size: true,
+              file_alt: true,
+            }
+          },
+          task: {
+            select: {
+              id: true,
+              role_name: true,
+              ammount: true,
+              post_count: true,
+              status: true,
+            }
+          }
         },
       });
 
@@ -243,9 +309,37 @@ export class PostService {
     const updated = await this.prisma.post.update({
       where: { id },
       data: postData,
-      include: {
-        post_channels: true,
-        post_files: true,
+      select: {
+        id: true,
+        content: true,
+        schedule_at: true,
+        hashtags: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+        feedback: true,
+        task_id: true,
+        post_channels: {
+          select: {
+            id: true,
+            channel: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          }
+        },
+        post_files: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            file_path: true,
+            size: true,
+            file_alt: true,
+          }
+        },
       },
     });
     return { success: true, data: await this.findOne(id) };
@@ -253,10 +347,58 @@ export class PostService {
 
   async remove(id: string) {
     try {
-      const deleted = await this.prisma.post.delete({
+      // First, get the post to check if it has any scheduled jobs
+      const post = await this.prisma.post.findUnique({
         where: { id },
+        include: {
+          post_channels: true,
+          post_files: true,
+        },
       });
-      return { success: true, data: deleted };
+
+      if (!post) {
+        return { success: false, message: 'Post not found' };
+      }
+
+      // Remove any scheduled jobs from the queue if the post was scheduled
+      if (post.status === 1) {
+        // Remove any pending jobs for this post
+        const jobs = await this.postQueue.getJobs(['waiting', 'delayed']);
+        for (const job of jobs) {
+          if (job.data.postId === id) {
+            await job.remove();
+          }
+        }
+      }
+
+      // Delete post files from storage
+      for (const file of post.post_files) {
+        try {
+          await SojebStorage.delete('post/' + file.file_path);
+        } catch (error) {
+          console.warn(`Failed to delete file ${file.file_path}:`, error);
+        }
+      }
+
+      // Delete all connected records in a transaction
+      await this.prisma.$transaction(async (tx) => {
+        // Delete post channels
+        await tx.postChannel.deleteMany({
+          where: { post_id: id },
+        });
+
+        // Delete post files
+        await tx.postFile.deleteMany({
+          where: { post_id: id },
+        });
+
+        // Finally delete the post
+        await tx.post.delete({
+          where: { id },
+        });
+      });
+
+      return { success: true, message: 'Post and all connected records deleted successfully' };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -273,9 +415,35 @@ export class PostService {
           status: 1, // Only get scheduled posts
           deleted_at: null,
         },
-        include: {
-          post_channels: { include: { channel: true } },
-          post_files: true,
+        select: {
+          id: true,
+          content: true,
+          schedule_at: true,
+          hashtags: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          post_channels: {
+            select: {
+              id: true,
+              channel: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          post_files: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              file_path: true,
+              size: true,
+              file_alt: true,
+            }
+          },
         },
         orderBy: { schedule_at: 'asc' },
       });
@@ -300,7 +468,7 @@ export class PostService {
   async getUpcomingPosts() {
     try {
       const now = new Date();
-      console.log(now)
+
       const posts = await this.prisma.post.findMany({
         where: {
           schedule_at: {
@@ -309,9 +477,37 @@ export class PostService {
           status: 1,
           deleted_at: null,
         },
-        include: {
-          post_channels: { include: { channel: true } },
-          post_files: true,
+        select: {
+          id: true,
+          content: true,
+          schedule_at: true,
+          hashtags: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          feedback: true,
+          task_id: true,
+          post_channels: {
+            select: {
+              id: true,
+              channel: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          post_files: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              file_path: true,
+              size: true,
+              file_alt: true,
+            }
+          },
         },
         orderBy: { schedule_at: 'asc' },
       });
@@ -335,7 +531,7 @@ export class PostService {
 
   async reviewPost(
     postId: string,
-    action: 1 | 2, // 1 = approved, 2 = rejected
+    status: 1 | 2, // 1 = approved, 2 = rejected
     feedback?: string,
   ) {
     try {
@@ -343,14 +539,14 @@ export class PostService {
       const post = await this.prisma.post.update({
         where: { id: postId },
         data: {
-          status: action,
+          status: status,
           feedback: feedback || null,
           updated_at: new Date(),
         },
       });
 
       // Step 2: If post is approved, add to queue for publishing
-      if (action === 1) {
+      if (status === 1) {
         if (post.schedule_at) {
           const scheduleDate = new Date(post.schedule_at);
           const delay = scheduleDate.getTime() - Date.now();
@@ -381,33 +577,48 @@ export class PostService {
           },
         },
       });
-
       if (task) {
-        // Step 4: Check if all posts in task are approved
-        const allPostsApproved = task.posts.every((p) => p.status === 1);
+        // Step 4: Count approved posts for this task
+        const approvedPostsCount = task.posts.filter((p) => p.status === 1).length;
 
-        if (allPostsApproved) {
-          // Step 5: Update task status to Completed
+
+        // Step 5: Check if the number of approved posts matches the assigned amount
+        if (approvedPostsCount >= task.ammount) {
+          // Update task status to Completed
           await this.prisma.taskAssign.update({
             where: { id: task.id },
-            data: { status: 'completed' }, // or Status.completed enum if using
+            data: {
+              status: 'completed',
+              post_count: approvedPostsCount // Update the post count
+            },
           });
-        }
 
-        // Step 6: After task completion, check if all tasks in the order are completed
-        const updatedTasks = await this.prisma.taskAssign.findMany({
-          where: { order_id: task.order_id },
-        });
 
-        const allTasksCompleted = updatedTasks.every(
-          (t) => t.status === 'completed',
-        );
-
-        if (allTasksCompleted) {
-          await this.prisma.order.update({
-            where: { id: task.order_id },
-            data: { order_status: 'completed' }, // Or OrderStatus.completed enum
+          // Step 6: After task completion, check if all tasks in the order are completed
+          const updatedTasks = await this.prisma.taskAssign.findMany({
+            where: { order_id: task.order_id },
           });
+
+          const allTasksCompleted = updatedTasks.every(
+            (t) => t.status === 'completed',
+          );
+
+          if (allTasksCompleted) {
+            await this.prisma.order.update({
+              where: { id: task.order_id },
+              data: { order_status: 'completed' }, // Or OrderStatus.completed enum
+            });
+            console.log("Order marked as completed - all tasks are done");
+          }
+        } else {
+          // Update the post count even if task is not complete yet
+          await this.prisma.taskAssign.update({
+            where: { id: task.id },
+            data: {
+              post_count: approvedPostsCount // Update the current post count
+            },
+          });
+
         }
       }
 
