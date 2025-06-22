@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateResellerProfileDto } from './dto/create-reseller_profile.dto';
 import { UpdateResellerProfileDto } from './dto/update-reseller_profile.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Status } from '@prisma/client';
+import { WithdrawPaymentDto } from './dto/withdraw-payment-dto';
+import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
+import Stripe from 'stripe';
 
 @Injectable()
 export class ResellerProfileService {
@@ -183,14 +186,30 @@ export class ResellerProfileService {
     };
   }
 
-async resellerPaymentWithdrawal(resellerId: string, amount: number, method: string) {
+  //This function handles the withdrawal request for a reseller
+async resellerPaymentWithdrawal(
+  resellerId: string,
+  account_id: string,
+  withdrawPaymentDto: WithdrawPaymentDto
+) {
   try {
-    // Fetch withdrawal settings
     const settings = await this.prisma.withdrawalSettings.findFirst();
 
-    if (!settings) {
-      return { message: 'Withdrawal settings not configured' };
-    }
+    const reseller = await this.prisma.reseller.findUnique({
+      where: { reseller_id: resellerId },
+      select: { user_id: true },
+    });
+
+    if (!reseller) throw new NotFoundException('Reseller not found');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: reseller.user_id },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.banking_id) throw new NotFoundException('User has no Stripe account connected');
+
+    if (!settings) return { message: 'Withdrawal settings not configured' };
 
     const {
       minimum_withdrawal_amount,
@@ -201,80 +220,128 @@ async resellerPaymentWithdrawal(resellerId: string, amount: number, method: stri
       payment_methods,
     } = settings;
 
-    // Check if selected method is allowed
-    if (!payment_methods.includes(method)) {
-      return { message: `Invalid payment method. Allowed: ${payment_methods.join(', ')}` };
+    if (!payment_methods.includes(withdrawPaymentDto.method)) {
+      return {
+        message: `Invalid payment method. Allowed: ${payment_methods.join(', ')}`,
+      };
     }
 
-    // Check if amount is above minimum
-    if (amount < minimum_withdrawal_amount) {
-      return { message: `Minimum withdrawal amount is ${minimum_withdrawal_amount}` };
+    if (withdrawPaymentDto.amount < minimum_withdrawal_amount) {
+      return {
+        message: `Minimum withdrawal amount is ${minimum_withdrawal_amount}`,
+      };
     }
 
-    // Fetch reseller's balance
-    const reseller = await this.prisma.reseller.findUnique({
+    const totalEarnings = await this.prisma.reseller.findUnique({
       where: { reseller_id: resellerId },
       select: { total_earnings: true },
     });
 
-    if (!reseller) {
-      return { message: 'Reseller not found' };
-    }
-
-    const totalEarnings = reseller.total_earnings;
-
-    if (amount > totalEarnings) {
+    if (!totalEarnings || withdrawPaymentDto.amount > totalEarnings.total_earnings) {
       return { message: 'Insufficient funds for withdrawal' };
     }
 
-    // Calculate admin commission
+    // Calculate fees
     let adminCommission = 0;
-
     if (is_flat_commission && flat_commission_value) {
       adminCommission = flat_commission_value;
     } else if (!is_flat_commission && percentage_commission_value) {
-      adminCommission = (amount * percentage_commission_value) / 100;
+      adminCommission = (withdrawPaymentDto.amount * percentage_commission_value) / 100;
     }
 
-    // Total deductions (admin + processing fee)
     const totalDeductions = adminCommission + (withdrawal_processing_fee || 0);
-
-    const amountAfterDeductions = amount - totalDeductions;
+    const amountAfterDeductions = withdrawPaymentDto.amount - totalDeductions;
 
     if (amountAfterDeductions <= 0) {
       return { message: 'Withdrawal amount is too low after deductions' };
     }
 
-    // Save withdrawal request
-    await this.prisma.resellerWithdrawal.create({
+    // Check admin balance
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2025-05-28.basil',
+    });
+
+    const balance = await stripe.balance.retrieve();
+    const adminAvailable = balance.available.find((b) => b.currency === 'usd')?.amount || 0;
+    console.log(adminAvailable, "adminAvailable");
+    
+
+    if (adminAvailable < Math.round(amountAfterDeductions * 100)) {
+      throw new Error('Admin Stripe balance is too low to fund the withdrawal.');
+    }
+
+    const metadata = {
+      user_id: user.id,
+      account_id: user.banking_id,
+      method: withdrawPaymentDto.method,
+    };
+
+    // 1. Transfer from Admin → Reseller Stripe
+    const transfer = await stripe.transfers.create({
+      amount: Math.round(amountAfterDeductions * 100),
+      currency: 'usd',
+      destination: user.banking_id,
+      metadata,
+    });
+
+    //2. Payout from Reseller Stripe → Bank
+    const payout = await stripe.payouts.create(
+      {
+        amount: Math.round(amountAfterDeductions * 100),
+        currency: 'usd',
+        metadata,
+      },
+      {
+        stripeAccount: user.banking_id,
+      }
+    );
+
+    // Record DB entries
+    const resellerWithdrawal = await this.prisma.resellerWithdrawal.create({
       data: {
         reseller_id: resellerId,
         amount: amountAfterDeductions,
-        method: method,
-        status: 1, // pending
+        method: withdrawPaymentDto.method,
+        status: 1,
       },
     });
 
-    // Deduct from earnings
+    await this.prisma.paymentTransaction.create({
+      data: {
+        user_id: user.id,
+        amount: withdrawPaymentDto.amount,
+        currency: 'usd',
+        status: 'PENDING',
+        type: 'WITHDRAWAL',
+      },
+    });
+
     await this.prisma.reseller.update({
       where: { reseller_id: resellerId },
-      data: { total_earnings: totalEarnings - amount },
+      data: {
+        total_earnings:
+          totalEarnings.total_earnings - withdrawPaymentDto.amount,
+      },
     });
 
     return {
       message: 'Withdrawal request created successfully',
       data: {
-        requested_amount: amount,
-        payment_method: method,
+        id: resellerWithdrawal.id,
+        requested_amount: withdrawPaymentDto.amount,
+        payment_method: withdrawPaymentDto.method,
         admin_commission: adminCommission,
         processing_fee: withdrawal_processing_fee,
         final_amount: amountAfterDeductions,
-        remaining_balance: totalEarnings - amount,
+        remaining_balance:
+          totalEarnings.total_earnings - withdrawPaymentDto.amount,
+        stripe_transfer_id: transfer.id,
+        stripe_payout_id: payout.id,
       },
     };
   } catch (error) {
     console.error('Error processing withdrawal:', error);
-    throw new Error('Failed to process withdrawal');
+    throw new Error('Failed to process withdrawal. Please try again later.');
   }
 }
 
