@@ -12,13 +12,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class ResellerProfileController {
   constructor(private readonly resellerProfileService: ResellerProfileService , private readonly prisma: PrismaService) {}
 
-
+//get signle reseller profile
     @Get('reseller/:resellerId')
   async getResellerTasks(@Param('resellerId') resellerId: string) {
     const result = await this.resellerProfileService.getOneResellerTask(resellerId);
     return result;
   }
 
+  //get all completed tasks for a reseller
     @Get('completed/:resellerId')
   async getResellerEarningsAndTasks(@Param('resellerId') resellerId: string) {
     try {
@@ -32,11 +33,14 @@ export class ResellerProfileController {
     }
   }
 
+  // get all tasks for a reseller
   @Get('Onetask/:taskId/:resellerId')
   async getOneTask(@Param('taskId') taskId: string, @Param('resellerId') resellerId: string) {
     const result = await this.resellerProfileService.getTaskDetails(taskId, resellerId);
     return result;
   }
+
+  //withdrawal
 @Post(':resellerId/withdraw/:accountId')
 async withdraw(
   @Param('resellerId') resellerId: string,
