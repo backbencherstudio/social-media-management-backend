@@ -53,11 +53,6 @@ export class ResellerProfileService {
       Assigned_by: task.assigned_by,
       due_date: task.due_date,
       note: task.note,
-      YourInfo: task.assignees.map((a) => ({
-        reseller_id: a.reseller_id,
-        full_name: a.full_name,
-        email: a.user_email,
-      })),
       clint_name: task.order?.user_name,
       clint_email: task.order?.user_email,
     }));
@@ -72,63 +67,215 @@ export class ResellerProfileService {
     };
   }
   //tasks
-  async getAllCompletedTasks(resellerId: string) {
-  try {
-    const tasks = await this.prisma.taskAssign.findMany({
+ async getResellerEarningsAndTasks(resellerId: string) {
+    // Fetch reseller data
+    const reseller = await this.prisma.reseller.findUnique({
+      where: { reseller_id: resellerId },
+      select: {
+        reseller_id: true,
+        full_name: true,
+        user_email: true,
+        total_task: true,
+        total_earnings: true,
+        complete_tasks: true,
+      },
+    });
+
+    if (!reseller) {
+      return { message: 'Reseller not found' };
+    }
+
+    // Fetch completed tasks assigned to the reseller
+    const completedTasks = await this.prisma.taskAssign.findMany({
       where: {
-        status: 'completed',
+        assignees: {
+          some: {
+            reseller_id: resellerId,
+          },
+        },
+        status: 'completed', // Filter by completed tasks
+      },
+      include: {
+        order: true,
+        assignees: {
+          select: {
+            reseller_id: true,
+            full_name: true,
+            user_email: true,
+          },
+        },
+      },
+    });
+
+    // Format tasks for the response
+    const formattedTasks = completedTasks.map((task) => ({
+      task_id: task.id,
+      task_status: task.status,
+      task_amount: task.ammount,
+      post_type: task.post_type,
+      assign_date: task.created_at,
+      client_name: task.order.user_name,
+      client_email: task.order.user_email,
+      order_status: task.order.order_status,
+      package_name: task.order.pakage_name,
+    }));
+
+    return {
+      message: 'Reseller earnings and completed tasks fetched successfully',
+      data: {
+        reseller: {
+          full_name: reseller.full_name,
+          email: reseller.user_email,
+          total_earnings: reseller.total_earnings,
+          total_tasks: reseller.total_task,
+          complete_tasks: reseller.complete_tasks,
+        },
+        completed_tasks: formattedTasks,
+      },
+    };
+  }
+  //view details
+  async getTaskDetails(taskId: string, resellerId: string) {
+    const task = await this.prisma.taskAssign.findFirst({
+      where: {
+        id: taskId,
         assignees: {
           some: {
             reseller_id: resellerId,
           },
         },
       },
-      orderBy: {
-        created_at: 'desc',
-      },
       include: {
+        assignees: {
+          select: {
+            reseller_id: true,
+            full_name: true,
+            user_email: true,
+          },
+        },
         order: {
           select: {
             user_name: true,
             user_email: true,
           },
-
         },
       },
     });
 
-    const totalEarnings = await this.prisma.reseller.findUnique({
+    if (!task) {
+      return { message: 'Task not found or does not belong to this reseller' };
+    }
+
+    return {
+      message: 'Task details fetched successfully',
+      data: {
+        task_id: task.id,
+        task_status: task.status,
+        task_amount: task.ammount,
+        post_type: task.post_type,
+        assign_date: task.created_at,
+        client_name: task.order.user_name,
+        client_email: task.order.user_email,
+        task_note: task.note,
+        // order_status: task.order.order_status,
+        // package_name: task.order.pakage_name,
+      },
+    };
+  }
+
+async resellerPaymentWithdrawal(resellerId: string, amount: number, method: string) {
+  try {
+    // Fetch withdrawal settings
+    const settings = await this.prisma.withdrawalSettings.findFirst();
+
+    if (!settings) {
+      return { message: 'Withdrawal settings not configured' };
+    }
+
+    const {
+      minimum_withdrawal_amount,
+      withdrawal_processing_fee,
+      is_flat_commission,
+      flat_commission_value,
+      percentage_commission_value,
+      payment_methods,
+    } = settings;
+
+    // Check if selected method is allowed
+    if (!payment_methods.includes(method)) {
+      return { message: `Invalid payment method. Allowed: ${payment_methods.join(', ')}` };
+    }
+
+    // Check if amount is above minimum
+    if (amount < minimum_withdrawal_amount) {
+      return { message: `Minimum withdrawal amount is ${minimum_withdrawal_amount}` };
+    }
+
+    // Fetch reseller's balance
+    const reseller = await this.prisma.reseller.findUnique({
       where: { reseller_id: resellerId },
       select: { total_earnings: true },
     });
 
-    if (!tasks.length) {
-      return { message: 'No completed tasks found', tasks: [] };
+    if (!reseller) {
+      return { message: 'Reseller not found' };
     }
 
-    const formattedTasks = tasks.map(task => ({
-      client_name: task.order?.user_name || 'N/A',
-      client_email: task.order?.user_email || 'N/A',
-      total_earnings: totalEarnings?.total_earnings || 0,
-      post_type: task.post_type,
-      status: task.status,
-      date: task.created_at,
-      totalEarnings: totalEarnings?.total_earnings || 0,
-    }));
+    const totalEarnings = reseller.total_earnings;
+
+    if (amount > totalEarnings) {
+      return { message: 'Insufficient funds for withdrawal' };
+    }
+
+    // Calculate admin commission
+    let adminCommission = 0;
+
+    if (is_flat_commission && flat_commission_value) {
+      adminCommission = flat_commission_value;
+    } else if (!is_flat_commission && percentage_commission_value) {
+      adminCommission = (amount * percentage_commission_value) / 100;
+    }
+
+    // Total deductions (admin + processing fee)
+    const totalDeductions = adminCommission + (withdrawal_processing_fee || 0);
+
+    const amountAfterDeductions = amount - totalDeductions;
+
+    if (amountAfterDeductions <= 0) {
+      return { message: 'Withdrawal amount is too low after deductions' };
+    }
+
+    // Save withdrawal request
+    await this.prisma.resellerWithdrawal.create({
+      data: {
+        reseller_id: resellerId,
+        amount: amountAfterDeductions,
+        method: method,
+        status: 1, // pending
+      },
+    });
+
+    // Deduct from earnings
+    await this.prisma.reseller.update({
+      where: { reseller_id: resellerId },
+      data: { total_earnings: totalEarnings - amount },
+    });
 
     return {
-      message: 'Completed tasks fetched successfully',
+      message: 'Withdrawal request created successfully',
       data: {
-        total: formattedTasks.length,
-        tasks: formattedTasks,
-        
+        requested_amount: amount,
+        payment_method: method,
+        admin_commission: adminCommission,
+        processing_fee: withdrawal_processing_fee,
+        final_amount: amountAfterDeductions,
+        remaining_balance: totalEarnings - amount,
       },
     };
   } catch (error) {
-    console.error('Error in getAllCompletedTasks:', error.message);
-    throw new Error('Failed to fetch completed tasks');
+    console.error('Error processing withdrawal:', error);
+    throw new Error('Failed to process withdrawal');
   }
 }
-
 
 }
