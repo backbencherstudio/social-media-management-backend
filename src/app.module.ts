@@ -30,13 +30,8 @@ import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/w
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
-<<<<<<< HEAD
-import { ClientModule } from './modules/reseller/client/client.module';
-import { ActiveServiceModule } from './modules/reseller/active-service/active-service.module';
-import { ResellerProfileModule } from './modules/reseller/reseller_profile/reseller_profile.module';
-=======
 import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
->>>>>>> 9e6c2df1d1d4b7f197f53792b89ae789bdc177f7
+import { ResellerProfile } from './modules/reseller/reseller_profile/entities/reseller_profile.entity';
 
 
 @Module({
@@ -71,15 +66,9 @@ import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
     AiChatbotModule,
     DesignFileModule,
     SocialsModule,
-<<<<<<< HEAD
-    ClientModule,
-    ActiveServiceModule,
-    ResellerProfileModule,
-   
-=======
     DashboardModule,
+    ResellerProfile
 
->>>>>>> 9e6c2df1d1d4b7f197f53792b89ae789bdc177f7
   ],
   controllers: [AppController],
   providers: [AppService],
