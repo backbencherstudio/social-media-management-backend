@@ -6,6 +6,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import { TwitterService } from '../../socials/platforms/twitter.service';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class PostService {
@@ -17,7 +18,22 @@ export class PostService {
 
   async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
     console.log('Creating post with data:', createPostDto);
+    console.log('Creating post with file:', files);
     try {
+      // Validate task_id if provided
+      if (createPostDto.task_id) {
+        const taskExists = await this.prisma.taskAssign.findUnique({
+          where: { id: createPostDto.task_id },
+        });
+
+        if (!taskExists) {
+          return {
+            success: false,
+            message: `Task with ID ${createPostDto.task_id} does not exist`
+          };
+        }
+      }
+
       const post = await this.prisma.post.create({
         data: {
           content: createPostDto.content,
@@ -36,6 +52,7 @@ export class PostService {
           })),
         });
       }
+      console.log("files", files)
 
       if (files && files.length > 0) {
         const postFiles = [];
@@ -46,7 +63,7 @@ export class PostService {
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
           const fileName = `${randomName}-${file.originalname}`;
-          await SojebStorage.put('post-files/' + fileName, file.buffer);
+          await SojebStorage.put('post/' + fileName, file.buffer);
 
           postFiles.push({
             post_id: post.id,
@@ -106,7 +123,19 @@ export class PostService {
           task: true
         },
       });
-      return { success: true, data: posts };
+
+      // Add public URLs to post files
+      const postsWithUrls = posts.map((post) => ({
+        ...post,
+        post_files: post.post_files.map((file) => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+          ),
+        })),
+      }));
+
+      return { success: true, data: postsWithUrls };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -122,7 +151,23 @@ export class PostService {
           task: true
         },
       });
-      return { success: true, data: post };
+
+      if (!post) {
+        return { success: false, message: 'Post not found' };
+      }
+
+      // Add public URLs to post files
+      const postWithUrls = {
+        ...post,
+        post_files: post.post_files.map((file) => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+          ),
+        })),
+      };
+
+      return { success: true, data: postWithUrls };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -203,7 +248,7 @@ export class PostService {
         post_files: true,
       },
     });
-    return { success: true, data: updated };
+    return { success: true, data: await this.findOne(id) };
   }
 
   async remove(id: string) {
@@ -234,7 +279,19 @@ export class PostService {
         },
         orderBy: { schedule_at: 'asc' },
       });
-      return { success: true, data: posts };
+
+      // Add public URLs to post files
+      const postsWithUrls = posts.map((post) => ({
+        ...post,
+        post_files: post.post_files.map((file) => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+          ),
+        })),
+      }));
+
+      return { success: true, data: postsWithUrls };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -243,7 +300,7 @@ export class PostService {
   async getUpcomingPosts() {
     try {
       const now = new Date();
-
+      console.log(now)
       const posts = await this.prisma.post.findMany({
         where: {
           schedule_at: {
@@ -259,7 +316,18 @@ export class PostService {
         orderBy: { schedule_at: 'asc' },
       });
 
-      return { success: true, data: posts };
+      // Add public URLs to post files
+      const postsWithUrls = posts.map((post) => ({
+        ...post,
+        post_files: post.post_files.map((file) => ({
+          ...file,
+          file_url: SojebStorage.url(
+            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+          ),
+        })),
+      }));
+
+      return { success: true, data: postsWithUrls };
     } catch (error) {
       return { success: false, message: error.message };
     }

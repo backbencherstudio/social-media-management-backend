@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class DesignFileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(
     createDesignFileDto: CreateDesignFileDto,
@@ -37,10 +37,10 @@ export class DesignFileService {
           const fileName = `${randomName}${file.originalname}`;
           console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
           // Upload file using SojebStorage
-          await SojebStorage.put('design-assets/' + fileName, file.buffer);
+          await SojebStorage.put('assets/' + fileName, file.buffer);
 
           fileAssets.push({
-            designFileId: designFile.id,
+            design_file_id: designFile.id,
             name: file.originalname,
             type: file.mimetype.startsWith('image') ? 'image' : 'video',
             file_path: fileName,
@@ -66,20 +66,19 @@ export class DesignFileService {
   }
 
   async findAll() {
-   
+
     try {
       const designassets = await this.prisma.designFile.findMany({
         include: { assets: true },
         orderBy: { created_at: 'desc' },
       });
-      console.log('designassets', designassets);
       // Add public URLs to assets
       const designassetsWithUrls = designassets.map((designFile) => ({
         ...designFile,
         assets: designFile.assets.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-assets/' + file.file_path,
+            appConfig().storageUrl.rootUrl + '/assets/' + file.file_path,
           ),
         })),
       }));
@@ -116,7 +115,7 @@ export class DesignFileService {
         assets: designFile.assets.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-assets/' + file.file_path,
+            appConfig().storageUrl.rootUrl + '/assets/' + file.file_path,
           ),
         })),
       };
@@ -158,23 +157,23 @@ export class DesignFileService {
   }
 
   async approveFile() {
-   
+
     try {
       const designassets = await this.prisma.designFile.findMany({
-        where:{
-          status:1
+        where: {
+          status: 1
         },
         include: { assets: true },
         orderBy: { created_at: 'desc' },
       });
-     
+
       // Add public URLs to assets
       const designassetsWithUrls = designassets.map((designFile) => ({
         ...designFile,
         assets: designFile.assets.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/design-assets/' + file.file_path,
+            appConfig().storageUrl.rootUrl + '/assets/' + file.file_path,
           ),
         })),
       }));

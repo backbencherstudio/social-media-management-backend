@@ -431,6 +431,100 @@ export class SocialsService {
     return service();
   }
 
+  async getSocialStats(userId: string): Promise<ConnectionResult> {
+    try {
+      // 1. Get user's connected platforms
+      const userAccounts = await this.prisma.account.findMany({
+        where: { user_id: userId },
+        select: { provider: true },
+      });
+      const connectedProviders = userAccounts.map(acc => acc.provider).filter(p => p) as string[];
+
+      if (connectedProviders.length === 0) {
+        return {
+          success: true,
+          data: { totalPosts: 0, totalReach: 0, engagementRate: 0, avgResponse: 0 },
+          message: "No social platforms connected."
+        };
+      }
+
+      // 2. Fetch posts linked to the user that were posted on their connected channels.
+      const posts = await this.prisma.post.findMany({
+        where: {
+          task: {
+            user_id: userId,
+          },
+          post_channels: {
+            some: {
+              channel: {
+                name: {
+                  in: connectedProviders,
+                },
+              },
+            },
+          },
+        },
+        include: {
+          post_performances: true,
+        },
+      });
+
+      const totalPosts = posts.length;
+      let totalReach = 0;
+      let totalEngagement = 0;
+
+      posts.forEach((post) => {
+        post.post_performances.forEach((perf) => {
+          // Manually filter performances by provider
+          if (connectedProviders.includes(perf.provider)) {
+            totalReach += perf.reach ?? 0;
+            totalEngagement += (perf.likes ?? 0) + (perf.comments ?? 0) + (perf.shares ?? 0);
+          }
+        });
+      });
+
+      const engagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
+
+      // 3. Calculate Average Response Time from PostPerformance
+      const responseAggregates = await this.prisma.postPerformance.aggregate({
+        _avg: {
+          avg_response_time_seconds: true,
+        },
+        where: {
+          provider: {
+            in: connectedProviders,
+          },
+          post: {
+            task: {
+              user_id: userId,
+            },
+          },
+          avg_response_time_seconds: {
+            not: null,
+          },
+        },
+      });
+
+      const avgResponseInSeconds = responseAggregates._avg.avg_response_time_seconds ?? 0;
+      const avgResponseInHours = parseFloat((avgResponseInSeconds / 3600).toFixed(1));
+
+      return {
+        success: true,
+        data: {
+          totalPosts,
+          totalReach,
+          engagementRate: parseFloat(engagementRate.toFixed(2)),
+          avgResponse: avgResponseInHours,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to fetch social stats: ${error.message}`,
+      };
+    }
+  }
+
   // Private helper methods
 
   private validateConnectionInput(userId: string, credentials: CreateCredentialDto): void {
@@ -584,7 +678,9 @@ export class SocialsService {
   }
 
   private formatTwitterPostsForPerformance(tweetsData: any): FormattedPost[] {
-    return this.safeArray(tweetsData).map((tweet: any) => {
+    // If tweetsData is { data: [...] }, use tweetsData.data
+    const tweets = Array.isArray(tweetsData) ? tweetsData : (tweetsData?.data || []);
+    return tweets.map((tweet: any) => {
       const metrics = tweet.public_metrics || {};
       const likes = metrics.like_count || 0;
       const comments = metrics.reply_count || 0;

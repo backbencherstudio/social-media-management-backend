@@ -20,8 +20,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { PostModule } from './modules/reseller/post/post.module';
-import {ServiceManagementModule} from './modules/admin/sevice-management/service-management.module'
-import {BlogModule} from './modules/admin/blog/blog.module'
+import { ServiceManagementModule } from './modules/admin/sevice-management/service-management.module'
+import { BlogModule } from './modules/admin/blog/blog.module'
 import { UserModule } from './modules/chat/user/user.module';
 import { FeatureModule } from './modules/admin/features/featuers_module';
 import { CategoryModule } from './modules/admin/sevice-management/category/category.module';
@@ -30,9 +30,13 @@ import { WebsiteInfoModule } from './modules/admin/admin_settings/website-info/w
 import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
+<<<<<<< HEAD
 import { ClientModule } from './modules/reseller/client/client.module';
 import { ActiveServiceModule } from './modules/reseller/active-service/active-service.module';
 import { ResellerProfileModule } from './modules/reseller/reseller_profile/reseller_profile.module';
+=======
+import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
+>>>>>>> 9e6c2df1d1d4b7f197f53792b89ae789bdc177f7
 
 
 @Module({
@@ -67,10 +71,15 @@ import { ResellerProfileModule } from './modules/reseller/reseller_profile/resel
     AiChatbotModule,
     DesignFileModule,
     SocialsModule,
+<<<<<<< HEAD
     ClientModule,
     ActiveServiceModule,
     ResellerProfileModule,
    
+=======
+    DashboardModule,
+
+>>>>>>> 9e6c2df1d1d4b7f197f53792b89ae789bdc177f7
   ],
   controllers: [AppController],
   providers: [AppService],

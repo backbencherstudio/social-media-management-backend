@@ -906,18 +906,19 @@ model PostPerformance {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
+  status     Int?      @default(1) @db.SmallInt
 
-  post_id String
-  post    Post?  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  post_id String?
+  post    Post?   @relation(fields: [post_id], references: [id], onDelete: Cascade)
 
-  platform        String?
-  likes           Int?
-  comments        Int?
-  shares          Int?
-  reach           Int?
-  impressions     Int?
-  clicks          Int?
-  engagement_rate Float?
+  provider                  String? // e.g. facebook, twitter
+  likes                     Int?
+  comments                  Int?
+  shares                    Int?
+  views                     Int?
+  reach                     Int?
+  impressions               Int?
+  avg_response_time_seconds Int? // New field for response time
 
   @@map("post_performances")
 }
@@ -1018,9 +1019,9 @@ model TaskAssign {
   due_date   String?
   status     Status  @default(In_progress)
 
-  assignees Reseller[] @relation("TaskAssaingees")
+  assignees Reseller[]   @relation("TaskAssaingees")
   posts     Post[]
-  files DesignFile[]
+  files     DesignFile[]
 
   @@map("task_assign")
 }
@@ -1130,7 +1131,7 @@ model DesignFile {
   feedback   String?
   task_id    String?
   task       TaskAssign?       @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  assets     DesignFileAsset[] 
+  assets     DesignFileAsset[]
 }
 
 model DesignFileAsset {

@@ -36,9 +36,10 @@ export class PostController {
     @UploadedFiles() files: { files?: Express.Multer.File[] },
   ) {
     let createPostDto: CreatePostDto;
-
+    console.log("body", body)
     // If data is sent as JSON string inside `body.data`, parse it
     if (body?.data) {
+
       createPostDto = JSON.parse(body.data);
     } else {
       createPostDto = body;
