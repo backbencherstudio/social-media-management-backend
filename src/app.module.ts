@@ -32,6 +32,7 @@ import { DesignFileModule } from './modules/reseller/design-file/design-file.mod
 import { SocialsModule } from './modules/socials/socials.module';
 import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
 import { ResellerProfile } from './modules/reseller/reseller_profile/entities/reseller_profile.entity';
+import { ResellerProfileModule } from './modules/reseller/reseller_profile/reseller_profile.module';
 
 
 @Module({
@@ -67,7 +68,7 @@ import { ResellerProfile } from './modules/reseller/reseller_profile/entities/re
     DesignFileModule,
     SocialsModule,
     DashboardModule,
-    ResellerProfile
+    ResellerProfileModule
 
   ],
   controllers: [AppController],
