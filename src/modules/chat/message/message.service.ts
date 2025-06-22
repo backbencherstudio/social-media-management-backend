@@ -29,7 +29,7 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
   let conversation = await this.prisma.conversation.findFirst({
     where: {
       creator_id: userId,
-      participant_id: this.messageGateway.ADMIN_ID, 
+      participant_id: await this.messageGateway.ADMIN_ID, 
     },
   });
 
@@ -37,7 +37,7 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
     conversation = await this.prisma.conversation.create({
       data: {
         creator_id: userId,
-        participant_id: this.messageGateway.ADMIN_ID, 
+        participant_id: await this.messageGateway.ADMIN_ID, 
       },
     });
     console.log('New conversation created: ', conversation.id);
@@ -47,7 +47,7 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
   const newMessage = await this.prisma.message.create({
     data: {
       sender_id: userId,
-      receiver_id: this.messageGateway.ADMIN_ID, 
+      receiver_id: await this.messageGateway.ADMIN_ID,
       message,
       status: MessageStatus.PENDING,
       conversation_id: conversation.id,
@@ -96,7 +96,7 @@ async sendMessageToUser(adminId: string, userId: string, message: string) {
     let conversation = await this.prisma.conversation.findFirst({
     where: {
       creator_id: userId,
-      participant_id: this.messageGateway.ADMIN_ID, 
+      participant_id: await this.messageGateway.ADMIN_ID, 
     },
   });
 
@@ -104,7 +104,7 @@ async sendMessageToUser(adminId: string, userId: string, message: string) {
     conversation = await this.prisma.conversation.create({
       data: {
         creator_id: userId,
-        participant_id: this.messageGateway.ADMIN_ID, 
+        participant_id: await this.messageGateway.ADMIN_ID,
       },
     });
     console.log('New conversation created: ', conversation.id);
