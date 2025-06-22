@@ -417,18 +417,46 @@ static async createPaymentIntent({
   }
 
   // Once the user has an approved Stripe account with a linked bank, you can send them funds.
+  //REal
+//   static async createPayout(
+// account_id: string, amount: number, currency: string, metadata: { user_id: string; account_id: string; transaction_id: string; },
+//   ) {
+//     const payout = await Stripe.payouts.create({
+//       amount: amount * 100, // amount in cents
+//       currency: currency,
+//       destination: account_id,
+//     });
+
+//     return payout;
+//   }
+
+//Testing
+
+
+
   static async createPayout(
-    account_id: string,
+    connectedAccountId: string,
     amount: number,
     currency: string,
+    metadata: { user_id: string; account_id: string; transaction_id: string }
   ) {
-    const payout = await Stripe.payouts.create({
-      amount: amount * 100, // amount in cents
-      currency: currency,
-      destination: account_id,
-    });
+    try {
+      const payout = await Stripe.payouts.create(
+        {
+          amount: Math.round(amount * 100), // amount in cents
+          currency,
+          metadata,
+        },
+        {
+          stripeAccount: connectedAccountId, // ✅ This tells Stripe the payout is from the connected account
+        }
+      );
 
-    return payout;
+      return payout;
+    } catch (error) {
+      console.error('Stripe payout error:', error);
+      throw error;
+    }
   }
 
   // static async createPayout(amount: number, currency: string) {

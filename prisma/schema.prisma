@@ -72,7 +72,7 @@ model User {
 
   // billing id. e.g. stripe customer id
   billing_id String?
-
+  banking_id String? 
   type              String?   @default("user") // user, admin, superadmin
   email_verified_at DateTime?
 
@@ -1056,6 +1056,25 @@ model ResellerApplication {
   @@map("reseller_application")
 }
 
+//reseller payment withdrawal
+
+model ResellerWithdrawal {
+  id         String    @id @default(cuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  status Int? @default(1) @db.SmallInt
+
+  reseller_id String?
+  reseller    Reseller? @relation(fields: [reseller_id], references: [reseller_id])
+
+  amount Float?
+  method String? // e.g. "bank", "paypal", "stripe"
+
+  @@map("reseller_withdrawals")
+}
+
 //admin dashboard reseller
 
 enum ResellerStatus {
@@ -1082,6 +1101,7 @@ model Reseller {
   ResellerPayments ResellerPayments[]
 
   @@map("resellers")
+  ResellerWithdrawal ResellerWithdrawal[]
 }
 
 enum ResellerPayemntStat {

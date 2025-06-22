@@ -31,7 +31,8 @@ import { AiChatbotModule } from './aichatbot/ai-chatbot.module';
 import { DesignFileModule } from './modules/reseller/design-file/design-file.module';
 import { SocialsModule } from './modules/socials/socials.module';
 import { DashboardModule } from './modules/reseller/dashboard/dashboard.module';
-import { AssetsModule } from './modules/reseller/assets/assets.module';
+import { ResellerProfile } from './modules/reseller/reseller_profile/entities/reseller_profile.entity';
+import { ResellerProfileModule } from './modules/reseller/reseller_profile/reseller_profile.module';
 
 
 @Module({
@@ -67,7 +68,7 @@ import { AssetsModule } from './modules/reseller/assets/assets.module';
     DesignFileModule,
     SocialsModule,
     DashboardModule,
-    AssetsModule,
+    ResellerProfileModule
 
   ],
   controllers: [AppController],

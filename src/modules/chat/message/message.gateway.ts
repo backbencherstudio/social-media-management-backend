@@ -21,7 +21,14 @@ export class MessageGateway
   server: Server;
   public users: Record<string, string> = {}; // socketId -> userId
   public adminSocketId: string | null = null;
-  public readonly ADMIN_ID = 'cmb4pc8f70003uoh4qkmtcc1x';
+  public readonly adminId =   this.prisma.user.findFirst({
+    where: { type: 'admin' },
+    select: { id: true },
+  }).then(user => user?.id || null).catch(() => {
+    console.error('Failed to fetch admin ID');
+    return null;
+  });
+  public readonly ADMIN_ID = this.adminId;
   constructor(private readonly prisma: PrismaService) {}
   async afterInit(server: Server) {
     console.log('WebSocket Gateway initialized');
@@ -38,7 +45,7 @@ export class MessageGateway
       console.log(`User ${userId} disconnected`);
 
       // Notify admin if a user disconnected
-      if (userId !== this.ADMIN_ID && this.adminSocketId) {
+      if (userId !== await this.ADMIN_ID && this.adminSocketId) {
         this.server.to(this.adminSocketId).emit('user_disconnected', userId);
       }
     }
@@ -53,7 +60,7 @@ export class MessageGateway
     console.log(`Admin registration attempt: ${adminId}`);
     
     try {
-      if (adminId !== this.ADMIN_ID) {
+      if (adminId !== await this.ADMIN_ID) {
         socket.emit('registration_error', 'Invalid admin credentials');
         return;
       }
@@ -151,7 +158,7 @@ export class MessageGateway
   @SubscribeMessage('message_to_user')
   async handleMessageToUser(socket: Socket, data: { userId: string; message: string }) {
     // Verify sender is admin
-    if (this.users[socket.id] !== this.ADMIN_ID) {
+    if (this.users[socket.id] !== await this.ADMIN_ID) {
       socket.emit('error', 'Only admin can send messages to users.');
       return;
     }
