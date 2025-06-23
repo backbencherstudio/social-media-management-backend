@@ -71,8 +71,8 @@ model User {
   date_of_birth DateTime? @db.Date
 
   // billing id. e.g. stripe customer id
-  billing_id String?
-  banking_id String? 
+  billing_id        String?
+  banking_id        String?
   type              String?   @default("user") // user, admin, superadmin
   email_verified_at DateTime?
 
@@ -663,12 +663,16 @@ model Post {
   deleted_at DateTime?
   status     Int?      @default(0) @db.SmallInt
 
-  schedule_at DateTime?
-  content     String?     @db.Text
-  hashtags    String[]
-  feedback    String?
-  task_id     String?
-  task        TaskAssign? @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  schedule_at       DateTime?
+  content           String?     @db.Text
+  hashtags          String[]
+  feedback          String?
+  twitter_post_id   String?
+  facebook_post_id  String?
+  instagram_post_id String?
+  linkedin_post_id  String?
+  task_id           String?
+  task              TaskAssign? @relation(fields: [task_id], references: [id], onDelete: Cascade)
 
   post_files        PostFile[]
   post_channels     PostChannel[]
@@ -1117,10 +1121,10 @@ model Reseller {
   reseller_application ResellerApplication[] @relation("resellers")
   TaskAssign           TaskAssign[]          @relation("TaskAssaingees")
 
-  ResellerPayments ResellerPayments[]
+  ResellerPayments   ResellerPayments[]
+  ResellerWithdrawal ResellerWithdrawal[]
 
   @@map("resellers")
-  ResellerWithdrawal ResellerWithdrawal[]
 }
 
 enum ResellerPayemntStat {
