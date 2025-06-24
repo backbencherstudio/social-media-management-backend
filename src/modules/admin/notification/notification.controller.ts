@@ -9,7 +9,7 @@ import { Request } from 'express';
 
 @ApiBearerAuth()
 @ApiTags('Notification')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN, Role.VENDOR)
 @Controller('admin/notification')
 export class NotificationController {
@@ -24,6 +24,21 @@ export class NotificationController {
       const notification = await this.notificationService.findAll(user_id);
 
       return notification;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+   @Get('all')
+  async getAllNotifications(@Req() req: Request) {
+    try {
+
+
+      const notifications = await this.notificationService.getAllNotifications();
+      return notifications;
     } catch (error) {
       return {
         success: false,

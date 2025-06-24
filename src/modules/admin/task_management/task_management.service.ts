@@ -18,9 +18,8 @@ export class TaskManagementService {
   }
   // ---------------------assign order to the reseller--------------------\\
   async assignUserToOrder(
-user_id: string,
- orderId: string, dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }  ) {
-    const { res_id, note, roleId, ammount, post_count, post_type } = dto;   
+   orderId: string, dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }  ) {
+   const { res_id, note, roleId, ammount, post_count, post_type } = dto;   
 
 
     const reseller = await this.prisma.reseller.findUnique({
@@ -127,11 +126,15 @@ user_id: string,
         total_task: { increment: 1 },
       }
     })
+    const adminUser = await this.prisma.user.findFirst({
+      where: { type: 'admin' },
+      select: { id: true, name: true },
+    });
 
     // send notification to assined user (reseller)
     const notificationPayload: any = {
-      sender_id: user_id,
-      receiver_id: reseller.reseller_id,
+      sender_id: adminUser.id,
+      receiver_id: reseller.user_id,
       text: 'You have been assigned to this task',
       type: 'post',
       entity_id: task.id
@@ -166,7 +169,7 @@ user_id: string,
         package_name: order.pakage_name,
       },
     };
-  }
+  } 
  //---------------unassginging orders to the resellers-----------------\\
   async unassignUserFromOrder(
     orderId: string,
@@ -209,6 +212,24 @@ user_id: string,
       await this.prisma.taskAssign.delete({
         where: { id: taskId },
       });
+
+       const adminUser = await this.prisma.user.findFirst({
+      where: { type: 'admin' },
+      select: { id: true, name: true },
+    });
+
+         // send notification to assined user (reseller)
+    const notificationPayload: any = {
+      sender_id: adminUser.id,
+      receiver_id: res_id,
+      text: 'You have been assigned to this task',
+      type: 'post',
+      entity_id: task.id
+    }
+
+    NotificationRepository.createNotification(notificationPayload);
+    this.messageGateway.server.emit("notification", notificationPayload)
+    // End sending notification
 
       return {
         message: `User unassigned from task. Task deleted because there are no more assignees. Note: ${note}`,
