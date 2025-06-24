@@ -84,6 +84,13 @@ export class PostService {
         }
       }
 
+      if (createPostDto.task_id) {
+        await this.prisma.taskAssign.update({
+          where: { id: createPostDto.task_id },
+          data: { status: 'Clint_review' },
+        });
+      }
+
       // If post is created as approved (status = 1), schedule for publishing
       if (post.status === 1) {
         if (post.schedule_at) {
@@ -408,7 +415,7 @@ export class PostService {
     }
   }
 
-  async getScheduledPostsForCalendar(start: Date, end: Date) {
+  async getScheduledPostsForCalendar(start: Date, end: Date, userId: string) {
     try {
       const posts = await this.prisma.post.findMany({
         where: {
@@ -418,6 +425,7 @@ export class PostService {
           },
           status: 1, // Only get scheduled posts
           deleted_at: null,
+          task: { user_id: userId },
         },
         select: {
           id: true,
@@ -469,7 +477,7 @@ export class PostService {
     }
   }
 
-  async getUpcomingPosts() {
+  async getUpcomingPosts(userId: string) {
     try {
       const now = new Date();
 
@@ -480,6 +488,7 @@ export class PostService {
           },
           status: 1,
           deleted_at: null,
+          task: { user_id: userId },
         },
         select: {
           id: true,
@@ -586,8 +595,8 @@ export class PostService {
         const approvedPostsCount = task.posts.filter((p) => p.status === 1).length;
 
 
-        // Step 5: Check if the number of approved posts matches the assigned amount
-        if (approvedPostsCount >= task.ammount) {
+        // Step 5: Check if the number of approved posts matches the assigned post count
+        if (approvedPostsCount >= task.post_count) {
           // Update task status to Completed
           await this.prisma.taskAssign.update({
             where: { id: task.id },
