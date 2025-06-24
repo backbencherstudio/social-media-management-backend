@@ -80,6 +80,16 @@ export class PostController {
     return this.postService.getUpcomingPosts();
   }
 
+  @Get('publish/:userId')
+  getServerPublishedPosts(@Param('userId') userId: string) {
+    return this.postService.getServerPublishedPosts(userId);
+  }
+
+  @Get('analysis/:userId')
+  getPostStats(@Param('userId') userId: string) {
+    return this.postService.getPostStats(userId)
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.postService.findOne(id);

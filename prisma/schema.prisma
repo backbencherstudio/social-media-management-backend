@@ -916,14 +916,13 @@ model PostPerformance {
   post_id String?
   post    Post?   @relation(fields: [post_id], references: [id], onDelete: Cascade)
 
-  provider                  String? // e.g. facebook, twitter
-  likes                     Int?
-  comments                  Int?
-  shares                    Int?
-  views                     Int?
-  reach                     Int?
-  impressions               Int?
-  avg_response_time_seconds Int? // New field for response time
+  provider    String? // e.g. facebook, twitter
+  likes       Int?
+  comments    Int?
+  shares      Int?
+  views       Int?
+  reach       Int?
+  impressions Int?
 
   @@map("post_performances")
 }
