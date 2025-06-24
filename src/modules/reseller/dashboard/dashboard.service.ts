@@ -8,47 +8,33 @@ import { Status } from '@prisma/client';
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) { }
 
-  create(createDashboardDto: CreateDashboardDto) {
-    return 'This action adds a new dashboard';
-  }
-
-  findAll() {
-    return `This action returns all dashboard`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} dashboard`;
-  }
-
-  update(id: number, updateDashboardDto: UpdateDashboardDto) {
-    return `This action updates a #${id} dashboard`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} dashboard`;
-  }
-
   async getDashboardStats(userId: string) {
     try {
-      const reseller = await this.prisma.reseller.findFirst({
-        where: { user_id: userId },
-        include: { user: true },
+      const user = await this.prisma.user.findFirst({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          type: true,
+          created_at: true,
+        },
       });
 
-      if (!reseller) {
+      if (!user) {
         return {
           success: false,
-          message: 'Reseller not found.',
+          message: 'User not found.',
         };
       }
 
+      // Get tasks assigned to this user (if they are a client)
       const tasks = await this.prisma.taskAssign.findMany({
         where: {
-          assignees: {
-            some: {
-              reseller_id: reseller.reseller_id,
-            },
-          },
+          user_id: userId,
+        },
+        select: {
+          status: true,
         },
       });
 
@@ -62,24 +48,39 @@ export class DashboardService {
         (t) => t.status === Status.completed,
       ).length;
 
+      // Get user's orders for earnings calculation
+      const orders = await this.prisma.order.findMany({
+        where: {
+          user_id: userId,
+        },
+        select: {
+          ammount: true,
+          order_status: true,
+        },
+      });
+
+      const totalEarnings = orders
+        .filter(order => order.order_status === 'completed')
+        .reduce((sum, order) => sum + (order.ammount || 0), 0);
+
       // TODO: Implement logic to calculate percentage changes and on-time delivery
       return {
         success: true,
         data: {
-          welcomeMessage: `Welcome! ${reseller.user.name || 'Reseller'}`,
-          taskSummary: `Let's Rock today. We have ${pendingTasks} Pending Tasks and ${newTasks} New Task.`,
+          welcomeMessage: `Welcome! ${user.name || 'User'}`,
+          taskSummary: `You have ${pendingTasks} Pending Tasks and ${newTasks} New Tasks.`,
           stats: {
             completedTasks: {
               count: completedTasks,
-              change: 8.2, // Hardcoded
+              change: 8.2, // Hardcoded - TODO: Calculate actual change
             },
             onTimeDelivery: {
-              percentage: 96, // Hardcoded
-              change: 0.8, // Hardcoded
+              percentage: 96, // Hardcoded - TODO: Calculate actual percentage
+              change: 0.8, // Hardcoded - TODO: Calculate actual change
             },
             earnings: {
-              amount: reseller.total_earnings,
-              change: 5.1, // Hardcoded
+              amount: totalEarnings,
+              change: 5.1, // Hardcoded - TODO: Calculate actual change
             },
           },
         },
@@ -102,8 +103,16 @@ export class DashboardService {
             },
           },
         },
-        include: {
-          user: true,
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              type: true,
+              created_at: true,
+            },
+          },
         },
       });
       const clients = tasks
@@ -134,8 +143,16 @@ export class DashboardService {
           },
           user_id: userId,
         },
-        include: {
-          user: true,
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              type: true,
+              created_at: true,
+            },
+          },
         },
       });
 
@@ -158,16 +175,55 @@ export class DashboardService {
     }
   }
 
-  async findAllActiveServices() {
+  async findAllActiveServices(clientId?: string) {
     try {
       const services = await this.prisma.service.findMany({
         where: {
-          status: 1, // active
+          status: 1,
+          // service_tiers: {
+          //   some: {
+          //     orders: clientId ? {
+          //       some: {
+          //         user_id: clientId
+          //       }
+          //     } : undefined
+          //   }
+          // }
         },
-        include: {
-          user: true,
-          category: true,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          status: true,
+          created_at: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          service_tiers: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              orders: {
+                select: {
+                  id: true,
+                  status: true,
+                },
+              },
+            },
+          },
         },
+        take: 3,
       });
       return { success: true, data: services };
     } catch (error) {
@@ -179,9 +235,25 @@ export class DashboardService {
     try {
       const service = await this.prisma.service.findUnique({
         where: { id },
-        include: {
-          user: true,
-          category: true,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          status: true,
+          created_at: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
