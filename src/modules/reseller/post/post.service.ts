@@ -7,6 +7,8 @@ import { Queue } from 'bullmq';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import { TwitterService } from '../../socials/platforms/twitter.service';
 import appConfig from 'src/config/app.config';
+import { FacebookService } from '../../socials/platforms/facebook.service';
+import { InstagramService } from '../../socials/platforms/instagram.service';
 
 @Injectable()
 export class PostService {
@@ -14,6 +16,8 @@ export class PostService {
     private readonly prisma: PrismaService,
     @InjectQueue('post-schedule') private postQueue: Queue,
     private twitterService: TwitterService,
+    private facebookService: FacebookService,
+    private instagramService: InstagramService,
   ) { }
 
   async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
@@ -550,8 +554,8 @@ export class PostService {
         if (post.schedule_at) {
           const scheduleDate = new Date(post.schedule_at);
           const delay = scheduleDate.getTime() - Date.now();
-
           if (delay > 0) {
+            console.log("call if blog")
             await this.postQueue.add(
               'publish-post',
               { postId: post.id },
@@ -630,5 +634,111 @@ export class PostService {
     } catch (error) {
       return { success: false, message: error.message };
     }
+  }
+
+  async getServerPublishedPosts(userId: string) {
+    // 1. Find all published posts for the user
+    const posts = await this.prisma.post.findMany({
+      where: {
+        status: 3, // published
+        task: { user_id: userId },
+      },
+      select: {
+        id: true,
+        content: true,
+        created_at: true,
+        twitter_post_id: true,
+        post_channels: {
+          select: {
+            channel: { select: { name: true } }
+          }
+        },
+        post_performances: true,
+      },
+    });
+
+    // 2. For each Twitter post, update its performance
+    for (const post of posts) {
+      const isTwitter = post.post_channels.some(
+        pc => pc.channel.name.toLowerCase() === 'twitter'
+      );
+      if (isTwitter) {
+        // Find the Twitter performance record
+        let perf = post.post_performances.find(p => p.provider === 'twitter');
+        // If not found, create a new one after fetching
+        // You need to store the tweet ID somewhere (e.g., in PostPerformance or Post)
+        // For now, let's assume you have it as post.twitter_post_id
+        if (post.twitter_post_id) {
+          const latest = await this.twitterService.fetchPostPerformance(post.twitter_post_id);
+          if (perf) {
+            await this.prisma.postPerformance.update({
+              where: { id: perf.id },
+              data: {
+                likes: latest.likes,
+                comments: latest.comments,
+                shares: latest.shares,
+                reach: latest.reach,
+                impressions: latest.impressions,
+              },
+            });
+          } else {
+            await this.prisma.postPerformance.create({
+              data: {
+                post_id: post.id,
+                provider: 'twitter',
+                likes: latest.likes,
+                comments: latest.comments,
+                shares: latest.shares,
+                reach: latest.reach,
+                impressions: latest.impressions,
+              },
+            });
+          }
+        }
+      }
+
+      // For Facebook
+      const isFacebook = post.post_channels.some(
+        pc => pc.channel.name.toLowerCase() === 'facebook'
+      );
+      if (isFacebook) {
+        // if (post.facebook_post_id) {
+        //   const latest = await this.facebookService.fetchPostPerformance(post.facebook_post_id);
+        //   // ...update or create PostPerformance
+        // }
+      }
+
+      // For Instagram
+      const isInstagram = post.post_channels.some(
+        pc => pc.channel.name.toLowerCase() === 'instagram'
+      );
+      if (isInstagram) {
+        // if (post.instagram_post_id) {
+        //   const latest = await this.instagramService.fetchPostPerformance(post.instagram_post_id);
+        //   // ...update or create PostPerformance
+        // }
+      }
+    }
+
+    // 3. Fetch again with select to return up-to-date data
+    const updatedPosts = await this.prisma.post.findMany({
+      where: {
+        status: 3,
+        task: { user_id: userId },
+      },
+      select: {
+        id: true,
+        content: true,
+        created_at: true,
+        post_channels: {
+          select: {
+            channel: { select: { name: true } }
+          }
+        },
+        post_performances: true,
+      },
+    });
+
+    return { success: true, data: updatedPosts };
   }
 }

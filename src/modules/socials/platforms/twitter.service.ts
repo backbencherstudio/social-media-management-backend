@@ -30,18 +30,6 @@ export class TwitterService {
         max_results: 10,
       });
 
-      console.log('Twitter API Response:', {
-        hasData: !!tweetsResponse.data,
-        dataType: typeof tweetsResponse.data,
-        isArray: Array.isArray(tweetsResponse.data),
-        dataLength: Array.isArray(tweetsResponse.data) ? tweetsResponse.data.length : 'not array',
-        meta: tweetsResponse.meta,
-        responseKeys: Object.keys(tweetsResponse),
-        dataKeys: tweetsResponse.data ? Object.keys(tweetsResponse.data) : 'no data',
-      });
-
-      // Twitter API v2 returns { data: [...], meta: {...} }
-      // So tweetsResponse.data.data contains the actual tweets array
       const tweets = tweetsResponse.data?.data || [];
 
       // Transform tweets to match expected format
@@ -278,6 +266,37 @@ export class TwitterService {
       return { success: true, message: 'Message sent' };
     } catch (error) {
       return { success: false, message: 'Twitter DM API not available or not authorized.' };
+    }
+  }
+
+  // Fetch performance metrics for a specific tweet by ID
+  async fetchPostPerformance(tweetId: string) {
+    try {
+      // Find any account to use for authentication (since tweetId is global)
+      const account = await this.prisma.account.findFirst({
+        where: { provider: 'twitter' },
+      });
+      if (!account) throw new Error('No Twitter account available');
+      const client = createTwitterClient(account);
+      const tweet = await client.v2.singleTweet(tweetId, {
+        'tweet.fields': ['public_metrics'],
+      });
+      const metrics: any = tweet.data?.public_metrics || {};
+      return {
+        likes: metrics?.like_count ?? 0,
+        comments: metrics?.reply_count ?? 0,
+        shares: metrics?.retweet_count ?? 0,
+        reach: null, // Twitter API does not provide reach
+        impressions: metrics?.impression_count ?? null, // Only available for some accounts
+      };
+    } catch (error) {
+      return {
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        reach: null,
+        impressions: null,
+      };
     }
   }
 }

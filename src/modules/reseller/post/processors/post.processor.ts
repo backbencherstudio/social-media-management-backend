@@ -52,12 +52,6 @@ export class PostProcessor extends WorkerHost {
         throw new Error(`Post with ID ${postId} not found`);
       }
 
-      // Update post status to indicate it's being processed
-      await this.prisma.post.update({
-        where: { id: postId },
-        data: { status: 1 }, // 2 = processing
-      });
-
       // Check if post is approved (status = 1)
       if (post.status !== 1) {
         this.logger.log(`Post ${postId} is not approved (status: ${post.status}), skipping publication`);
@@ -65,9 +59,9 @@ export class PostProcessor extends WorkerHost {
       }
 
       // Get the user ID from the task
-      if (!post.task || !post.task.user_id) {
-        throw new Error('Post is not associated with a user task');
-      }
+      // if (!post.task || !post.task.user_id) {
+      //   throw new Error('Post is not associated with a user task');
+      // }
 
       const userId = post.task.user_id;
       this.logger.log(`Publishing post for user: ${userId}`);
@@ -80,19 +74,54 @@ export class PostProcessor extends WorkerHost {
 
         if (channelName === 'twitter') {
           try {
+            // Check if user has connected Twitter account
+            const twitterAccount = await this.prisma.account.findFirst({
+              where: { user_id: userId, provider: 'twitter' },
+            });
+            if (!twitterAccount) {
+              this.logger.warn(`User ${userId} has not connected Twitter account. Skipping.`);
+              publishResults.push({
+                channel: 'twitter',
+                success: false,
+                message: 'Twitter account not connected for this user',
+              });
+              continue;
+            }
             // Prepare post data for Twitter
             const postData = {
               content: post.content || '',
-              hashtags: post.hashtags || [],
-              mediaFiles: post.post_files.map(file => ({
-                name: file.name || '',
-                type: file.type || '',
-                file_path: file.file_path || '',
-              })),
+              // hashtags: post.hashtags || [],
+              // mediaFiles: post.post_files.map(file => ({
+              //   name: file.name || '',
+              //   type: file.type || '',
+              //   file_path: file.file_path || '',
+              // })),
             };
 
             // Publish to Twitter
             const twitterResult = await this.twitterService.publishPost(userId, postData);
+            if (twitterResult.success && twitterResult.data?.data?.id) {
+              // Save the Twitter post ID to the Post record
+              await this.prisma.post.update({
+                where: { id: postId },
+                data: { twitter_post_id: twitterResult.data.data.id },
+              });
+
+              // Fetch performance data for the new tweet
+              const performance = await this.twitterService.fetchPostPerformance(twitterResult.data.data.id);
+              // Create PostPerformance record
+              await this.prisma.postPerformance.create({
+                data: {
+                  post_id: postId,
+                  provider: 'twitter',
+                  likes: performance.likes,
+                  comments: performance.comments,
+                  shares: performance.shares,
+                  reach: performance.reach,
+                  impressions: performance.impressions,
+                },
+              });
+            }
 
             publishResults.push({
               channel: 'twitter',
