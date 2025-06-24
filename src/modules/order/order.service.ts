@@ -32,7 +32,7 @@ export class OrderService {
         // Step 2: Create the order
         const order = await tx.order.create({
           data: {
-             pakage_name: orderData.pakage_name,
+            pakage_name: orderData.pakage_name,
             ammount: totalAmount,
             user_id: userDetails.id,
             user_name: userDetails.name,
@@ -75,6 +75,19 @@ export class OrderService {
       );
     }
   }
+
+  async findOrdersByUserId(userId: string) {
+    return this.prisma.order.findMany({
+      where: { user_id: userId },
+      include: {
+        Order_Details: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+  }
+
 
   create(createOrderDto: CreateOrderDto) {
     return 'This action adds a new order';
