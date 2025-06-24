@@ -36,7 +36,6 @@ export class PostController {
     @UploadedFiles() files: { files?: Express.Multer.File[] },
   ) {
     let createPostDto: CreatePostDto;
-    console.log("body", body)
     // If data is sent as JSON string inside `body.data`, parse it
     if (body?.data) {
 
@@ -53,10 +52,11 @@ export class PostController {
     return this.postService.findAll();
   }
 
-  @Get('calendar')
+  @Get('calendar/:userId')
   async getScheduledPosts(
     @Query('start') start: string,
     @Query('end') end: string,
+    @Param('userId') userId: string,
   ) {
     try {
       const startDate = new Date(start);
@@ -69,15 +69,16 @@ export class PostController {
       return await this.postService.getScheduledPostsForCalendar(
         startDate,
         endDate,
+        userId,
       );
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
 
-  @Get('upcoming')
-  getUpcomingPosts() {
-    return this.postService.getUpcomingPosts();
+  @Get('upcoming/:userId')
+  getUpcomingPosts(@Param('userId') userId: string) {
+    return this.postService.getUpcomingPosts(userId);
   }
 
   @Get('publish/:userId')
