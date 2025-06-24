@@ -916,14 +916,13 @@ model PostPerformance {
   post_id String?
   post    Post?   @relation(fields: [post_id], references: [id], onDelete: Cascade)
 
-  provider                  String? // e.g. facebook, twitter
-  likes                     Int?
-  comments                  Int?
-  shares                    Int?
-  views                     Int?
-  reach                     Int?
-  impressions               Int?
-  avg_response_time_seconds Int? // New field for response time
+  provider    String? // e.g. facebook, twitter
+  likes       Int?
+  comments    Int?
+  shares      Int?
+  views       Int?
+  reach       Int?
+  impressions Int?
 
   @@map("post_performances")
 }
@@ -964,22 +963,24 @@ enum paymentStatus {
 }
 
 model Order_Details {
-  id              String       @id
+  id              String        @id @default(uuid())
   order_id        String
-  order           Order        @relation(fields: [order_id], references: [id])
+  order           Order         @relation(fields: [order_id], references: [id])
   service_name    String
   service_amount  String
+  service_count   Float
   service_price   Float
   service_tier_id String?
-  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
+  service_tiers   ServiceTier[]
+  // service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
   order_assigns   TaskAssign[]
-  created_at      DateTime     @default(now())
+  created_at      DateTime      @default(now())
 
   @@map("order_details")
 }
 
 model Order {
-  id         String   @id
+  id         String   @id @default(uuid())
   created_at DateTime @default(now())
 
   order_status OrderStatus @default(progress)

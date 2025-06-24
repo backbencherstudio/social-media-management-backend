@@ -50,8 +50,6 @@ export class AuthController {
   async me(@Req() req: Request) {
     try {
       const user_id = req.user.userId;
-      console.log(user_id);
-
       const response = await this.authService.me(user_id);
 
       return response;

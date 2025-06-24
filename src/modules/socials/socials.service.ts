@@ -414,7 +414,7 @@ export class SocialsService {
       if (connectedProviders.length === 0) {
         return {
           success: true,
-          data: { totalPosts: 0, totalReach: 0, engagementRate: 0, avgResponse: 0 },
+          data: { totalPosts: 0, totalReach: 0, engagementRate: 0 },
           message: "No social platforms connected."
         };
       }
@@ -456,36 +456,12 @@ export class SocialsService {
 
       const engagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
 
-      // 3. Calculate Average Response Time from PostPerformance
-      const responseAggregates = await this.prisma.postPerformance.aggregate({
-        _avg: {
-          avg_response_time_seconds: true,
-        },
-        where: {
-          provider: {
-            in: connectedProviders,
-          },
-          post: {
-            task: {
-              user_id: userId,
-            },
-          },
-          avg_response_time_seconds: {
-            not: null,
-          },
-        },
-      });
-
-      const avgResponseInSeconds = responseAggregates._avg.avg_response_time_seconds ?? 0;
-      const avgResponseInHours = parseFloat((avgResponseInSeconds / 3600).toFixed(1));
-
       return {
         success: true,
         data: {
           totalPosts,
           totalReach,
           engagementRate: parseFloat(engagementRate.toFixed(2)),
-          avgResponse: avgResponseInHours,
         },
       };
     } catch (error) {
