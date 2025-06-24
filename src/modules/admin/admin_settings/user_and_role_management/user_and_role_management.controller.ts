@@ -1,10 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { UserAndRoleManagementService } from './user_and_role_management.service';
 import { AssignRoleByEmailDto } from './dto/AssignRoleByEmailDto';
 import { CreateRoleDto } from './dto/create-role-dto';
 import { ManageUserRoleDto } from './dto/mange-role-dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { Role } from 'src/common/guard/role/role.enum';
 
-
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('user-and-role-management')
 export class UserAndRoleManagementController {
   constructor(private readonly userAndRoleManagementService: UserAndRoleManagementService) {}

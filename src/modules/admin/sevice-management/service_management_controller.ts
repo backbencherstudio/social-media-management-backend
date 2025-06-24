@@ -7,12 +7,23 @@ import {
   Put,
   Delete,
   Param,
-  Patch
+  Patch,
+  UseGuards
 } from '@nestjs/common';
 import { ServiceManagementService } from './service-management.service';
 import { CreateServiceDto } from './dto/create-service.dto';
-import { ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiParam, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Role } from 'src/common/guard/role/role.enum';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
+
+
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('services')
 export class ServiceManagementController {
   constructor(

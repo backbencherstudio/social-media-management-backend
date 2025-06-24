@@ -13,10 +13,10 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { Role } from 'src/common/guard/role/role.enum';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 
-// @ApiBearerAuth()
+@ApiBearerAuth()
 @ApiTags('Payment & Transaction')
-// @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('admin/withdrawal-settings')
 export class PaymentAndTransactionController {
   constructor(

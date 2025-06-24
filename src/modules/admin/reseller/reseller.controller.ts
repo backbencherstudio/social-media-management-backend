@@ -1,8 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Put, UseGuards } from '@nestjs/common';
 import { ResellerService } from './reseller.service';
 import { TaskManagementService } from '../task_management/task_management.service';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Role } from 'src/common/guard/role/role.enum';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
-
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('reseller')
 export class ResellerController {
   constructor(private readonly resellerService: ResellerService,private readonly taskAssignService: TaskManagementService) {}

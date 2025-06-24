@@ -1,9 +1,19 @@
-import { Controller, Post, Body, Get, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards } from '@nestjs/common';
 import { EmailSettings } from '@prisma/client';
 import { CreateEmailSettingsDto } from './dto/create-email_setting.dto';
 import { EmailSettingsService } from './email_settings.service';
 import { UpdateEmailSettingsDto } from './dto/update-email_setting.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Role } from 'src/common/guard/role/role.enum';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
+
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('admin/emailSettings')
 export class EmailSettingsController {
   constructor(private readonly emailSettingsService: EmailSettingsService) {}

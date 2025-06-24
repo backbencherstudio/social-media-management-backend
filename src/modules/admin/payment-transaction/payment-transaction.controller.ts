@@ -7,10 +7,10 @@ import { Role } from '../../../common/guard/role/role.enum';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { Request } from 'express';
 
-// @ApiBearerAuth()
+@ApiBearerAuth()
 @ApiTags('Payment transaction')
-// @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.VENDOR)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('admin/payment-transaction')
 export class PaymentTransactionController {
   constructor(

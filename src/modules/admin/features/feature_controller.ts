@@ -7,12 +7,22 @@ import {
   Put,
   Delete,
   Param,
+  UseGuards,
 } from '@nestjs/common';
 import { FeatureServices } from './feature_service';
 import { CreateFeatureDto } from './dto/create-feature-dto';
 import { UpdateFeatureDto } from './dto/update-feature-dto';
-import { ApiParam, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiParam, ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Role } from 'src/common/guard/role/role.enum';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
+
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Controller('features')
 export class FeatureController {
   constructor(private readonly featureService: FeatureServices) {}
