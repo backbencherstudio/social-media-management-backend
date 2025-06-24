@@ -44,7 +44,7 @@ export class OrderService {
         const orderDetailsData = serviceTiers.map((tier) => ({
           order_id: order.id,
           service_name: tier.service?.name ?? "Unknown Service",
-          service_amount: tier.name ?? "Unknown Tier",
+          service_amount_name: tier.name ?? "Unknown Tier",
           service_count: tier.max_post ?? 0,
           service_price: tier.price ?? 0,
           service_tier_id: tier.id,

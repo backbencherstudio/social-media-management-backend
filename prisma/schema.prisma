@@ -967,7 +967,7 @@ model Order_Details {
   order_id        String
   order           Order         @relation(fields: [order_id], references: [id])
   service_name    String
-  service_amount  String
+  service_amount_name  String
   service_count   Float
   service_price   Float
   service_tier_id String?

@@ -10,7 +10,7 @@ export class CreateOrderDetailDto {
 
   @IsOptional()
   @IsString()
-  service_amount: string;
+  service_amount_name: string;
   
   @IsOptional()
   @IsNumber()
