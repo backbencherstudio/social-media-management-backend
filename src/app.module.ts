@@ -36,6 +36,7 @@ import { ResellerProfileModule } from './modules/reseller/reseller_profile/resel
 import { AssetsModule } from './modules/reseller/assets/assets.module';
 import { PostModule as UserPostModule } from './modules/user/post/post.module';
 import { AssetsModule as UserAssetsModule } from './modules/user/assets/assets.module';
+import { OrderModule } from './modules/order/order.module';
 
 
 @Module({
@@ -75,6 +76,8 @@ import { AssetsModule as UserAssetsModule } from './modules/user/assets/assets.m
     AssetsModule,
     UserPostModule,
     UserAssetsModule,
+    OrderModule
+
   ],
   controllers: [AppController],
   providers: [AppService],
