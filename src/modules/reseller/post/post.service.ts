@@ -637,6 +637,17 @@ export class PostService {
   }
 
   async getServerPublishedPosts(userId: string) {
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId
+      }
+    })
+
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
     // 1. Find all published posts for the user
     const posts = await this.prisma.post.findMany({
       where: {
@@ -663,11 +674,7 @@ export class PostService {
         pc => pc.channel.name.toLowerCase() === 'twitter'
       );
       if (isTwitter) {
-        // Find the Twitter performance record
         let perf = post.post_performances.find(p => p.provider === 'twitter');
-        // If not found, create a new one after fetching
-        // You need to store the tweet ID somewhere (e.g., in PostPerformance or Post)
-        // For now, let's assume you have it as post.twitter_post_id
         if (post.twitter_post_id) {
           const latest = await this.twitterService.fetchPostPerformance(post.twitter_post_id);
           if (perf) {
@@ -740,5 +747,71 @@ export class PostService {
     });
 
     return { success: true, data: updatedPosts };
+  }
+
+  async getPostStats(userId: string) {
+    try {
+      // 1. Fetch all published posts for the user
+      const posts = await this.prisma.post.findMany({
+        where: {
+          status: 3, // published
+          task: { user_id: userId },
+        },
+        select: {
+          id: true,
+          post_performances: {
+            select: {
+              likes: true,
+              comments: true,
+              shares: true,
+              reach: true,
+            },
+          },
+        },
+      });
+
+      const totalPosts = posts.length;
+      let totalReach = 0;
+      let totalEngagement = 0;
+      let totalEngagementRate = 0;
+      let postsWithReach = 0;
+
+      for (const post of posts) {
+        let postEngagement = 0;
+        let postReach = 0;
+        for (const perf of post.post_performances) {
+          const likes = perf.likes || 0;
+          const comments = perf.comments || 0;
+          const shares = perf.shares || 0;
+          const reach = perf.reach || 0;
+          postEngagement += likes + comments + shares;
+          postReach += reach;
+        }
+        totalEngagement += postEngagement;
+        totalReach += postReach;
+        if (postReach > 0) {
+          totalEngagementRate += postEngagement / postReach;
+          postsWithReach++;
+        }
+      }
+
+      const avgEngagementRate = postsWithReach > 0 ? (totalEngagementRate / postsWithReach) : 0;
+      const avgResponse = totalPosts > 0 ? (totalEngagement / totalPosts) : 0;
+
+      return {
+        success: true,
+        data: {
+          totalPosts,
+          totalReach,
+          engagementRate: Number(avgEngagementRate.toFixed(4)),
+          avgResponse: Number(avgResponse.toFixed(2)),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch Post stats.',
+      };
+    }
   }
 }
