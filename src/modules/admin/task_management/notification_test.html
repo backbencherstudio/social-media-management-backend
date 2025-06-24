@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reseller Notification Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    #notifications {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .notification {
+      background: #e0f7fa;
+      border-left: 4px solid #00796b;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📣 Reseller Notification Panel</h2>
+  <div id="notifications">
+    <p><em>Waiting for notifications...</em></p>
+  </div>
+
+  <!-- Include Socket.IO Client CDN -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const socket = io("http://localhost:4000/"); // Change to your backend server URL
+
+    const notificationsDiv = document.getElementById("notifications");
+
+    socket.on("connect", () => {
+      console.log("Connected to WebSocket Server");
+    });
+
+    socket.on("notification", (data) => {
+      console.log("New Notification:", data);
+
+      const note = document.createElement("div");
+      note.className = "notification";
+      note.innerHTML = `
+        <strong>${data.text}</strong><br>
+        <small>Type: ${data.type} | Task ID: ${data.entity_id}</small>
+      `;
+
+      // Remove placeholder
+      if (notificationsDiv.children.length === 1 && notificationsDiv.children[0].tagName === "P") {
+        notificationsDiv.innerHTML = "";
+      }
+
+      notificationsDiv.prepend(note);
+    });
+
+    socket.on("disconnect", () => {
+      console.warn("Disconnected from server");
+    });
+  </script>
+</body>
+</html>

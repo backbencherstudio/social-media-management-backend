@@ -156,4 +156,19 @@ export class NotificationService {
       };
     }
   }
+
+  async getAllNotifications() {
+   try{
+     const notifications = await this.prisma.notification.findMany();
+     return {
+       success: true,
+       data: notifications,
+     };
+   }catch (error) {
+     return {
+       success: false,
+       message: error.message,
+     };
+   }
+  }
 }

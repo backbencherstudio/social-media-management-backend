@@ -34,6 +34,7 @@ export class ResellerProfileService {
         },
         order: {
           select: {
+            user_id: true,
             user_name: true,
             user_email: true,
           },
@@ -56,6 +57,7 @@ export class ResellerProfileService {
       Assigned_by: task.assigned_by,
       due_date: task.due_date,
       note: task.note,
+      clint_id: task.order?.user_id,
       clint_name: task.order?.user_name,
       clint_email: task.order?.user_email,
     }));
