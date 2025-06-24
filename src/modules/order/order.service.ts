@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Prisma } from '@prisma/client';
@@ -8,29 +8,53 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 export class OrderService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async createOrder(dto: CreateOrderDto) {
+  async createOrder(userDetails, dto: CreateOrderDto) {
     const { order_items, ...orderData } = dto;
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        // Step 1: Create the order
+        const serviceTierIds = order_items.map(item => item.service_tier_id);
+        const serviceTiers = await tx.serviceTier.findMany({
+          where: { id: { in: serviceTierIds } },
+          include: {
+            service: {
+              select: { name: true },
+            },
+          },
+        });
+        if (serviceTiers.length !== order_items.length) {
+          throw new BadRequestException(`${serviceTiers.length} One or more service_tier_id values are invalid. ${order_items.length}`);
+        }
+
+        const totalAmount = serviceTiers.reduce((sum, tier) => {
+          return sum + (tier.price ?? 0);
+        }, 0);
+
+        // Step 2: Create the order
         const order = await tx.order.create({
           data: {
-            ...orderData,
-          } as Prisma.OrderUncheckedCreateInput, // 👈 Fix type mismatch
+             pakage_name: orderData.pakage_name,
+            ammount: totalAmount,
+            user_id: userDetails.id,
+            user_name: userDetails.name,
+            user_email: userDetails.email,
+          } as Prisma.OrderUncheckedCreateInput,
         });
 
-        // Step 2: Create all related order details
-        const orderDetails = await tx.order_Details.createMany({
-          data: order_items.map((item) => ({
-            order_id: order.id, 
-            service_name: item.service_name,
-            service_amount: item.service_amount,
-            service_price: item.service_price,
-            service_tier_id: item.service_tier_id,
-          })),
+        // Step 3: Create Order_Details based on fetched tier + service info
+        const orderDetailsData = serviceTiers.map((tier) => ({
+          order_id: order.id,
+          service_name: tier.service?.name ?? "Unknown Service",
+          service_amount: tier.name ?? "Unknown Tier",
+          service_count: tier.max_post ?? 0,
+          service_price: tier.price ?? 0,
+          service_tier_id: tier.id,
+        }));
+
+        await tx.order_Details.createMany({
+          data: orderDetailsData,
         });
 
-        return { order, orderDetails };
+        return { order, orderDetails: orderDetailsData };
       });
 
       return {

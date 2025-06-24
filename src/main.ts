@@ -12,10 +12,10 @@ import { AppModule } from './app.module';
 import { CustomExceptionFilter } from './common/exception/custom-exception.filter';
 import appConfig from './config/app.config';
 import { SojebStorage } from './common/lib/Disk/SojebStorage';
-import * as session from 'express-session';
-import * as passport from 'passport';
-// import session from 'express-session';
-// import passport from 'passport';
+// import * as session from 'express-session';
+// import * as passport from 'passport';
+import session from 'express-session';
+import passport from 'passport';
 // import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
