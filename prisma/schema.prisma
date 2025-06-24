@@ -960,11 +960,12 @@ enum paymentStatus {
 }
 
 model Order_Details {
-  id              String       @id
+  id              String       @id @default(uuid())
   order_id        String
   order           Order        @relation(fields: [order_id], references: [id])
   service_name    String
   service_amount  String
+  service_count   Float
   service_price   Float
   service_tier_id String?
   service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
