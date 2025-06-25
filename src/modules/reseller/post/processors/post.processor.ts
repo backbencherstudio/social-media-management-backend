@@ -29,7 +29,6 @@ export class PostProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.id} with name ${job.name}`);
     try {
       const { postId } = job.data;
-
       // Get the post with all related data
       const post = await this.prisma.post.findUnique({
         where: { id: postId },
@@ -62,8 +61,8 @@ export class PostProcessor extends WorkerHost {
       // if (!post.task || !post.task.user_id) {
       //   throw new Error('Post is not associated with a user task');
       // }
-
-      const userId = post.task.user_id;
+      const userId = 'cmcaezr200000ws68zs50kn2q'
+      // todo    const userId = post.task.user_id;
       this.logger.log(`Publishing post for user: ${userId}`);
 
       // Process each channel
@@ -100,6 +99,7 @@ export class PostProcessor extends WorkerHost {
 
             // Publish to Twitter
             const twitterResult = await this.twitterService.publishPost(userId, postData);
+            console.log("twitter result", twitterResult)
             if (twitterResult.success && twitterResult.data?.data?.id) {
               // Save the Twitter post ID to the Post record
               await this.prisma.post.update({
@@ -149,7 +149,6 @@ export class PostProcessor extends WorkerHost {
           });
         }
       }
-
       // Check if any channel was successfully published
       const hasSuccessfulPublish = publishResults.some(result => result.success);
 

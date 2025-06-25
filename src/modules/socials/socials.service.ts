@@ -44,7 +44,7 @@ export class SocialsService {
 
     try {
       await this.validateUserExists(userId);
-      await this.validateProviderAccount(credentials);
+      //   await this.validateProviderAccount(credentials);
 
       const accountData = this.buildAccountData(userId, credentials);
       const account = await this.upsertAccount(accountData);
@@ -70,7 +70,6 @@ export class SocialsService {
         this.prisma.channel.findMany(),
         this.prisma.account.findMany({ where: { user_id: userId } }),
       ]);
-
       const connectionData = channels.map((channel) => {
         const matchedAccounts = this.findAccountsForChannel(accounts, channel.name);
         return {

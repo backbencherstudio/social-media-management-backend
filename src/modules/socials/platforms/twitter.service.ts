@@ -161,10 +161,10 @@ export class TwitterService {
       }
 
       // Ensure all required credentials are present
-      if (!account.api_key || !account.api_secret || !account.access_token || !account.access_secret) {
+      if (!account.access_token || !account.access_secret) {
         return {
           success: false,
-          message: 'Missing Twitter API credentials (api_key, api_secret, access_token, access_secret) in account model',
+          message: 'Missing Twitter API credentials  in account model',
         };
       }
 

@@ -559,24 +559,23 @@ export class PostService {
       });
 
       // Step 2: If post is approved, add to queue for publishing
-      if (status === 1) {
-        if (post.schedule_at) {
-          const scheduleDate = new Date(post.schedule_at);
-          const delay = scheduleDate.getTime() - Date.now();
-          if (delay > 0) {
-            console.log("call if blog")
-            await this.postQueue.add(
-              'publish-post',
-              { postId: post.id },
-              { delay },
-            );
-          } else {
-            await this.postQueue.add('publish-post', { postId: post.id });
-          }
-        } else {
-          await this.postQueue.add('publish-post', { postId: post.id });
-        }
-      }
+      // if (status === 1) {
+      //   if (post.schedule_at) {
+      //     const scheduleDate = new Date(post.schedule_at);
+      //     const delay = scheduleDate.getTime() - Date.now();
+      //     if (delay > 0) {
+      //       await this.postQueue.add(
+      //         'publish-post',
+      //         { postId: post.id },
+      //         { delay },
+      //       );
+      //     } else {
+      //       await this.postQueue.add('publish-post', { postId: post.id });
+      //     }
+      //   } else {
+      //     await this.postQueue.add('publish-post', { postId: post.id });
+      //   }
+      // }
 
       // Step 3: Get related task via post.task_id
       const task = await this.prisma.taskAssign.findFirst({
@@ -606,6 +605,31 @@ export class PostService {
             },
           });
 
+          // Step 5.1: Update reseller's complete_tasks count and earnings
+          const reseller = await this.prisma.reseller.findFirst({
+            where: {
+              TaskAssign: {
+                some: { id: task.id }
+              }
+            }
+          });
+
+          if (reseller) {
+            // Calculate task earnings (you may need to adjust this based on your business logic)
+            const taskEarnings = task.order?.ammount ? task.order.ammount / task.order.order_assigns.length : 0;
+
+            await this.prisma.reseller.update({
+              where: { reseller_id: reseller.reseller_id },
+              data: {
+                complete_tasks: {
+                  increment: 1
+                },
+                total_earnings: {
+                  increment: taskEarnings
+                }
+              }
+            });
+          }
 
           // Step 6: After task completion, check if all tasks in the order are completed
           const updatedTasks = await this.prisma.taskAssign.findMany({
@@ -617,11 +641,18 @@ export class PostService {
           );
 
           if (allTasksCompleted) {
+            // Update order status to completed
             await this.prisma.order.update({
               where: { id: task.order_id },
-              data: { order_status: 'completed' }, // Or OrderStatus.completed enum
+              data: {
+                order_status: 'completed'
+              },
             });
-            console.log("Order marked as completed - all tasks are done");
+
+            console.log(`Order ${task.order_id} marked as completed - all tasks are done`);
+
+            // Optional: You can add additional logic here for order completion
+            // For example: send notifications, update user stats, etc.
           }
         } else {
           // Update the post count even if task is not complete yet
