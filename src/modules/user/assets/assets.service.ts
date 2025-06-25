@@ -23,33 +23,79 @@ export class AssetsService {
         return { success: true, data: files };
     }
 
-    // Review (approve/reject) a design file
-    async reviewDesignFile(
-        userId: string,
-        designFileId: string,
-        status: 1 | 2, // 1 = approved, 2 = rejected
-        feedback?: string,
-    ) {
-        // Ensure the design file belongs to the user
-        const designFile = await this.prisma.designFile.findFirst({
-            where: {
-                id: designFileId,
-                task: { user_id: userId },
-            },
-        });
-        if (!designFile) {
-            return { success: false, message: 'Design file not found or not allowed' };
+    async getContentQueue(userId: string, status?: string, date?: string) {
+        // --- Fetch posts ---
+        const postWhere: any = {
+            task: { user_id: userId },
+        };
+        if (status) {
+            if (status === 'pending') postWhere.status = 0;
+            if (status === 'approve') postWhere.status = 1;
+        }
+        if (date) {
+            postWhere.schedule_at = { equals: new Date(date) };
         }
 
-        // Update the design file's status and feedback
-        const updated = await this.prisma.designFile.update({
-            where: { id: designFileId },
-            data: {
-                status,
-                feedback: feedback || null,
+        const posts = await this.prisma.post.findMany({
+            where: postWhere,
+            include: {
+                post_files: true,
+                post_channels: { include: { channel: true } },
+                task: true,
             },
+            orderBy: { schedule_at: 'asc' },
         });
 
-        return { success: true, data: updated };
+        // --- Fetch design files ---
+        const designFiles = await this.prisma.designFileAsset.findMany({
+            where: {
+                design_file: {
+                    task: { user_id: userId },
+                    ...(status ? { status: status === 'pending' ? 0 : 1 } : {}),
+                },
+            },
+            include: {
+                design_file: true,
+            },
+            orderBy: { created_at: 'desc' },
+        });
+
+        // --- Normalize posts ---
+        const postItems = posts.map(post => ({
+            id: post.id,
+            type: 'post',
+            title: post.content?.slice(0, 50) || 'Untitled',
+            scheduledFor: post.schedule_at,
+            platforms: post.post_channels.map(pc => pc.channel?.name).filter(Boolean),
+            status: post.status,
+            preview: post.content,
+            files: post.post_files,
+            postType: post.task?.post_type,
+            submittedAt: post.created_at,
+        }));
+
+        // --- Normalize design files ---
+        const designFileItems = designFiles.map(file => ({
+            id: file.id,
+            type: 'design_file',
+            title: file.name,
+            scheduledFor: file.created_at,
+            platforms: [],
+            status: file.design_file?.status,
+            preview: null,
+            files: [file],
+            postType: 'Design File',
+            submittedAt: file.created_at,
+        }));
+
+        // --- Combine and sort ---
+        const queue = [...postItems, ...designFileItems].sort(
+            (a, b) => new Date(b.scheduledFor).getTime() - new Date(a.scheduledFor).getTime()
+        );
+
+        return {
+            success: true,
+            date: queue
+        };
     }
 }

@@ -5,20 +5,15 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Reseller')
 @ApiBearerAuth()
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('reseller/dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) { }
 
   @Get('clients')
   findAllClients(@Req() req) {
-    const resellerId = "RES_n461l81lt1q8naigks2170vm"
-    return this.dashboardService.findAllClients(resellerId)
-  }
-
-  @Get('active-services')
-  findAllActiveServices(@Query('clientId') clientId?: string) {
-    return this.dashboardService.findAllActiveServices(clientId);
+    const userId = req?.user?.userId;
+    return this.dashboardService.findAllClients(userId);
   }
 
   @Get('active-services/:id')
@@ -36,5 +31,10 @@ export class DashboardController {
     // Assuming the reseller ID is on req.user.id from the JWT payload
     const resellerId = req.user.id;
     return this.dashboardService.findOneClient(resellerId, userId);
+  }
+
+  @Get('user/:userId/active-services')
+  async getUserActiveServices(@Param('userId') userId: string) {
+    return this.dashboardService.getUserActiveServices(userId);
   }
 }

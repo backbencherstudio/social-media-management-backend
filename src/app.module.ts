@@ -37,6 +37,7 @@ import { AssetsModule } from './modules/reseller/assets/assets.module';
 import { PostModule as UserPostModule } from './modules/user/post/post.module';
 import { AssetsModule as UserAssetsModule } from './modules/user/assets/assets.module';
 import { OrderModule } from './modules/order/order.module';
+import { DashboardModule as UserDashboardModule } from './modules/user/dashboard/dashboard.module';
 
 
 @Module({
@@ -76,8 +77,8 @@ import { OrderModule } from './modules/order/order.module';
     AssetsModule,
     UserPostModule,
     UserAssetsModule,
-    OrderModule
-
+    OrderModule,
+    UserDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

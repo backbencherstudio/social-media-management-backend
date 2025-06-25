@@ -23,6 +23,10 @@ export class CreateDesignFileDto {
   @IsOptional()
   status?: number;
 
+  @IsString()
+  @IsOptional()
+  task_id: string
+
   @IsArray()
   @IsOptional()
   files?: CreateDesignFileAssetDto[];
