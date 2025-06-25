@@ -963,18 +963,18 @@ enum paymentStatus {
 }
 
 model Order_Details {
-  id              String        @id @default(uuid())
-  order_id        String
-  order           Order         @relation(fields: [order_id], references: [id])
-  service_name    String
-  service_amount_name  String
-  service_count   Float
-  service_price   Float
-  service_tier_id String?
-  service_tiers   ServiceTier[]
+  id                  String        @id @default(uuid())
+  order_id            String
+  order               Order         @relation(fields: [order_id], references: [id])
+  service_name        String
+  service_amount_name String
+  service_count       Float
+  service_price       Float
+  service_tier_id     String?
+  service_tiers       ServiceTier[]
   // service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
-  order_assigns   TaskAssign[]
-  created_at      DateTime      @default(now())
+  order_assigns       TaskAssign[]
+  created_at          DateTime      @default(now())
 
   @@map("order_details")
 }

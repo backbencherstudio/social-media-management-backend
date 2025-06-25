@@ -13,6 +13,7 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
 import { InstagramStrategy } from './strategies/instagram.strategy';
 import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { TwitterStrategy } from './strategies/twitter.strategy';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [

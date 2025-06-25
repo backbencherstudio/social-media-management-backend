@@ -630,30 +630,6 @@ export class PostService {
               }
             });
           }
-
-          // Step 6: After task completion, check if all tasks in the order are completed
-          const updatedTasks = await this.prisma.taskAssign.findMany({
-            where: { order_id: task.order_id },
-          });
-
-          const allTasksCompleted = updatedTasks.every(
-            (t) => t.status === 'completed',
-          );
-
-          if (allTasksCompleted) {
-            // Update order status to completed
-            await this.prisma.order.update({
-              where: { id: task.order_id },
-              data: {
-                order_status: 'completed'
-              },
-            });
-
-            console.log(`Order ${task.order_id} marked as completed - all tasks are done`);
-
-            // Optional: You can add additional logic here for order completion
-            // For example: send notifications, update user stats, etc.
-          }
         } else {
           // Update the post count even if task is not complete yet
           await this.prisma.taskAssign.update({
