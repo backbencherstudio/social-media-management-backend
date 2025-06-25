@@ -564,7 +564,6 @@ export class PostService {
           const scheduleDate = new Date(post.schedule_at);
           const delay = scheduleDate.getTime() - Date.now();
           if (delay > 0) {
-            console.log("call if blog")
             await this.postQueue.add(
               'publish-post',
               { postId: post.id },

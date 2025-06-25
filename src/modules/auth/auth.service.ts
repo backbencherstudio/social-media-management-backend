@@ -1175,13 +1175,20 @@ export class AuthService {
     provider: string;
     tokenSecret: string;
   }) {
-    console.log("profile", profile)
+
     try {
-      // 1. Find user 
-      // by email or username (email might be missing in Twitter)
-      let user = await this.prisma.user.findFirst({
-        where: { username: profile.username },
-      });
+      // 1. Find user by email (if available), then by username
+      let user = null;
+      if (profile.email) {
+        user = await this.prisma.user.findFirst({
+          where: { email: profile.email },
+        });
+      }
+      // if (!user) {
+      //   user = await this.prisma.user.findFirst({
+      //     where: { username: profile.username },
+      //   });
+      // }
 
       if (!user) {
         user = await this.prisma.user.create({
