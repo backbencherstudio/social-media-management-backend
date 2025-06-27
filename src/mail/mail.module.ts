@@ -51,7 +51,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 
     BullModule.registerQueue({
-      name: 'mail3-queue',
+      name: 'mail4-queue1',
     }),
   ],
   providers: [
