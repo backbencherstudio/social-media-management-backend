@@ -107,6 +107,7 @@ model User {
   TaskAssign          TaskAssign[]
 
   @@map("users")
+  Conversation_List Conversation_List[]
 }
 
 model Ucode {
@@ -282,6 +283,18 @@ model Conversation {
   creator        User      @relation("creator", fields: [creator_id], references: [id])
   participant    User      @relation("participant", fields: [participant_id], references: [id])
   messages       Message[]
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now())
+
+  Conversation_List Conversation_List[]
+}
+
+model Conversation_List{
+  id             String    @id @default(cuid())
+  user_id        String
+  conversation_id String
+  user           User      @relation(fields: [user_id], references: [id])
+  conversation   Conversation @relation(fields: [conversation_id], references: [id])
   created_at     DateTime  @default(now())
   updated_at     DateTime  @default(now())
 }
