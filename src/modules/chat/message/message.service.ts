@@ -115,7 +115,7 @@ async sendMessageToUser(adminId: string, userId: string, message: string) {
     //socket id
     if (!userSocketId) {
       return{
-        message: 'User is not connected',
+        message: 'client is not connected',
         success: false,
         data: null,
       };
@@ -218,7 +218,7 @@ async getAllConversations() {
         messages: true, // Keep all messages
       },
       orderBy: {
-        created_at: 'desc', // You can still order the conversations
+        created_at: 'asc', // You can still order the conversations
       },
     });
 
@@ -256,7 +256,11 @@ async getOneConversation(conversationId: string) {
             type: true,
           },
         },
-        messages: true, // Include all messages related to the conversation
+        messages: {
+          orderBy: {
+            created_at: 'asc', // Order messages by creation date
+          },
+        }, // Include all messages related to the conversation
       },
     });
 
