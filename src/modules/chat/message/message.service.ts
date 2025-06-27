@@ -11,7 +11,8 @@ export class MsgService {
     //private readonly jwtService: JwtService,
     private readonly messageGateway: MessageGateway,
 ) {}
-// Create and send a message to admin from user
+
+// Send message to admin from user
 async sendMessageToAdmin(userId: string, message: string): Promise<{ success: boolean, message: string, data: any }> {
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
@@ -22,8 +23,12 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
     throw new Error('User not found');
   }
 
-  if (user.type !== 'user') {
-    throw new Error('Only users can send messages to admin');
+  if (user.type !== 'clint') {
+    return {
+      message: 'Only clients can send messages to admin',
+      success: false,
+      data: null,
+    }
   }
 
   let conversation = await this.prisma.conversation.findFirst({
@@ -84,14 +89,36 @@ async sendMessageToUser(adminId: string, userId: string, message: string) {
     });
 
     if (!admin || admin.type !== 'admin') {
-      throw new Error('Only admins can send messages to users');
-    }
+        return {
+      message: 'Only admins can send messages to users',
+      success: false,
+      data: null,
+    };
+  }
 
     const userSocketId = this.messageGateway.getSocketIdByUserId(userId);
 
+      const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: { type: true },
+  });
+
+  
+  if (user.type !== 'clint') {
+    return {
+      message: 'He is not a client',
+      success: false,
+      data: null,
+    }
+  }
+
     //socket id
     if (!userSocketId) {
-      throw new Error(`User ${userId} not online.`);
+      return{
+        message: 'User is not connected',
+        success: false,
+        data: null,
+      };
     }
     let conversation = await this.prisma.conversation.findFirst({
     where: {
