@@ -7,16 +7,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class MailService {
   constructor(
-    @InjectQueue('mail3-queue') private readonly queue: Queue,
+    @InjectQueue('mail4-queue1') private readonly queue: Queue,
     private readonly emailSettingsService: EmailSettingsService,
-        private readonly prisma: PrismaService,
-  ) {}
+    private readonly prisma: PrismaService,
+  ) { }
 
 
   private async getFromAddress(): Promise<string> {
     const emailSettings = await this.prisma.emailSettings.findUnique({
-      where: { id: 1 },  
-    });; 
+      where: { id: 1 },
+    });;
     if (!emailSettings) {
       throw new Error('Email settings not found in the database.');
     }

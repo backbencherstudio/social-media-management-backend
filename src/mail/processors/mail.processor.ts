@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from 'src/prisma/prisma.service';
 
-@Processor('mail3-queue')
+@Processor('mail4-queue1')
 export class MailProcessor extends WorkerHost {
   private readonly logger = new Logger(MailProcessor.name);
   constructor(private mailerService: MailerService, private prisma: PrismaService) {
@@ -57,10 +57,20 @@ export class MailProcessor extends WorkerHost {
           break;
         case 'sendOtpCodeToEmail':
           this.logger.log('Sending OTP code to email');
+
           await this.mailerService.sendMail({
             transporterName: "mail",
             to: job.data.to,
             from: job.data.from,
+            subject: job.data.subject,
+            template: job.data.template,
+            context: job.data.context,
+          });
+          break;
+        case 'sendVerificationLink':
+          this.logger.log('Sending verification link');
+          await this.mailerService.sendMail({
+            to: job.data.to,
             subject: job.data.subject,
             template: job.data.template,
             context: job.data.context,
