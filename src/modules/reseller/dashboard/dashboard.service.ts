@@ -93,15 +93,11 @@ export class DashboardService {
     }
   }
 
-  async findAllClients(resellerId: string) {
+  async findAllClients(userId: string) {
     try {
       const tasks = await this.prisma.taskAssign.findMany({
         where: {
-          assignees: {
-            some: {
-              reseller_id: resellerId,
-            },
-          },
+          reseller_id: userId
         },
         select: {
           user: {
@@ -115,10 +111,15 @@ export class DashboardService {
           },
         },
       });
-      const clients = tasks
-        .map((task) => task.user)
-        // todo this .filter((user) => user !== null && user.type === 'clint');
-        .filter((user) => user !== null);
+
+      // Deduplicate users by their id
+      const userMap = new Map();
+      for (const task of tasks) {
+        if (task.user) {
+          userMap.set(task.user.id, task.user);
+        }
+      }
+      const clients = Array.from(userMap.values());
 
       return {
         success: true,
@@ -175,62 +176,6 @@ export class DashboardService {
     }
   }
 
-  async findAllActiveServices(clientId?: string) {
-    try {
-      const services = await this.prisma.service.findMany({
-        where: {
-          status: 1,
-          // service_tiers: {
-          //   some: {
-          //     orders: clientId ? {
-          //       some: {
-          //         user_id: clientId
-          //       }
-          //     } : undefined
-          //   }
-          // }
-        },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          status: true,
-          created_at: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          service_tiers: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              orders: {
-                select: {
-                  id: true,
-                  status: true,
-                },
-              },
-            },
-          },
-        },
-        take: 3,
-      });
-      return { success: true, data: services };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
   async findOneActiveService(id: string) {
     try {
       const service = await this.prisma.service.findUnique({
@@ -262,6 +207,37 @@ export class DashboardService {
       }
 
       return { success: true, data: service };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUserActiveServices(userId: string) {
+    try {
+      const subscriptions = await this.prisma.subscription.findMany({
+        where: {
+          user_id: userId,
+          status: 'active', // or SubscriptionStatus.active if using enum
+        },
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              category: { select: { id: true, name: true } },
+            },
+          },
+          service_tier: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+            },
+          },
+        },
+      });
+      return { success: true, data: subscriptions };
     } catch (error) {
       return { success: false, message: error.message };
     }

@@ -16,5 +16,6 @@ import { SocialsModule } from '../../socials/socials.module';
   ],
   controllers: [PostController],
   providers: [PostService, PostProcessor],
+  exports: [PostService, PostService],
 })
-export class PostModule {}
+export class PostModule { }

@@ -13,6 +13,19 @@ export class DesignFileService {
     assets?: Express.Multer.File[],
   ) {
     try {
+      // Validate task_id if provided
+      // if (createDesignFileDto.task_id) {
+      //   const taskExists = await this.prisma.taskAssign.findUnique({
+      //     where: { id: createDesignFileDto.task_id },
+      //   });
+
+      //   if (!taskExists) {
+      //     return {
+      //       success: false,
+      //       message: `Task with ID ${createDesignFileDto.task_id} does not exist`
+      //     };
+      //   }
+      // }
       // Create DesignFile record
       const designFile = await this.prisma.designFile.create({
         data: {
@@ -33,7 +46,6 @@ export class DesignFileService {
             .join('');
 
           const fileName = `${randomName}${file.originalname}`;
-          console.log(`Uploading file: ${fileName} (${file.size} bytes)`);
           // Upload file using SojebStorage
           await SojebStorage.put('assets/' + fileName, file.buffer);
 
@@ -49,6 +61,13 @@ export class DesignFileService {
         if (fileAssets.length > 0) {
           await this.prisma.designFileAsset.createMany({ data: fileAssets });
         }
+      }
+
+      if (createDesignFileDto.task_id) {
+        await this.prisma.taskAssign.update({
+          where: { id: createDesignFileDto.task_id },
+          data: { status: 'Clint_review' },
+        });
       }
 
       return {
@@ -136,6 +155,7 @@ export class DesignFileService {
     feedback?: string,
   ) {
     try {
+      // Update the design file
       const post = await this.prisma.designFile.update({
         where: { id: designFileId },
         data: {
@@ -144,9 +164,29 @@ export class DesignFileService {
         },
       });
 
+      // Fetch the related task and its design files
+      if (post.task_id) {
+        const task = await this.prisma.taskAssign.findUnique({
+          where: { id: post.task_id },
+          include: { files: true }, // 'files' is the relation to DesignFile[]
+        });
+
+        if (task) {
+          const approvedCount = task.files.filter(f => f.status === 1).length;
+          const requiredCount = task.post_count || task.files.length; // adjust as needed
+
+          if (approvedCount >= requiredCount) {
+            await this.prisma.taskAssign.update({
+              where: { id: task.id },
+              data: { status: 'completed' },
+            });
+          }
+        }
+      }
+
       return {
         success: true,
-        message: `File update successfully`,
+        message: `File updated successfully`,
         data: post,
       };
     } catch (error) {
@@ -154,39 +194,7 @@ export class DesignFileService {
     }
   }
 
-  async approveFile() {
 
-    try {
-      const designassets = await this.prisma.designFile.findMany({
-        where: {
-          status: 1
-        },
-        include: { assets: true },
-        orderBy: { created_at: 'desc' },
-      });
-
-      // Add public URLs to assets
-      const designassetsWithUrls = designassets.map((designFile) => ({
-        ...designFile,
-        assets: designFile.assets.map((file) => ({
-          ...file,
-          file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/assets/' + file.file_path,
-          ),
-        })),
-      }));
-
-      return {
-        success: true,
-        data: designassetsWithUrls,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  }
 
   async update(id: string, updateDesignFileDto: any, assets?: Express.Multer.File[]) {
     try {
@@ -212,7 +220,6 @@ export class DesignFileService {
             .join('');
 
           const fileName = `${randomName}${file.originalname}`;
-          console.log(`Uploading new file: ${fileName} (${file.size} bytes)`);
 
           // Upload file using SojebStorage
           await SojebStorage.put('assets/' + fileName, file.buffer);

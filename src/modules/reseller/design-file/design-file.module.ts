@@ -7,5 +7,6 @@ import { PrismaModule } from 'src/prisma/prisma.module';
   imports: [PrismaModule],
   providers: [DesignFileService],
   controllers: [DesignFileController],
+  exports: [DesignFileService],
 })
-export class DesignFileModule {}
+export class DesignFileModule { }
