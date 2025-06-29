@@ -131,119 +131,62 @@ async pay(@Body() createOrderDto: CreateOrderDto, @Req() req: Request) {
              //-------------paymnet-success---------------- 
 
 
-case 'payment_intent.succeeded':
+case 'payment_intent.succeeded': {
   const paymentIntent = event.data.object;
+  const metadata = paymentIntent.metadata;
 
-  // test Log metadata to check values-----------------------
-  console.log('Payment Intent Metadata:', paymentIntent.metadata);
+  // Log incoming metadata
+  console.log('✅ Payment Intent Metadata:', metadata);
 
-  // Extract userId and serviceIds from metadata--------------------------
-  const userId = paymentIntent.metadata?.user_id || paymentIntent.metadata?.userId;
+  const userId = metadata?.user_id;
+  const serviceIds = metadata?.service_ids?.split(',') ?? [];
+  const serviceTierIds = metadata?.service_tier_ids?.split(',') ?? [];
 
-  // Parse order_details from metadata if present-----------------------
-  let orderDetails: any = [];
-  let serviceIds: string[] = [];
-  if (paymentIntent.metadata?.order_details) {
-    try {
-      orderDetails = JSON.parse(paymentIntent.metadata.order_details);
-      if (Array.isArray(orderDetails)) {
-        serviceIds = orderDetails.map((item: any) => item.service_id);
-      } else if (orderDetails.service_id) {
-        serviceIds = [orderDetails.service_id];
-      }
-    } catch (e) {
-      console.error('Failed to parse order_details:', e);
-      orderDetails = [];
-      serviceIds = [];
-    }
+  // Defensive checks
+  if (!userId) throw new Error('User ID missing in metadata');
+  if (!serviceIds.length || !serviceTierIds.length) {
+    throw new Error('Missing service IDs or tier IDs');
   }
 
-
-  let serviceTierIds: string[] = [];
-
-  if (paymentIntent.metadata?.order_details) {
-    try {
-      orderDetails = JSON.parse(paymentIntent.metadata.order_details);
-
-      // getting service_tier_ids from order details --------------------------
-      if (Array.isArray(orderDetails)) {
-        serviceTierIds = orderDetails.map((item: any) => item.service_tier_id);  
-      } else if (orderDetails.service_tier_id) {
-        serviceTierIds = [orderDetails.service_tier_id];
-      }
-    } catch (e) {
-      console.error('Failed to parse order_details:', e);
-      serviceTierIds = [];
-    }
-  }
-
-  // test purpose---------------------------------------------------------
-  console.log('User ID:', userId);
-  console.log('Service Tier IDs:', serviceTierIds);
-  console.log('Service IDs:', serviceIds);
-  console.log('Order Details:', orderDetails);
-
-  // checcking user ID and fetching user details-------------------
+  // Fetch user
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, name: true, email: true },
   });
+  if (!user) throw new Error('User not found');
 
-  if (!user) {
-    throw new Error('User not found');
-  }
+  // Fetch tiers and services
+  const [serviceTiers, services] = await Promise.all([
+    this.prisma.serviceTier.findMany({ where: { id: { in: serviceTierIds } } }),
+    this.prisma.service.findMany({ where: { id: { in: serviceIds } } }),
+  ]);
 
-  // getting service tiers and services based on IDs -----------------------
-  const serviceTiers = await this.prisma.serviceTier.findMany({
-    where: { id: { in: serviceTierIds } },
-  });
-
-  const services = await this.prisma.service.findMany({
-    where: { id: { in: serviceIds } },
-  });
-
-  // serviceTiers and services validation---------------------------------
   if (serviceTiers.length !== serviceTierIds.length || services.length !== serviceIds.length) {
-    throw new Error('Invalid service or service tier ID');
+    throw new Error('Invalid service or service tier IDs');
   }
 
-  // Mapping service tiers and services to order items---------------------
-  const orderItems = serviceTiers.map((tier, index) => ({
+  // Create mapped order items
+  const orderItems = serviceTiers.map((tier, i) => ({
     service_tier_id: tier.id,
-    service_id: services[index]?.id ?? '', 
-    service_name: services[index]?.name ?? 'Unknown Service',
+    service_id: serviceIds[i] ?? '', // Ensure fallback
+    service_name: services[i]?.name ?? 'Unknown Service',
     service_amount_name: tier.name ?? 'Unknown Tier',
     service_count: tier.max_post ?? 0,
     service_price: tier.price ?? 0,
   }));
 
-  // Calculate the total amount
   const totalAmount = orderItems.reduce((sum, item) => sum + item.service_price, 0);
 
-  // Create order DTO
   const orderDto: CreateOrderDto = {
-    pakage_name: 'Pro Package', 
-    order_items: orderItems, 
+    pakage_name: metadata.package_name,
+    order_items: orderItems,
     ammount: totalAmount,
     user_id: user.id,
-    service_id: CreateOrderDto.service_id, 
+    service_id: CreateOrderDto.service_id, // Ensure this is passed correctly
   };
 
-   const orderCreationResult = await this.orderService.createOrder(user, orderDto);
-   console.log('Order created:', orderCreationResult);
-//   console.log('Order created:', orderCreationResult);
-  // // Optionally check for existing orders with pending payment
-  // const checkOrderExists = await this.prisma.order.findFirst({
-  //   where: { user_id: user.id, payment_status: 'pending' },
-  // });
-
-  // if (checkOrderExists) {
-  //   throw new Error('Order already exists with pending payment');
-  // }
-
-  // // Create the order
-  // const orderCreationResult = await this.orderService.createOrder(user, orderDto);
-  // console.log('Order created:', orderCreationResult);
+  const orderCreationResult = await this.orderService.createOrder(user, orderDto);
+  console.log('✅ Order created:', orderCreationResult);
 
   // Update user type
   await this.prisma.user.update({
@@ -251,7 +194,7 @@ case 'payment_intent.succeeded':
     data: { type: 'client' },
   });
 
-  // Log the transaction
+  // Save transaction
   await TransactionRepository.updateTransaction({
     reference_number: paymentIntent.id,
     status: 'succeeded',
@@ -260,122 +203,9 @@ case 'payment_intent.succeeded':
     raw_status: paymentIntent.status,
   });
 
-  console.log('Order created and subscription activated successfully.');
-  break; 
-
-//       
-// case 'payment_intent.succeeded':
-//   const paymentIntent = event.data.object;
-
-//   // Log metadata to verify the values
-//   console.log('Payment Intent Metadata:', paymentIntent.metadata);
-
-//   // Extract userId, service_id, and order details from metadata
-//   const userId = paymentIntent.metadata?.user_id || paymentIntent.metadata?.userId;
-//   const serviceId = paymentIntent.metadata?.service_id;
-//   let serviceTierIds: string[] = [];
-//   let orderDetails: any = [];
-
-//   // Parse order_details and extract service tier ids
-//   if (paymentIntent.metadata?.order_details) {
-//     try {
-//       orderDetails = JSON.parse(paymentIntent.metadata.order_details);
-
-//       // Extract service_tier_ids from order details
-//       if (Array.isArray(orderDetails)) {
-//         serviceTierIds = orderDetails.map((item: any) => item.service_tier_id); // Get all service_tier_ids
-//       } else if (orderDetails.service_tier_id) {
-//         serviceTierIds = [orderDetails.service_tier_id]; // Single service tier
-//       }
-//     } catch (e) {
-//       console.error('Failed to parse order_details:', e);
-//       serviceTierIds = [];
-//     }
-//   }
-
-//   // Log parsed values
-//   console.log('User ID:', userId);
-//   console.log('Service Tier IDs:', serviceTierIds);
-//   console.log('Order Details:', orderDetails);
-
-//   // Query the user
-//   const user = await this.prisma.user.findUnique({
-//     where: { id: userId },
-//     select: { id: true, name: true, email: true },
-//   });
-
-//   if (!user) {
-//     throw new Error('User not found');
-//   }
-
-//   // Fetch the service tier based on the service_tier_ids
-//   const serviceTiers = await this.prisma.serviceTier.findMany({
-//     where: { id: { in: serviceTierIds } },
-//   });
-
-//   // Fetch the service based on the service_id
-//   const service = await this.prisma.service.findUnique({
-//     where: { id: serviceId },
-//   });
-
-//   // Ensure service tiers and service are valid
-//   if (serviceTiers.length !== serviceTierIds.length || !service) {
-//     throw new Error('Invalid service or service tier ID');
-//   }
-
-//   // Map the service tiers and order details to order items
-//   const orderItems = serviceTiers.map((tier, index) => ({
-//     service_tier_id: tier.id,
-//     service_id: serviceId, // Add service_id to match CreateOrderDetailDto
-//     service_name: orderDetails[index]?.service_name ?? 'Unknown Service',
-//     service_amount_name: tier.name ?? 'Unknown Tier',
-//     service_count: orderDetails[index]?.quantity ?? 0,
-//     service_price: orderDetails[index]?.service_price ?? 0,
-//   }));
-
-//   // Calculate the total amount
-//   const totalAmount = orderItems.reduce((sum, item) => sum + item.service_price, 0);
-
-//   // Create the order DTO
-//   const orderDto: CreateOrderDto = {
-//     pakage_name: paymentIntent.metadata.package_name || 'Pro Package', // Pass package name from metadata
-//     order_items: orderItems,
-//     ammount: totalAmount,
-//     user_id: user.id,
-//     service_id: CreateOrderDto.service_id, // Ensure this is passed correctly
-//   };
-
-//   // Optionally check for existing orders with pending payment
-//   // const checkOrderExists = await this.prisma.order.findFirst({
-//   //   where: { user_id: user.id, payment_status: 'pending' },
-//   // });
-
-//   // if (checkOrderExists) {
-//   //   throw new Error('Order already exists with pending payment');
-//   // }
-
-//   // Create the order
-//   const orderCreationResult = await this.orderService.createOrder(user, orderDto);
-//   console.log('Order created:', orderCreationResult);
-
-//   // Update user type if needed
-//   await this.prisma.user.update({
-//     where: { id: user.id },
-//     data: { type: 'client' },
-//   });
-
-//   // Log the transaction
-//   await TransactionRepository.updateTransaction({
-//     reference_number: paymentIntent.id,
-//     status: 'succeeded',
-//     paid_amount: paymentIntent.amount / 100,
-//     paid_currency: paymentIntent.currency,
-//     raw_status: paymentIntent.status,
-//   });
-
-//   console.log('Order created and subscription activated successfully.');
-//   break;
-
+  console.log('✅ Order created and subscription activated.');
+  break;
+}
 //    //-------------paymnet-fail---------------- 
         case 'payment_intent.payment_failed':
 

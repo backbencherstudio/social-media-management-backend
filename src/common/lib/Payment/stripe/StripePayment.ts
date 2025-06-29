@@ -203,27 +203,32 @@ export class StripePayment {
 // }
 
 static async createPaymentIntent(orderDto: CreateOrderDto) {
-    try {
-      
-      const totalAmount = orderDto.order_items.reduce((sum, item) => sum + (item.service_price ?? 0), 0);
+  try {
+    const totalAmount = orderDto.order_items.reduce((sum, item) => sum + (item.service_price ?? 0), 0);
+    const orderId = `ORD_${Date.now()}`;
 
-    
-      return await Stripe.paymentIntents.create({
-        amount: totalAmount * 100,  
-        currency: 'usd',  
-        metadata: {
-          order_id: `ORD_${new Date().getTime()}`,  
-          package_name: orderDto.pakage_name,
-          user_id: orderDto.user_id || "cmceogav2000yre6w92gd7muh",
-          order_details: JSON.stringify(orderDto.order_items), 
-        },
-      });
+    // Prepare only compact metadata (avoid large strings)
+    const serviceTierIds = orderDto.order_items.map(item => item.service_tier_id).join(',');
+    const serviceIds = orderDto.order_items.map(item => item.service_id).join(',');
 
-    } catch (error) {
-      console.error('Error creating PaymentIntent:', error);
-      throw new Error('Failed to create PaymentIntent');
-    }
+    return await Stripe.paymentIntents.create({
+      amount: totalAmount * 100, // Convert dollars to cents
+      currency: 'usd',
+      metadata: {
+        order_id: orderId,
+        package_name: orderDto.pakage_name,
+        user_id: orderDto.user_id || 'default_user_id',
+        service_tier_ids: serviceTierIds,
+        service_ids: serviceIds,
+        item_count: orderDto.order_items.length.toString()
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error creating PaymentIntent:', error);
+    throw new Error('Failed to create PaymentIntent');
   }
+}
+
 
   /**
    * Create stripe hosted checkout session
