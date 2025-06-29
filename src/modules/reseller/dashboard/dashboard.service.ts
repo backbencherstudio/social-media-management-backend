@@ -220,20 +220,17 @@ export class DashboardService {
           status: 'active', // or SubscriptionStatus.active if using enum
         },
         include: {
-          service: {
+          order: {
             select: {
               id: true,
-              name: true,
-              description: true,
-              category: { select: { id: true, name: true } },
+              pakage_name: true,
+              Order_Details: true,
             },
           },
-          service_tier: {
+          orders: {
             select: {
-              id: true,
-              name: true,
-              price: true,
-            },
+              Order_Details:true,
+             order_status: true,           },
           },
         },
       });

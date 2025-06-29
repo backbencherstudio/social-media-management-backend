@@ -416,8 +416,8 @@ export class AuthService {
       );
 
       // Send verification email with full URL
-      const verificationLink = `${process.env.APP_URL}/api/auth/verify-registration?token=${token}`;
-
+      // const verificationLink = `${process.env.APP_URL}/api/auth/verify-registration?token=${token}`;
+      const verificationLink = `http://localhost:3000/auth/verify-registration?token=${token}`;
       this.mailService.sendVerificationLink({
         email,
         link: verificationLink,

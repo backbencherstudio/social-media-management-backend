@@ -20,10 +20,10 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
 
 
-@ApiBearerAuth()
-@ApiTags('Website Info')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN_LITE)
+// @ApiBearerAuth()
+// @ApiTags('Website Info')
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles(Role.ADMIN_LITE)
 @Controller('services')
 export class ServiceManagementController {
   constructor(

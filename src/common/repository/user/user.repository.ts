@@ -68,6 +68,7 @@ export class UserRepository {
           name: true,
           email: true,
           password: true,
+          billing_id:true,
           type: true,
           role_users: {
             select: {

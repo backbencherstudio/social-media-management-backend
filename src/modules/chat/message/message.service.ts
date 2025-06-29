@@ -12,13 +12,163 @@ export class MsgService {
     private readonly messageGateway: MessageGateway,
 ) {}
 
-// Send message to admin from user
+// // Send message to admin from user
+// async sendMessageToAdmin(userId: string, message: string): Promise<{ success: boolean, message: string, data: any }> {
+//   const user = await this.prisma.user.findUnique({
+//     where: { id: userId },
+//   });
+
+  
+//   if (!user) {
+//     throw new Error('User not found');
+//   }
+
+//   if (user.type !== 'clint') {
+//     return {
+//       message: 'Only clients can send messages to admin',
+//       success: false,
+//       data: null,
+//     }
+//   }
+
+//   let conversation = await this.prisma.conversation.findFirst({
+//     where: {
+//       creator_id: userId,
+//       participant_id: await this.messageGateway.ADMIN_ID, 
+//     },
+//   });
+
+//   if (!conversation) {
+//     conversation = await this.prisma.conversation.create({
+//       data: {
+//         creator_id: userId,
+//         participant_id: await this.messageGateway.ADMIN_ID, 
+//       },
+//     });
+//     console.log('New conversation created: ', conversation.id);
+//   }
+
+//   // Create the message with a PENDING status and link it to the conversation
+//   const newMessage = await this.prisma.message.create({
+//     data: {
+//       sender_id: userId,
+//       receiver_id: await this.messageGateway.ADMIN_ID,
+//       message,
+//       status: MessageStatus.PENDING,
+//       conversation_id: conversation.id,
+//     },
+//   });
+
+//   // If the admin is connected, emit the message to the admin
+//   if (this.messageGateway.adminSocketId) {
+//     this.messageGateway.server
+//       .to(this.messageGateway.adminSocketId)
+//       .emit('message_from_user', {
+//         userId,
+//         message,
+//         messageId: newMessage.id,
+//         conversationId: conversation.id,
+//       });
+
+   
+//     await this.prisma.message.update({
+//       where: { id: newMessage.id },
+//       data: { status: MessageStatus.SENT },
+//     });
+
+//     return { success: true, message: 'Message sent to admin', data: newMessage };
+//   } else {
+   
+//     throw new Error('Admin is not available');
+//   }
+// }
+// // Send message to user from admin
+// async sendMessageToUser(adminId: string, userId: string, message: string) {
+//     const admin = await this.prisma.user.findUnique({
+//       where: { id: adminId },
+//     });
+
+//     if (!admin || admin.type !== 'admin') {
+//         return {
+//       message: 'Only admins can send messages to users',
+//       success: false,
+//       data: null,
+//     };
+//   }
+
+//     const userSocketId = this.messageGateway.getSocketIdByUserId(userId);
+
+//       const user = await this.prisma.user.findUnique({
+//     where: { id: userId },
+//     select: { type: true },
+//   });
+
+  
+//   if (user.type !== 'clint') {
+//     return {
+//       message: 'He is not a client',
+//       success: false,
+//       data: null,
+//     }
+//   }
+
+//     //socket id
+//     // if (!userSocketId) {
+//     //   return{
+//     //     message: 'client is not connected',
+//     //     success: false,
+//     //     data: null,
+//     //   };
+//     // }
+//     let conversation = await this.prisma.conversation.findFirst({
+//     where: {
+//       creator_id: userId,
+//       participant_id: await this.messageGateway.ADMIN_ID, 
+//     },
+//   });
+
+//   if (!conversation) {
+//     conversation = await this.prisma.conversation.create({
+//       data: {
+//         creator_id: userId,
+//         participant_id: await this.messageGateway.ADMIN_ID,
+//       },
+//     });
+//     console.log('New conversation created: ', conversation.id);
+//   }
+
+    
+//     const newMessage = await this.prisma.message.create({
+//       data: {
+//         sender_id: adminId,
+//         receiver_id: userId,
+//         message,
+//         status: MessageStatus.PENDING,
+//         conversation_id: conversation.id,
+//       },
+//     });
+
+
+//     this.messageGateway.server
+//       .to(userSocketId)
+//       .emit('message_from_admin', { message, messageId: newMessage.id });
+
+ 
+//     await this.prisma.message.update({
+//       where: { id: newMessage.id },
+//       data: { status: MessageStatus.SENT },
+//     });
+
+//     return { success: true, message: `Message sent to user ${userId}`, data: newMessage };
+// }
+
+
+// Send message to admin (even if admin is not currently online)
 async sendMessageToAdmin(userId: string, message: string): Promise<{ success: boolean, message: string, data: any }> {
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
   });
 
-  
   if (!user) {
     throw new Error('User not found');
   }
@@ -51,8 +201,8 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
   // Create the message with a PENDING status and link it to the conversation
   const newMessage = await this.prisma.message.create({
     data: {
-      sender_id: userId,
-      receiver_id: await this.messageGateway.ADMIN_ID,
+      sender_id: userId, // Ensure the sender is the user
+      receiver_id: await this.messageGateway.ADMIN_ID, // Ensure the receiver is the admin
       message,
       status: MessageStatus.PENDING,
       conversation_id: conversation.id,
@@ -70,7 +220,7 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
         conversationId: conversation.id,
       });
 
-   
+    // Update the message status to SENT once the admin is active
     await this.prisma.message.update({
       where: { id: newMessage.id },
       data: { status: MessageStatus.SENT },
@@ -78,32 +228,31 @@ async sendMessageToAdmin(userId: string, message: string): Promise<{ success: bo
 
     return { success: true, message: 'Message sent to admin', data: newMessage };
   } else {
-   
-    throw new Error('Admin is not available');
+    return { success: true, message: 'Message sent, waiting for admin to come online', data: newMessage };
   }
 }
-// Send message to user from admin
-async sendMessageToUser(adminId: string, userId: string, message: string) {
-    const admin = await this.prisma.user.findUnique({
-      where: { id: adminId },
-    });
 
-    if (!admin || admin.type !== 'admin') {
-        return {
+// Send message to user from admin (even if user is not currently online)
+async sendMessageToUser(adminId: string, userId: string, message: string) {
+  const admin = await this.prisma.user.findUnique({
+    where: { id: adminId },
+  });
+
+  if (!admin || admin.type !== 'admin') {
+    return {
       message: 'Only admins can send messages to users',
       success: false,
       data: null,
     };
   }
 
-    const userSocketId = this.messageGateway.getSocketIdByUserId(userId);
+  const userSocketId = this.messageGateway.getSocketIdByUserId(userId);
 
-      const user = await this.prisma.user.findUnique({
+  const user = await this.prisma.user.findUnique({
     where: { id: userId },
     select: { type: true },
   });
 
-  
   if (user.type !== 'clint') {
     return {
       message: 'He is not a client',
@@ -112,15 +261,7 @@ async sendMessageToUser(adminId: string, userId: string, message: string) {
     }
   }
 
-    //socket id
-    if (!userSocketId) {
-      return{
-        message: 'client is not connected',
-        success: false,
-        data: null,
-      };
-    }
-    let conversation = await this.prisma.conversation.findFirst({
+  let conversation = await this.prisma.conversation.findFirst({
     where: {
       creator_id: userId,
       participant_id: await this.messageGateway.ADMIN_ID, 
@@ -137,30 +278,37 @@ async sendMessageToUser(adminId: string, userId: string, message: string) {
     console.log('New conversation created: ', conversation.id);
   }
 
-    
-    const newMessage = await this.prisma.message.create({
-      data: {
-        sender_id: adminId,
-        receiver_id: userId,
-        message,
-        status: MessageStatus.PENDING,
-        conversation_id: conversation.id,
-      },
-    });
+  // Create the message with a PENDING status and link it to the conversation
+  const newMessage = await this.prisma.message.create({
+    data: {
+      sender_id: adminId, // Ensure the sender is the admin
+      receiver_id: userId, // Ensure the receiver is the user
+      message,
+      status: MessageStatus.PENDING,
+      conversation_id: conversation.id,
+    },
+  });
 
-
+  // If the user is connected, emit the message to the user
+  if (userSocketId) {
     this.messageGateway.server
       .to(userSocketId)
       .emit('message_from_admin', { message, messageId: newMessage.id });
 
- 
+    // Update the message status to SENT once the user is active
     await this.prisma.message.update({
       where: { id: newMessage.id },
       data: { status: MessageStatus.SENT },
     });
 
     return { success: true, message: `Message sent to user ${userId}`, data: newMessage };
+  } else {
+    return { success: true, message: `Message sent to user ${userId}, waiting for them to log in`, data: newMessage };
+  }
 }
+
+
+
 // Mark message as delivered
 async markMessageAsDelivered(messageId: string) {
     const message = await this.prisma.message.update({
@@ -273,4 +421,56 @@ async getOneConversation(conversationId: string) {
     console.error('Error fetching conversation:', error);
     throw new Error('Could not fetch the conversation');
   }
-}}
+}
+// Get one conversation by user ID
+async getOneConversationByUserID(userID: string) {
+  try {
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        OR: [
+          { creator_id: userID }, // Check if the user is the creator
+          { participant_id: userID } // Check if the user is a participant
+        ]
+      },
+      include: {
+        creator: {
+          select: {
+            id: true, 
+            created_at: true,
+            status: true,
+            email: true,
+            phone_number: true,
+            billing_id: true,
+            type: true,
+          },
+        },
+        participant: {
+          select: {
+            id: true, 
+            created_at: true,
+            status: true,
+            email: true,
+            phone_number: true,
+            billing_id: true,
+            type: true,
+          },
+        },
+        messages: {
+          orderBy: {
+            created_at: 'asc', // Order messages by creation date
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new Error('Conversation not found for this user');
+    }
+
+    return conversation;
+  } catch (error) {
+    console.error('Error fetching conversation for user:', error);
+    throw new Error('Could not fetch conversation for user');
+  }
+}
+}

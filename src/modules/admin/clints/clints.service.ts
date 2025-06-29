@@ -62,8 +62,12 @@ async getAllClints() {
         user_id: true,
         subscription: {
           select: {
-            service_id: true,
-            service_tier_id: true,
+            order_id: true,
+            order: {
+              select:{
+                Order_Details:true,
+              }
+            },
           },
         },
       },
