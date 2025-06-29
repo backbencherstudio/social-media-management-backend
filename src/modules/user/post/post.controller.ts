@@ -63,6 +63,6 @@ export class PostController {
       where: { id: id, task: { user_id: userId } },
     });
     if (!post) return { success: false, message: 'Post not found or not allowed' };
-    return this.resellerPostService.reviewPost(id, status, feedback);
+    return this.postService.reviewPost(userId, id, status, feedback);
   }
 }

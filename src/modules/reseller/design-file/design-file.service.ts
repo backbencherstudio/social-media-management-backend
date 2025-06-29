@@ -3,10 +3,15 @@ import { CreateDesignFileDto } from './dto/create-design-file.dto';
 import { SojebStorage } from 'src/common/lib/Disk/SojebStorage';
 import appConfig from 'src/config/app.config';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Injectable()
 export class DesignFileService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly messageGateway: MessageGateway,
+  ) { }
 
   async create(
     createDesignFileDto: CreateDesignFileDto,
@@ -69,6 +74,25 @@ export class DesignFileService {
           where: { id: createDesignFileDto.task_id },
           data: { status: 'Clint_review' },
         });
+        // Send notification to assigned user
+        const task = await this.prisma.taskAssign.findUnique({
+          where: { id: createDesignFileDto.task_id },
+          include: { user: true },
+        });
+        if (task) {
+          const reseller = await this.prisma.reseller.findUnique({
+            where: { reseller_id: task.reseller_id },
+          });
+          const notificationPayload = {
+            sender_id: reseller?.user_id,
+            receiver_id: task.user_id,
+            text: 'A new design file has been created.',
+            type: 'post' as const,
+            entity_id: designFile.id,
+          };
+          await NotificationRepository.createNotification(notificationPayload);
+          this.messageGateway.server.emit('notification', notificationPayload);
+        }
       }
 
       return {
