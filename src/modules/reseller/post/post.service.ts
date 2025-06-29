@@ -119,9 +119,13 @@ export class PostService {
     }
   }
 
-  async findAll() {
+  async findAllUserPost(userId: string) {
+    console.log(userId)
     try {
       const posts = await this.prisma.post.findMany({
+        where: {
+          task: { user_id: userId },
+        },
         select: {
           id: true,
           content: true,
