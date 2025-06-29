@@ -259,7 +259,7 @@ model PaymentTransaction {
   user    User?   @relation(fields: [user_id], references: [id])
 
   subscription_id String?
-  subscription    Subscription? @relation(fields: [subscription_id], references: [id])
+  subscription    Subscription? @relation("OrderSubscriptions", fields: [subscription_id], references: [id])
 
   type         String? @default("order")
   withdraw_via String? @default("wallet")
@@ -274,6 +274,7 @@ model PaymentTransaction {
   paid_currency    String?
 
   @@map("payment_transactions")
+  Subscription Subscription[]
 }
 
 model Conversation {
@@ -494,12 +495,12 @@ model Service {
   category    Category? @relation(fields: [category_id], references: [id])
 
   service_categories ServiceCategory[]
-  subscriptions      Subscription[]
   service_tiers      ServiceTier[]
   service_features   ServiceFeature[]
   addons             Addon[]
 
   @@map("services")
+  Order_Details Order_Details[]
 }
 
 // this table stores features
@@ -550,7 +551,7 @@ model ServiceTier {
 
   max_post Int?
 
-  subscriptions Subscription[]
+
   orders        Order[]
   Order_Details Order_Details[]
 
@@ -610,11 +611,8 @@ model Subscription {
   updated_at DateTime           @default(now())
   status     SubscriptionStatus @default(active)
 
-  service_tier_id String
-  service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
-
-  service_id String
-  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  order_id String? // reference to order if purchased via order
+  order    Order?  @relation("SubscriptionOrder", fields: [order_id], references: [id])
 
   start_at DateTime
   end_at   DateTime
@@ -627,9 +625,10 @@ model Subscription {
   payment_transactions  PaymentTransaction[]
   subscription_addons   SubscriptionAddon[]
   subscription_channels SubscriptionChannel[]
-  orders                Order[]
+  orders                Order[] @relation("OrderSubscriptions")
 
   @@map("subscriptions")
+  PaymentTransaction PaymentTransaction[] @relation("OrderSubscriptions")
 }
 
 // this table stores Subscription and Addon relation
@@ -976,21 +975,28 @@ enum paymentStatus {
 }
 
 model Order_Details {
-  id                  String        @id @default(uuid())
+  id                  String       @id @default(uuid())
   order_id            String
-  order               Order         @relation(fields: [order_id], references: [id])
+  order               Order        @relation(fields: [order_id], references: [id])
+
+  service_id          String
+  service             Service      @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  service_tier_id     String
+  serviceTier         ServiceTier  @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
+
   service_name        String
   service_amount_name String
   service_count       Float
   service_price       Float
-  service_tier_id     String?
-  service_tiers       ServiceTier[]
-  // service_tier    ServiceTier? @relation(fields: [service_tier_id], references: [id])
+
   order_assigns       TaskAssign[]
-  created_at          DateTime      @default(now())
+
+  created_at          DateTime     @default(now())
 
   @@map("order_details")
 }
+
 
 model Order {
   id         String   @id @default(uuid())
@@ -999,7 +1005,7 @@ model Order {
   order_status OrderStatus @default(progress)
 
   subscription_id String?
-  subscription    Subscription? @relation(fields: [subscription_id], references: [id])
+  subscription    Subscription? @relation("OrderSubscriptions", fields: [subscription_id], references: [id])
 
   user_id String?
   user    User?   @relation(fields: [user_id], references: [id])
@@ -1018,6 +1024,7 @@ model Order {
   Order_Details  Order_Details[]
 
   @@map("orders")
+  Subscription Subscription[] @relation("SubscriptionOrder")
 }
 
 //admisn_dashboard_assign_tasks and Task management

@@ -10,7 +10,7 @@ export class CreatePaymentIntentDto {
   @IsString()
   customer_id: string;
 
-    @IsString()
+  @IsString()
   user_id: string;
 
   @IsString()

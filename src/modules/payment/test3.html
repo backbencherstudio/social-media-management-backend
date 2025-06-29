@@ -1,364 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>One-Time Payment</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-   <style>
-        :root {
-            --primary-color: #4361ee;
-            --primary-dark: #3a56d4;
-            --secondary-color: #3f37c9;
-            --success-color: #4cc9f0;
-            --error-color: #f72585;
-            --light-gray: #f8f9fa;
-            --medium-gray: #e9ecef;
-            --dark-gray: #6c757d;
-            --text-color: #212529;
-            --white: #ffffff;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--light-gray);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .payment-container {
-            max-width: 500px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-
-        .payment-card {
-            background-color: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid var(--medium-gray);
-            border-radius: 6px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
-        }
-
-        .card-element {
-            padding: 12px 15px;
-            border: 1px solid var(--medium-gray);
-            border-radius: 6px;
-            background-color: var(--white);
-            margin-bottom: 10px;
-        }
-
-        .card-errors {
-            color: var(--error-color);
-            font-size: 14px;
-            margin-top: 8px;
-            min-height: 20px;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            width: 100%;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-        }
-
-        .btn-primary:disabled {
-            background-color: var(--dark-gray);
-            cursor: not-allowed;
-        }
-
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid var(--white);
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
-            display: inline-block;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background-color: var(--white);
-            padding: 30px;
-            border-radius: 10px;
-            max-width: 450px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .modal-icon.success {
-            background-color: rgba(76, 201, 240, 0.2);
-            color: var(--success-color);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 20px;
-            font-size: 24px;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 15px;
-            }
-            
-            .payment-card {
-                padding: 20px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stripe Multi-Service Payment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    select, button, input {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      font-size: 16px;
+    }
+    #cart {
+      margin: 20px 0;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    #card-element {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-    <div class="payment-container">
-        <div class="header">
-            <h1>One-Time Payment</h1>
-        </div>
 
-        <div class="payment-card">
-            <form id="payment-form" class="payment-form">
-                <div class="form-group">
-                    <label for="amount">Amount (USD)</label>
-                    <input type="number" id="amount" name="amount" value="10.00" step="0.01" min="0.50" required>
-                </div>
+<h2>Stripe Multi-Service Payment</h2>
 
-                <div class="form-group">
-                    <label for="user_id">User ID</label>
-                    <input type="text" id="user_id" name="user_id" value="cmb4xs19l0004uoh41k0zeqjb" required>
-                </div>
+<label for="service">Select a Service:</label>
+<select id="service"></select>
 
-                <div class="form-group">
-                    <label for="customer_id">Customer ID</label>
-                    <input type="text" id="customer_id" name="customer_id" value="cus_SNjb9CWJ4REoce" required>
-                </div>
+<label for="service-tier">Select a Service Tier:</label>
+<select id="service-tier"></select>
 
-                <div class="form-group">
-                    <label for="service_id">Service ID</label>
-                    <input type="text" id="service_id" name="service_id" value="cmb33m88e006oreg4u2htb0uk" required>
-                </div>
+<label for="user_id">Enter User ID:</label>
+<input type="text" id="user_id" placeholder="User ID"/>
 
-                <div class="form-group">
-                    <label for="service_tier_id">Service Tier ID</label>
-                    <input type="text" id="service_tier_id" name="service_tier_id" value="cmb33m8am0070reg4xwdc67m0" required>
-                </div>
+<button id="add-to-cart">Add to Cart</button>
 
-                <div class="form-group">
-                    <label>Credit Card Details</label>
-                    <div id="card-element" class="card-element"></div>
-                    <div id="card-errors" class="card-errors" role="alert"></div>
-                </div>
+<h3>Cart</h3>
+<div id="cart"></div>
 
-                <button type="submit" id="submit-btn" class="btn-primary">
-                    <span id="button-text">Pay $<span id="amount-display">199.00</span></span>
-                    <span id="spinner" class="spinner hidden"></span>
-                </button>
-            </form>
-        </div>
+<h3>Total: $<span id="total">0</span></h3>
 
-        <div id="success-modal" class="modal hidden">
-            <div class="modal-content">
-                <div class="modal-icon success">
-                    <i class="fas fa-check"></i>
-                </div>
-                <h2>Payment Successful!</h2>
-                <button id="close-modal" class="btn-primary">Continue</button>
-            </div>
-        </div>
-    </div>
+<div id="card-element"></div>
+<button id="pay-button">Pay Now</button>
 
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Stripe setup
-            const stripe = Stripe('pk_test_51RDjzqQLn2109uZQDwGQjxLb14jO1DHbcqYWHLOd3U7Ws27Le263zUXWjfa3UiWra63I7YDv8iWivSMWzgWYKqgK00nfGl1ysg');
-            const elements = stripe.elements();
-            
-            // Card element setup
-            const cardElement = elements.create('card');
-            cardElement.mount('#card-element');
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-            // UI elements
-            const form = document.getElementById('payment-form');
-            const submitBtn = document.getElementById('submit-btn');
-            const buttonText = document.getElementById('button-text');
-            const spinner = document.getElementById('spinner');
-            const cardErrors = document.getElementById('card-errors');
-            const amountInput = document.getElementById('amount');
-            const amountDisplay = document.getElementById('amount-display');
+<script>
+  const stripe = Stripe("pk_test_51RDjzqQLn2109uZQDwGQjxLb14jO1DHbcqYWHLOd3U7Ws27Le263zUXWjfa3UiWra63I7YDv8iWivSMWzgWYKqgK00nfGl1ysg");
+  const elements = stripe.elements();
+  const card = elements.create('card');
+  card.mount('#card-element');
 
-            // Update displayed amount when input changes
-            amountInput.addEventListener('input', function() {
-                amountDisplay.textContent = this.value;
-            });
+  let cart = [];
+  let clientSecret = "";
 
-            // Handle form submission
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();  // Prevent form submission
+  async function fetchServices() {
+    const res = await axios.get('http://localhost:4000/api/services/allServices');
+    const serviceSelect = document.getElementById('service');
+    serviceSelect.innerHTML = `<option value="">Select Service</option>`;
+    res.data.forEach(service => {
+      const option = document.createElement('option');
+      option.value = service.id;
+      option.textContent = service.name;
+      serviceSelect.appendChild(option);
+    });
+  }
 
-    // Disable submit button to avoid double submissions
-    submitBtn.disabled = true;
-    buttonText.textContent = 'Processing...';
-    spinner.classList.remove('hidden');
-    cardErrors.textContent = '';
+  async function fetchServiceTiers(serviceId) {
+    const res = await axios.get(`http://localhost:4000/api/services/${serviceId}`);
+    const tierSelect = document.getElementById('service-tier');
+    tierSelect.innerHTML = `<option value="">Select Tier</option>`;
+    res.data.service_tiers.forEach(tier => {
+      const option = document.createElement('option');
+      option.value = JSON.stringify({ id: tier.id, price: tier.price, name: tier.name });
+      option.textContent = `${tier.name} - $${tier.price}`;
+      tierSelect.appendChild(option);
+    });
+  }
+
+  document.getElementById('service').addEventListener('change', (e) => {
+    fetchServiceTiers(e.target.value);
+  });
+
+  function updateCartDisplay() {
+    const cartDiv = document.getElementById('cart');
+    const totalSpan = document.getElementById('total');
+    cartDiv.innerHTML = '';
+
+    let total = 0;
+    cart.forEach((item, index) => {
+      total += item.price;
+      const div = document.createElement('div');
+      div.textContent = `${item.service_name} → ${item.tier_name} - $${item.price}`;
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = 'Remove';
+      removeBtn.onclick = () => {
+        cart.splice(index, 1);
+        updateCartDisplay();
+      };
+      div.appendChild(removeBtn);
+      cartDiv.appendChild(div);
+    });
+
+    totalSpan.textContent = total.toFixed(2);
+  }
+
+  document.getElementById('add-to-cart').addEventListener('click', () => {
+    const serviceSelect = document.getElementById('service');
+    const tierSelect = document.getElementById('service-tier');
+
+    const serviceId = serviceSelect.value;
+    const serviceName = serviceSelect.options[serviceSelect.selectedIndex].text;
+
+    const selectedTier = tierSelect.value ? JSON.parse(tierSelect.value) : null;
+    if (!serviceId || !selectedTier) {
+      alert("Please select a service and tier.");
+      return;
+    }
+
+    cart.push({
+      service_id: serviceId,
+      service_name: serviceName,
+      service_tier_id: selectedTier.id,
+      tier_name: selectedTier.name,
+      price: selectedTier.price,
+      quantity: 1
+    });
+
+    updateCartDisplay();
+  });
+
+  document.getElementById('pay-button').addEventListener('click', async () => {
+    const userId = document.getElementById('user_id').value;
+    if (!userId || cart.length === 0) {
+      alert("Please enter User ID and add at least one service.");
+      return;
+    }
+
+    const order_items = cart.map(item => ({
+      service_id: item.service_id,
+      service_tier_id: item.service_tier_id,
+      quantity: item.quantity
+    }));
+
+    const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
 
     try {
-        // Get form values
-        const amount = parseFloat(amountInput.value);
-        const user_id = document.getElementById('user_id').value;
-        const customer_id = document.getElementById('customer_id').value;
-        const service_id = document.getElementById('service_id').value;
-        const service_tier_id = document.getElementById('service_tier_id').value;
+      const response = await axios.post('http://localhost:4000/api/payment/pay', {
+        user_id: userId,
+        pakage_name: "Pro Package",
+        order_items: order_items
+      });
 
-        // 1. Create payment method
-        const { paymentMethod, error: paymentMethodError } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: cardElement,
-        });
-        
-        if (paymentMethodError) {
-            throw paymentMethodError;
-        }
+      clientSecret = response.data.clientSecret;
 
-        // 2. Call your backend to create payment intent
-        const response = await fetch('http://localhost:4000/api/payment/pay', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                amount: amount,
-                currency: 'usd',
-                user_id: user_id,
-                customer_id: customer_id,
-                service_id: service_id,
-                service_tier_id: service_tier_id,
-                status: 'active',
-                metadata: {
-                    start_date: new Date().toISOString(),
-                    end_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-                }
-            })
-        });
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card }
+      });
 
-        const data = await response.json();
-        if (!data.clientSecret) throw new Error('Client secret not received');
-        
-        // 3. Confirm the payment on the client side
-        const { error: confirmError } = await stripe.confirmCardPayment(data.clientSecret, {
-            payment_method: paymentMethod.id
-        });
-
-        if (confirmError) {
-            throw confirmError;
-        }
-
-        // Show success
-        // document.getElementById('client-secret-display').textContent = data.clientSecret;
-        document.getElementById('success-modal').classList.remove('hidden');
-
-    } catch (error) {
-        console.error('Payment failed:', error);
-        cardErrors.textContent = error.message;
-    } finally {
-        submitBtn.disabled = false;  // Re-enable the button
-        buttonText.textContent = `Pay $${amountInput.value}`;  // Reset button text
-        spinner.classList.add('hidden');
+      if (error) {
+        alert("Payment failed: " + error.message);
+      } else if (paymentIntent.status === 'succeeded') {
+        alert("✅ Payment successful!");
+        cart = [];
+        updateCartDisplay();
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Something went wrong during payment.");
     }
-});
+  });
 
-            // Close modal
-            document.getElementById('close-modal').addEventListener('click', function() {
-                document.getElementById('success-modal').classList.add('hidden');
-            });
-
-            // Handle real-time validation errors
-            cardElement.on('change', function(event) {
-                if (event.error) {
-                    cardErrors.textContent = event.error.message;
-                } else {
-                    cardErrors.textContent = '';
-                }
-            });
-        });
-    </script>
+  fetchServices();
+</script>
 </body>
 </html>

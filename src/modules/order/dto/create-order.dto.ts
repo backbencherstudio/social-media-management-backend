@@ -8,7 +8,14 @@ export class CreateOrderDto {
   @IsOptional()
   @IsNumber()
   ammount: number;
+  
+  @IsOptional()
+  @IsString()
+  user_id: string;
 
+  @IsOptional()
+  @IsString()
+  service_id: string;
   
   @IsOptional()
   @IsString()
@@ -18,4 +25,9 @@ export class CreateOrderDto {
   @IsArray()
   @IsNotEmpty()
   order_items: CreateOrderDetailDto[];
+
+    @IsOptional()
+  metadata?: Record<string, string>;
+  static service_id: string;
+  static user_id: string;
 }

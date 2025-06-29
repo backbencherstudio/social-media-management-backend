@@ -27,9 +27,8 @@ async getAllOrders() {
         payment_status:true,
         subscription: {
           select: {
-            service_id: true, 
-            service_tier_id: true,
-            
+            order_id: true, 
+            status: true,
           },
         },
       },
@@ -42,39 +41,54 @@ async getAllOrders() {
   }
 }
 //--------------------------get one order with details------------------------
-async getOneOrder(orderId:string) {
+async getOneOrder(orderId: string) {
   try {
-    const orders = await this.prisma.order.findUnique({
-      where:{
-         id: orderId,
+    const order = await this.prisma.order.findUnique({
+      where: {
+        id: orderId,
       },
       select: {
-        id: true, 
-        order_status: true, 
-        subscription_id: true, 
-        payment_status:true,
-        ammount:true,
-        pakage_name:true,
-        user_id: true, 
-        user_email:true,
+        id: true,
+        order_status: true,
+        subscription_id: true,
+        payment_status: true,
+        ammount: true,
+        pakage_name: true,
+        user_id: true,
+        user_email: true,
         user_name: true,
+        // Include order details here
+        Order_Details: {
+          select: {
+            id: true,
+            service_id: true,
+            service_name: true,
+            service_amount_name: true,
+            service_count: true,
+            service_price: true,
+            service_tier_id: true,
+            created_at: true,
+          },
+        },
+        // Include subscription info
         subscription: {
           select: {
-            service_id: true, 
-            service_tier_id: true, 
-            start_at:true,
-            end_at:true
+            order_id: true,
+            status: true,
+            start_at: true,
+            end_at: true,
           },
         },
       },
     });
 
-    return orders;
+    return order;
   } catch (error) {
-    console.error('Error retrieving orders:', error);
+    console.error('❌ Error retrieving order:', error);
     throw error;
   }
 }
+
 //-------------------update order progress-----------------------
 async updateOrderType(orderId: string, updateOrderDto: UpdateOrderDto) {
     try {
