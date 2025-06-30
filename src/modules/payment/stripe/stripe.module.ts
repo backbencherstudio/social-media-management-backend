@@ -10,4 +10,4 @@ import { OrderModule } from 'src/modules/order/order.module';
   controllers: [StripeController],
   providers: [StripeService],
 })
-export class StripeModule {}
+export class StripeModule { }
