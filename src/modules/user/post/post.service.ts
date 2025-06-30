@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly messageGateway: MessageGateway,
   ) { }
 
   async findAll(userId: string) {
@@ -27,95 +30,107 @@ export class PostService {
     return { success: true, data: post };
   }
 
-  // User reviews a post (approve/reject)
-  // async reviewPost(
-  //   userId: string,
-  //   postId: string,
-  //   status: 1 | 2, // 1 = approved, 2 = rejected
-  //   feedback?: string,
-  // ) {
-  //   try {
-  //     // Ensure the post belongs to the user
-  //     const post = await this.prisma.post.findFirst({
-  //       where: { id: postId, task: { user_id: userId } },
-  //     });
-  //     if (!post) return { success: false, message: 'Post not found or not allowed' };
+  async reviewPost(
+    userId: string,
+    postId: string,
+    status: 1 | 2, // 1 = approved, 2 = rejected
+    feedback?: string,
+  ) {
+    try {
+      // Step 1: Update post status
+      const post = await this.prisma.post.update({
+        where: { id: postId },
+        data: {
+          status: status,
+          feedback: feedback || null,
+          updated_at: new Date(),
+        },
+      });
 
-  //     // Update post status and feedback
-  //     const updatedPost = await this.prisma.post.update({
-  //       where: { id: postId },
-  //       data: {
-  //         status,
-  //         feedback: feedback || null,
-  //       },
-  //     });
-
-  //     // Update the task's post count and status if needed
-  //     const task = await this.prisma.taskAssign.findFirst({
-  //       where: { id: post.task_id, user_id: userId },
-  //       include: {
-  //         posts: true,
-  //         order: {
-  //           include: { order_assigns: true }
-  //         }
-  //       },
-  //     });
-
-  //     if (task) {
-  //       const approvedPostsCount = task.posts.filter((p) => p.status === 1).length;
-  //       if (approvedPostsCount >= task.post_count) {
-  //         // Mark task as completed
-  //         await this.prisma.taskAssign.update({
-  //           where: { id: task.id },
-  //           data: {
-  //             status: 'completed',
-  //             post_count: approvedPostsCount,
-  //           },
-  //         });
-  //         // Step 5.1: Update reseller's complete_tasks count and earnings
-  //         const reseller = await this.prisma.reseller.findFirst({
-  //           where: {
-  //             TaskAssign: {
-  //               some: { id: task.id }
-  //             }
-  //           }
-  //         });
-
-  //         if (reseller) {
-  //           // Calculate task earnings (you may need to adjust this based on your business logic)
-  //           const taskEarnings = task.order?.ammount ? task.order.ammount / task.order.order_assigns.length : 0;
-
-  //           await this.prisma.reseller.update({
-  //             where: { reseller_id: reseller.reseller_id },
-  //             data: {
-  //               complete_tasks: {
-  //                 increment: 1
-  //               },
-  //               total_earnings: {
-  //                 increment: taskEarnings
-  //               }
-  //             }
-  //           });
-  //         }
-  //       } else {
-  //         // Just update the post count
-  //         await this.prisma.taskAssign.update({
-  //           where: { id: task.id },
-  //           data: {
-  //             post_count: approvedPostsCount,
-  //           },
-  //         });
-  //       }
-  //     }
-
-  //     return {
-  //       success: true,
-  //       message: 'Post reviewed and related updates applied.',
-  //       data: updatedPost,
-  //     };
-  //   } catch (error) {
-  //     return { success: false, message: error.message };
-  //   }
-  // }
+      // Step 2: Get related task via post.task_id
+      const task = await this.prisma.taskAssign.findFirst({
+        where: {
+          posts: { some: { id: postId } },
+        },
+        include: {
+          posts: true,
+          order: {
+            include: { order_assigns: true },
+          },
+        },
+      });
+      if (task) {
+        // Step 3: Count approved posts for this task
+        const approvedPostsCount = task.posts.filter((p) => p.status === 1).length;
+        // Step 4: Check if the number of approved posts matches the assigned post count
+        if (approvedPostsCount >= task.post_count) {
+          // Update task status to Completed
+          await this.prisma.taskAssign.update({
+            where: { id: task.id },
+            data: {
+              status: 'completed',
+              post_count: approvedPostsCount
+            },
+          });
+          // Step 4.1: Update reseller's complete_tasks count and earnings
+          const reseller = await this.prisma.reseller.findFirst({
+            where: {
+              TaskAssign: {
+                some: { id: task.id }
+              }
+            }
+          });
+          if (reseller) {
+            const taskEarnings = task.order?.ammount ? task.order.ammount / task.order.order_assigns.length : 0;
+            await this.prisma.reseller.update({
+              where: { reseller_id: reseller.reseller_id },
+              data: {
+                complete_tasks: {
+                  increment: 1
+                },
+                total_earnings: {
+                  increment: taskEarnings
+                }
+              }
+            });
+          }
+        } else {
+          // Update the post count even if task is not complete yet
+          await this.prisma.taskAssign.update({
+            where: { id: task.id },
+            data: {
+              post_count: approvedPostsCount
+            },
+          });
+        }
+        // Step 5: Notify reseller
+        const reseller = await this.prisma.reseller.findFirst({
+          where: {
+            TaskAssign: {
+              some: { id: task.id }
+            }
+          },
+        });
+        if (reseller) {
+          const notificationPayload = {
+            sender_id: userId,
+            receiver_id: reseller.user_id,
+            text: status === 1 ? 'Your post has been approved by the user.' : 'Your post has been rejected by the user.',
+            type: 'post' as const,
+            entity_id: post.id,
+          };
+          await NotificationRepository.createNotification(notificationPayload);
+          this.messageGateway.server.emit('notification', notificationPayload);
+        }
+      }
+      return {
+        success: true,
+        message: 'Post reviewed and related updates applied.',
+        data: post,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 
 }

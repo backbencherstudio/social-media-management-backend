@@ -16,6 +16,11 @@ export class DashboardController {
     return this.dashboardService.findAllClients(userId);
   }
 
+  @Get('user/:userId/active-services')
+  async getUserActiveServices(@Param('userId') userId: string) {
+    return this.dashboardService.getUserActiveServices(userId);
+  }
+
   @Get('active-services/:id')
   findOneActiveService(@Param('id') id: string) {
     return this.dashboardService.findOneActiveService(id);
@@ -31,10 +36,5 @@ export class DashboardController {
     // Assuming the reseller ID is on req.user.id from the JWT payload
     const resellerId = req.user.id;
     return this.dashboardService.findOneClient(resellerId, userId);
-  }
-
-  @Get('user/:userId/active-services')
-  async getUserActiveServices(@Param('userId') userId: string) {
-    return this.dashboardService.getUserActiveServices(userId);
   }
 }

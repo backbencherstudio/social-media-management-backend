@@ -47,9 +47,9 @@ export class PostController {
     return this.postService.create(createPostDto, files?.files || []);
   }
 
-  @Get()
-  findAll() {
-    return this.postService.findAll();
+  @Get('/:userId')
+  findAllUserPost(@Param('userId') userId: string) {
+    return this.postService.findAllUserPost(userId);
   }
 
   @Get('calendar/:userId')

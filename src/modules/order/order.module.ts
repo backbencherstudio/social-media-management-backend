@@ -7,10 +7,11 @@ import appConfig from 'src/config/app.config';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { AuthService } from '../auth/auth.service';
 import { AuthModule } from '../auth/auth.module';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Module({
   imports: [
-    AuthModule, 
+    AuthModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: appConfig().jwt.secret,
@@ -19,7 +20,7 @@ import { AuthModule } from '../auth/auth.module';
     PrismaModule,
   ],
   controllers: [OrderController],
-  providers: [OrderService, AuthService],
+  providers: [OrderService, AuthService, MessageGateway],
   exports: [AuthService, OrderService],
 })
-export class OrderModule {}
+export class OrderModule { }
