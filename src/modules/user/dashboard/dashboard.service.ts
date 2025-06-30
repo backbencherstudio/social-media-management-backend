@@ -13,10 +13,20 @@ export class DashboardService {
                 status: SubscriptionStatus.active,
             },
             include: {
-                service: {
+                order: {
                     select: {
                         id: true,
-                        name: true,
+                        pakage_name: true,
+                        Order_Details: {
+                            select: {
+                                id: true,
+                                service_name: true,
+                                service_amount_name: true,
+                                service_count: true,
+                                service_price: true,
+                                service_tier_id: true,
+                            },
+                        },
                     },
                 },
             },
@@ -29,8 +39,7 @@ export class DashboardService {
             total: activeServices.length,
             data: activeServices.map((subscription) => ({
                 id: subscription.id,
-                service: subscription.service?.name || 'Unknown Service',
-                serviceId: subscription.service?.id,
+                service: subscription.order.Order_Details?.[0]?.service_name || 'Unknown Service',
                 started: subscription.created_at,
                 status: subscription.status,
                 nextPayment: subscription.end_at,

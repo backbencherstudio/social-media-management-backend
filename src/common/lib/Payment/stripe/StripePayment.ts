@@ -2,6 +2,7 @@ import stripe from 'stripe';
 import appConfig from '../../../../config/app.config';
 import { Fetch } from '../../Fetch';
 import * as fs from 'fs';
+import { CreateOrderDto } from 'src/modules/order/dto/create-order.dto';
 
 const STRIPE_SECRET_KEY = appConfig().payment.stripe.secret_key;
 
@@ -145,61 +146,89 @@ export class StripePayment {
   // }
 
 
-static async createPaymentIntent({
-  amount,
-  currency,
-  user_id,
-  customer_id,
-  service_id,
-  service_tier_id,
-  status,
-  metadata,
-}: {
-  amount: number;
-  currency: string;
-  user_id: string;
-  customer_id: string;
-  service_id: string;
-  service_tier_id: string;
-  status: string;
-  metadata: {
-    start_date: string;
-    end_date: string;
-  };
-}): Promise<stripe.PaymentIntent> {
-  if (!amount || amount <= 0) {
-    throw new Error('Amount must be a positive number');
-  }
-  if (!currency) {
-    throw new Error('Currency is required');
-  }
-  if (!user_id || !customer_id || !service_id || !service_tier_id) {
-    throw new Error('All IDs are required');
-  }
-  if (!metadata || !metadata.start_date || !metadata.end_date) {
-    throw new Error('Metadata with start_date and end_date is required');
-  }
+// static async createPaymentIntent({
+//   amount,
+//   currency,
+//   user_id,
+//   customer_id,
+//   service_id,
+//   service_tier_id,
+//   status,
+//   metadata,
+// }: {
+//   amount: number;
+//   currency: string;
+//   user_id: string;
+//   customer_id: string;
+//   service_id: string;
+//   service_tier_id: string;
+//   status: string;
+//   metadata: {
+//     start_date: string;
+//     end_date: string;
+//   };
+// }): Promise<stripe.PaymentIntent> {
+//   if (!amount || amount <= 0) {
+//     throw new Error('Amount must be a positive number');
+//   }
+//   if (!currency) {
+//     throw new Error('Currency is required');
+//   }
+//   if (!user_id || !customer_id || !service_id || !service_tier_id) {
+//     throw new Error('All IDs are required');
+//   }
+//   if (!metadata || !metadata.start_date || !metadata.end_date) {
+//     throw new Error('Metadata with start_date and end_date is required');
+//   }
 
-  try {
+//   try {
     
+//     return await Stripe.paymentIntents.create({
+//       amount: Math.round(amount * 100), 
+//       currency: currency.toLowerCase(), 
+//       customer: customer_id,
+//       metadata: { //pushing to meta data----------------\\
+//         user_id,           
+//         service_id,        
+//         service_tier_id,   
+//         status,            
+//         start_date: metadata.start_date, 
+//         end_date: metadata.end_date,     
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Failed to create PaymentIntent:', error);
+//     throw new Error('Failed to create payment intent');
+//   }
+// }
+
+static async createPaymentIntent(orderDto: CreateOrderDto) {
+  try {
+    const totalAmount = orderDto.order_items.reduce((sum, item) => sum + (item.service_price ?? 0), 0);
+    const orderId = `ORD_${Date.now()}`;
+
+    // Prepare only compact metadata (avoid large strings)
+    const serviceTierIds = orderDto.order_items.map(item => item.service_tier_id).join(',');
+    const serviceIds = orderDto.order_items.map(item => item.service_id).join(',');
+
     return await Stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), 
-      currency: currency.toLowerCase(), 
-      customer: customer_id,
-      metadata: { //pushing to meta data----------------\\
-        user_id,           
-        service_id,        
-        service_tier_id,   
-        status,            
-        start_date: metadata.start_date, 
-        end_date: metadata.end_date,     
+      amount: totalAmount * 100, // Convert dollars to cents
+      currency: 'usd',
+      metadata: {
+        order_id: orderId,
+        package_name: orderDto.pakage_name,
+        user_id: orderDto.user_id || 'default_user_id',
+        service_tier_ids: serviceTierIds,
+        service_ids: serviceIds,
+        item_count: orderDto.order_items.length.toString()
       },
     });
   } catch (error) {
-    console.error('Failed to create PaymentIntent:', error);
-    throw new Error('Failed to create payment intent');
+    console.error('❌ Error creating PaymentIntent:', error);
+    throw new Error('Failed to create PaymentIntent');
   }
 }
+
 
   /**
    * Create stripe hosted checkout session

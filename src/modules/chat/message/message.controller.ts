@@ -24,6 +24,10 @@ export class MsgController {
   async getConversations() {
     return this.msgService.getAllConversations();
   }
+  @Get('user/:id')
+  async getOneConversation(@Param('id') userId: string) {
+    return this.msgService.getOneConversationByUserID(userId);
+  }
 
     @Get('conversation/:id')
   async getConversation(@Param('id') conversationId: string) {
