@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { CreateClientQuestionnaireDto } from './dto/create-client-questionnaire.dto';
+import { UpdateClientQuestionnaireDto } from './dto/update-client-questionnaire.dto';
 
 @Injectable()
 export class PostService {
@@ -26,6 +28,72 @@ export class PostService {
     });
     return { success: true, data: post };
   }
+
+  async createOrUpdateClientQuestionnaire(
+    userId: string,
+    createData: CreateClientQuestionnaireDto,
+  ) {
+    console.log(userId);
+    const existingQuestionnaire = await this.prisma.clientQuestionnaire.findUnique({
+      where: { userId },
+    });
+
+
+    // Fetch social media goals by name_id to connect to the questionnaire
+    const socialMediaGoals = await this.prisma.socialMediaGoal.findMany({
+      where: {
+        name_id: {
+          in: createData.social_media_goals || [], // Handle optional array
+        },
+      },
+    });
+
+    if (!socialMediaGoals.length) {
+      throw new Error('No valid social media goals found.');
+    }
+
+    const socialMediaGoalsToConnect = socialMediaGoals.map((goal) => ({
+      id: goal.id, // Connecting by goal ids
+    }));
+
+    if (existingQuestionnaire) {
+      // Update the existing questionnaire
+      const updatedQuestionnaire = await this.prisma.clientQuestionnaire.update({
+        where: { userId },
+        data: {
+          ...createData,
+          social_media_goals: {
+            connect: socialMediaGoalsToConnect, // Connect existing goals
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Client questionnaire updated successfully',
+        data: updatedQuestionnaire,
+      };
+    } else {
+      // Create a new client questionnaire
+      const newQuestionnaire = await this.prisma.clientQuestionnaire.create({
+        data: {
+          userId,
+          ...createData,
+          social_media_goals: {
+            connect: socialMediaGoalsToConnect, // Connect existing goals
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Client questionnaire created successfully',
+        data: newQuestionnaire,
+      };
+    }
+  }
+
+
 
   // User reviews a post (approve/reject)
   // async reviewPost(
