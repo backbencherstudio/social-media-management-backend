@@ -199,7 +199,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       }));
@@ -211,6 +211,7 @@ export class PostService {
   }
 
   async findOne(id: string) {
+
     try {
       const post = await this.prisma.post.findUnique({
         where: { id },
@@ -267,7 +268,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       };
@@ -494,7 +495,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       }));
@@ -559,7 +560,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       }));
