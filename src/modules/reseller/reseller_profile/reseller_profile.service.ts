@@ -269,7 +269,9 @@ async resellerPaymentWithdrawal(
     
 
     if (adminAvailable < Math.round(amountAfterDeductions * 100)) {
-      throw new Error('Admin Stripe balance is too low to fund the withdrawal.');
+      return {
+        message: 'You cannot withdraw your earnings at this time. Please try again later.',
+      };
     }
 
     const metadata = {
