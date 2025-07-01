@@ -24,17 +24,16 @@ import { RolesGuard } from 'src/common/guard/role/roles.guard';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
 
-@ApiBearerAuth()
-@ApiTags('Website Info')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN_LITE)
 @Controller('admin/blog')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
  
 
-
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Post()
 @UseInterceptors(
   FilesInterceptor('img', 10, {
@@ -65,6 +64,10 @@ async create(
 }
 
 
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
 @Get('/drafts')
 async findDrafts() {
   return await this.blogService.findDrafts();
@@ -72,25 +75,32 @@ async findDrafts() {
 
 
 
-  @Get()
-  async findAll() {
+@Get()
+async findAll() {
     try {
       return await this.blogService.findAll();
     } catch (error) {
       throw new InternalServerErrorException(error.message || 'Fetch failed');
     }
-  }
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+}
+
+@Get(':id')
+async findOne(@Param('id') id: string) {
     try {
       return await this.blogService.findOne(id);
     } catch (error) {
       throw new InternalServerErrorException(error.message || 'Not found');
     }
-  }
- @Patch(':id')
-  @UseInterceptors(FilesInterceptor('img', 10, { storage: memoryStorage() }))
-  async update(
+}
+
+
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
+@Patch(':id')
+@UseInterceptors(FilesInterceptor('img', 10, { storage: memoryStorage() }))
+async update(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
     @Body() body: any,
@@ -120,14 +130,32 @@ async findDrafts() {
       console.error('[❌ Update Blog Error]', error);
       throw new InternalServerErrorException(error.message || 'Update failed');
     }
-  }
+}
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
+@Patch(':id/publish')
+async publish(@Param('id') id: string) {
+  try {
+    return await this.blogService.publishPost(id);
+  } catch (error) {
+    console.error('[❌ Publish Blog Error]', error);
+    throw new InternalServerErrorException(error.message || 'Publish failed');
+  }
+}
+
+@ApiBearerAuth()
+@ApiTags('Website Info')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_LITE)
+@Delete(':id')
+async remove(@Param('id') id: string) {
     try {
       return await this.blogService.remove(id);
     } catch (error) {
       throw new InternalServerErrorException(error.message || 'Delete failed');
     }
-  }
+}
 }

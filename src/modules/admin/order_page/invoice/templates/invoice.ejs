@@ -12,7 +12,7 @@
       margin: 0 auto;
       padding: 30px;
     }
-    
+
     .header {
       display: flex;
       justify-content: space-between;
@@ -20,56 +20,56 @@
       border-bottom: 2px solid #4CAF50;
       padding-bottom: 20px;
     }
-    
+
     .company-info h2 {
       color: #4CAF50;
       margin: 0;
       font-size: 24px;
     }
-    
+
     .invoice-title {
       text-align: right;
     }
-    
+
     .invoice-title h1 {
       margin: 0;
       color: #333;
       font-size: 28px;
     }
-    
+
     .invoice-title p {
       margin: 5px 0 0;
       color: #666;
     }
-    
+
     .details {
       display: flex;
       justify-content: space-between;
       margin-bottom: 30px;
     }
-    
+
     .client-details, .invoice-details {
       width: 48%;
     }
-    
+
     h3 {
       color: #4CAF50;
       border-bottom: 1px solid #eee;
       padding-bottom: 5px;
       font-size: 18px;
     }
-    
+
     .detail-row {
       display: flex;
       margin-bottom: 8px;
       flex-wrap: wrap;
     }
-    
+
     .detail-label {
       font-weight: bold;
       width: 120px;
     }
-    
+
     .username {
       font-weight: bold;
       color: #2c3e50;
@@ -79,14 +79,14 @@
       border: 1px solid #4CAF50;
       margin-top: -2px;
     }
-    
+
     .subscription {
       background: #f9f9f9;
       padding: 15px;
       border-radius: 5px;
       margin-top: 20px;
     }
-    
+
     .status {
       display: inline-block;
       padding: 5px 10px;
@@ -95,17 +95,17 @@
       font-size: 12px;
       text-transform: uppercase;
     }
-    
+
     .payment-paid {
       background: #4CAF50;
       color: white;
     }
-    
+
     .payment-pending {
       background: #FFC107;
       color: #333;
     }
-    
+
     .footer {
       margin-top: 50px;
       text-align: center;
@@ -114,11 +114,34 @@
       border-top: 1px solid #eee;
       padding-top: 20px;
     }
-    
+
     .amount {
       font-size: 20px;
       font-weight: bold;
       color: #4CAF50;
+    }
+
+    .order-details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .order-details-table th,
+    .order-details-table td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    .order-details-table th {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .order-details-table td {
+      font-size: 14px;
+      color: #333;
     }
   </style>
 </head>
@@ -144,7 +167,7 @@
       </div>
       <div class="detail-row">
         <div class="detail-label">Username:</div>
-        <div class="username"><%= user_name %></div>
+        <div class="username"><%= user_name || 'N/A' %></div>
       </div>
     </div>
     
@@ -156,12 +179,12 @@
       </div>
       <div class="detail-row">
         <div class="detail-label">Order Status:</div>
-        <div><%= order_status %></div>
+        <div><%= order_status.charAt(0).toUpperCase() + order_status.slice(1) %></div>
       </div>
       <div class="detail-row">
         <div class="detail-label">Payment:</div>
         <div>
-          <span class="status payment-<%= payment_status.toLowerCase() %>"><%= payment_status %></span> - 
+          <span class="status payment-paid">Paid</span> - 
           <span class="amount">$<%= ammount %></span>
         </div>
       </div>
@@ -172,12 +195,40 @@
     <h3>Subscription Details</h3>
     <div class="detail-row">
       <div class="detail-label">Start Date:</div>
-      <div><%= subscription.start_at %></div>
+      <div><%= new Date(subscription.start_at).toLocaleDateString() %></div>
     </div>
     <div class="detail-row">
       <div class="detail-label">End Date:</div>
-      <div><%= subscription.end_at %></div>
+      <div><%= new Date(subscription.end_at).toLocaleDateString() %></div>
     </div>
+  </div>
+
+  <div class="subscription">
+    <h3>Order Details</h3>
+    <table class="order-details-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Unit Price</th>
+          <th>Quantity</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% Order_Details.forEach(function(order) { %>
+        <tr>
+          <td><%= order.service_name %></td>
+          <td>$<%= order.service_price %></td>
+          <td><%= order.service_count %></td>
+          <td>$<%= order.service_price * order.service_count %></td>
+        </tr>
+        <% }); %>
+        <tr>
+          <td colspan="3" style="font-weight: bold; text-align: right;">Total</td>
+          <td><span class="amount">$<%= ammount %></span></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   
   <div class="footer">

@@ -313,7 +313,7 @@ async resellerPaymentWithdrawal(
         user_id: user.id,
         amount: withdrawPaymentDto.amount,
         currency: 'usd',
-        status: 'PENDING',
+        status: 'success',
         type: 'WITHDRAWAL',
       },
     });
