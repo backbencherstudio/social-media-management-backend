@@ -47,9 +47,14 @@ export class PostController {
     return this.postService.create(createPostDto, files?.files || []);
   }
 
-  @Get()
-  findAll() {
-    return this.postService.findAll();
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.postService.findOne(id);
+  }
+
+  @Get('user/:userId')
+  findAllUserPost(@Param('userId') userId: string) {
+    return this.postService.findAllUserPost(userId);
   }
 
   @Get('calendar/:userId')
@@ -89,11 +94,6 @@ export class PostController {
   @Get('analysis/:userId')
   getPostStats(@Param('userId') userId: string) {
     return this.postService.getPostStats(userId)
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postService.findOne(id);
   }
 
   @Patch(':id/review')

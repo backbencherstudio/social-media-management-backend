@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { PostProcessor } from './processors/post.processor';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { SocialsModule } from '../../socials/socials.module';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { SocialsModule } from '../../socials/socials.module';
     }),
   ],
   controllers: [PostController],
-  providers: [PostService, PostProcessor],
+  providers: [PostService, PostProcessor, MessageGateway],
   exports: [PostService, PostService],
 })
 export class PostModule { }

@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { TwitterService } from '../../../socials/platforms/twitter.service';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Processor('post-schedule')
 export class PostProcessor extends WorkerHost {
@@ -11,6 +12,7 @@ export class PostProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly twitterService: TwitterService,
+    private readonly messageGateway: MessageGateway,
   ) {
     super();
   }
@@ -57,11 +59,11 @@ export class PostProcessor extends WorkerHost {
         return { success: false, message: 'Post is not approved for publication' };
       }
 
-      // Get the user ID from the task
-      // if (!post.task || !post.task.user_id) {
-      //   throw new Error('Post is not associated with a user task');
-      // }
-      const userId = 'cmcaezr200000ws68zs50kn2q'
+      //    Get the user ID from the task
+      if (!post.task || !post.task.user_id) {
+        throw new Error('Post is not associated with a user task');
+      }
+      const userId = post.task.user_id
       // todo    const userId = post.task.user_id;
       this.logger.log(`Publishing post for user: ${userId}`);
 
@@ -160,6 +162,15 @@ export class PostProcessor extends WorkerHost {
         });
 
         this.logger.log(`Post ${postId} published successfully to at least one channel`);
+        // Emit notification to user
+        const notificationPayload = {
+          sender_id: post.task?.user_id,
+          receiver_id: post.task?.user_id,
+          text: 'Your post has been published successfully.',
+          type: 'post' as const,
+          entity_id: postId,
+        };
+        this.messageGateway.server.emit('notification', notificationPayload);
       } else {
         // Update post status to failed
         await this.prisma.post.update({

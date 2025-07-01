@@ -95,9 +95,14 @@ export class DashboardService {
 
   async findAllClients(userId: string) {
     try {
+      const reseller = await this.prisma.reseller.findFirst({
+        where: {
+          user_id: userId
+        }
+      })
       const tasks = await this.prisma.taskAssign.findMany({
         where: {
-          reseller_id: userId
+          reseller_id: reseller.reseller_id
         },
         select: {
           user: {
@@ -217,7 +222,7 @@ export class DashboardService {
       const subscriptions = await this.prisma.subscription.findMany({
         where: {
           user_id: userId,
-          status: 'active', // or SubscriptionStatus.active if using enum
+          status: 'active',
         },
         include: {
           order: {

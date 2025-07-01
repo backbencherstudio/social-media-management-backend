@@ -16,7 +16,6 @@ export class CreateDesignFileAssetDto {
 
 export class CreateDesignFileDto {
   @IsString()
-  @IsOptional()
   content?: string;
 
   @IsNumber()

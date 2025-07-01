@@ -38,6 +38,7 @@ import { PostModule as UserPostModule } from './modules/user/post/post.module';
 import { AssetsModule as UserAssetsModule } from './modules/user/assets/assets.module';
 import { OrderModule } from './modules/order/order.module';
 import { DashboardModule as UserDashboardModule } from './modules/user/dashboard/dashboard.module';
+import { ServiceModule } from './modules/user/service/service.module';
 
 
 @Module({
@@ -79,6 +80,7 @@ import { DashboardModule as UserDashboardModule } from './modules/user/dashboard
     UserAssetsModule,
     OrderModule,
     UserDashboardModule,
+    ServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,11 +9,14 @@ import { TwitterService } from '../../socials/platforms/twitter.service';
 import appConfig from 'src/config/app.config';
 import { FacebookService } from '../../socials/platforms/facebook.service';
 import { InstagramService } from '../../socials/platforms/instagram.service';
+import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
+import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly messageGateway: MessageGateway,
     @InjectQueue('post-schedule') private postQueue: Queue,
     private twitterService: TwitterService,
     private facebookService: FacebookService,
@@ -23,17 +26,16 @@ export class PostService {
   async create(createPostDto: CreatePostDto, files?: Express.Multer.File[]) {
     try {
       // Validate task_id if provided
-      if (createPostDto.task_id) {
-        const taskExists = await this.prisma.taskAssign.findUnique({
-          where: { id: createPostDto.task_id },
-        });
 
-        if (!taskExists) {
-          return {
-            success: false,
-            message: `Task with ID ${createPostDto.task_id} does not exist`
-          };
-        }
+      const taskExists = await this.prisma.taskAssign.findUnique({
+        where: { id: createPostDto.task_id },
+      });
+
+      if (!taskExists) {
+        return {
+          success: false,
+          message: `Task with ID ${createPostDto.task_id} does not exist`
+        };
       }
 
       const post = await this.prisma.post.create({
@@ -84,12 +86,12 @@ export class PostService {
         }
       }
 
-      if (createPostDto.task_id) {
-        await this.prisma.taskAssign.update({
-          where: { id: createPostDto.task_id },
-          data: { status: 'Clint_review' },
-        });
-      }
+
+      await this.prisma.taskAssign.update({
+        where: { id: createPostDto.task_id },
+        data: { status: 'Clint_review' },
+      });
+
 
       // If post is created as approved (status = 1), schedule for publishing
       if (post.status === 1) {
@@ -110,6 +112,28 @@ export class PostService {
         }
       }
 
+
+      const task = await this.prisma.taskAssign.findUnique({
+        where: { id: createPostDto.task_id },
+        include: { user: true },
+      });
+      if (task) {
+        const reseller = await this.prisma.reseller.findUnique({
+          where: { reseller_id: task.reseller_id },
+        });
+        const notificationPayload = {
+          sender_id: reseller?.user_id,
+          receiver_id: task.user_id,
+          text: 'A new post has been created and assigned to you.',
+          type: 'post' as const, // must be one of the allowed types
+          entity_id: post.id,
+        };
+
+        await NotificationRepository.createNotification(notificationPayload);
+        this.messageGateway.server.emit('notification', notificationPayload);
+      }
+
+
       return {
         success: true,
         data: await this.findOne(post.id),
@@ -119,9 +143,13 @@ export class PostService {
     }
   }
 
-  async findAll() {
+  async findAllUserPost(userId: string) {
+    console.log(userId)
     try {
       const posts = await this.prisma.post.findMany({
+        where: {
+          task: { user_id: userId },
+        },
         select: {
           id: true,
           content: true,
@@ -171,7 +199,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       }));
@@ -183,6 +211,7 @@ export class PostService {
   }
 
   async findOne(id: string) {
+
     try {
       const post = await this.prisma.post.findUnique({
         where: { id },
@@ -239,7 +268,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       };
@@ -466,7 +495,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       }));
@@ -531,7 +560,7 @@ export class PostService {
         post_files: post.post_files.map((file) => ({
           ...file,
           file_url: SojebStorage.url(
-            appConfig().storageUrl.rootUrl + '/post/' + file.file_path,
+            appConfig().storageUrl.postFile + '/' + file.file_path,
           ),
         })),
       }));
