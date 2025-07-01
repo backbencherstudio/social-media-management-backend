@@ -121,6 +121,23 @@ export class AuthController {
       };
     }
   }
+  // -------------------get your order -------------------
+   @Get('user/:userId')
+  async getOrderByUserId(@Param('userId') userId: string) {
+    try {
+      // Call the service to fetch the order
+      const order = await this.authService.getOrderByUserId(userId);
+
+      // If no order found
+      if (!order) {
+        return { message: 'No order found for this user ID.' };
+      }
+
+      return order;
+    } catch (error) {
+      return { message: 'Error fetching order', error: error.message };
+    }
+  }
 
   //get all admins
   @ApiResponse({ description: 'Get all users' })

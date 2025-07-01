@@ -13,6 +13,7 @@ import { DateHelper } from '../../common/helper/date.helper';
 import { StripePayment } from 'src/common/lib/Payment/stripe/StripePayment';
 import { ResellerApplicationDto } from './dto/apply_for_reseller.dto';
 import * as bcrypt from 'bcryptjs';
+import { UpdateOrderDto } from '../admin/order_page/dto/create-order_page.dto';
 
 @Injectable()
 export class AuthService {
@@ -1303,6 +1304,48 @@ export class AuthService {
       };
     }
   }
+//  -------------------get you order details ------------------
 
 
+  // Method to fetch order by user ID
+  async getOrderByUserId(userId: string) {
+    try {
+      // Fetch the first order for the given user_id
+      const order = await this.prisma.order.findFirst({
+        where: {
+          user_id: userId,
+        },
+        include: {
+          Order_Details: true,  // Include Order details if needed
+          subscription: true,   // Include subscription if needed
+        },
+      });
+
+      // Return the order found
+      return order;
+    } catch (error) {
+      console.error('Error fetching order by user ID:', error);
+      throw error;
+    }
+  }
+
+  // Example update order type method (you already have this in your code)
+  async updateOrderType(orderId: string, updateOrderDto: UpdateOrderDto) {
+    try {
+      const updatedOrder = await this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          order_status: updateOrderDto.order_type,
+        },
+      });
+
+      return updatedOrder;
+    } catch (error) {
+      console.error('Error updating order type:', error);
+      throw error;
+    }
+  }
 }
+
+
+
