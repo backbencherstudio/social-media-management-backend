@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
@@ -18,6 +18,109 @@ export class PostService {
       orderBy: { created_at: 'desc' },
     });
     return { success: true, data: posts };
+  }
+
+  // create or Update Client Questionnaires
+  async createOrUpdateClientQuestionnaire(
+    userId: string,
+    createData: CreateClientQuestionnaireDto,
+  ) {
+    console.log(userId);
+    const existingQuestionnaire = await this.prisma.clientQuestionnaire.findUnique({
+      where: { userId },
+    });
+
+
+    // Fetch social media goals by name_id to connect to the questionnaire
+    const socialMediaGoals = await this.prisma.socialMediaGoal.findMany({
+      where: {
+        name_id: {
+          in: createData.social_media_goals || [], // Handle optional array
+        },
+      },
+    });
+
+    if (!socialMediaGoals.length) {
+      throw new Error('No valid social media goals found.');
+    }
+
+    const socialMediaGoalsToConnect = socialMediaGoals.map((goal) => ({
+      id: goal.id, // Connecting by goal ids
+    }));
+
+    if (existingQuestionnaire) {
+      // Update the existing questionnaire
+      const updatedQuestionnaire = await this.prisma.clientQuestionnaire.update({
+        where: { userId },
+        data: {
+          ...createData,
+          social_media_goals: {
+            connect: socialMediaGoalsToConnect, // Connect existing goals
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Client questionnaire updated successfully',
+        data: updatedQuestionnaire,
+      };
+    } else {
+      // Create a new client questionnaire
+      const newQuestionnaire = await this.prisma.clientQuestionnaire.create({
+        data: {
+          userId,
+          ...createData,
+          social_media_goals: {
+            connect: socialMediaGoalsToConnect, // Connect existing goals
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Client questionnaire created successfully',
+        data: newQuestionnaire,
+      };
+    }
+  }
+
+  // get specific client Questionnaire (service)
+  async getClientQuestionnaire(userId: string, clientUserId: string) {
+    // Check if the user is an admin or the owner of the questionnaire
+    if (userId !== clientUserId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (user?.type !== 'admin' && user?.type !== 'reseller') {
+        throw new HttpException(
+          'You do not have permission to view this questionnaire.',
+          HttpStatus.FORBIDDEN, // Set HTTP Status code to 403 Forbidden
+        );
+      }
+    }
+
+    // Fetch the client questionnaire by userId
+    const clientQuestionnaire = await this.prisma.clientQuestionnaire.findUnique({
+      where: { userId: clientUserId },
+      include: {
+        social_media_goals: true, // Include the related goals
+      },
+    });
+
+    if (!clientQuestionnaire) {
+      throw new HttpException(
+        'Client questionnaire not found.',
+        HttpStatus.NOT_FOUND, // Set HTTP Status code to 404 Not Found
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Client questionnaire retrieved successfully',
+      data: clientQuestionnaire,
+    };
   }
 
   // Get a single post for the user
