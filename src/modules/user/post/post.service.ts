@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotificationRepository } from 'src/common/repository/notification/notification.repository';
 import { MessageGateway } from 'src/modules/chat/message/message.gateway';
+import { CreateClientQuestionnaireDto } from './dto/create-client-questionnaire.dto';
+import { UpdateClientQuestionnaireDto } from './dto/update-client-questionnaire.dto';
 
 @Injectable()
 export class PostService {
@@ -29,6 +31,7 @@ export class PostService {
     });
     return { success: true, data: post };
   }
+
 
   async reviewPost(
     userId: string,
