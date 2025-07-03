@@ -12,7 +12,7 @@ import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 export class TaskManagementService {
 
   constructor(private readonly prisma: PrismaService, private readonly messageGateway: MessageGateway) { }
-
+// Create a new task management entry
   create(createTaskManagementDto: CreateTaskManagementDto) {
     return 'This action adds a new taskManagement';
   }
@@ -244,7 +244,7 @@ export class TaskManagementService {
     };
   }
   // get all tasks      
- async getAllTasks() {
+async getAllTasks() {
   const tasks = await this.prisma.taskAssign.findMany({
     orderBy: {
       created_at: 'desc',
@@ -265,28 +265,34 @@ export class TaskManagementService {
     return { message: 'No tasks found', tasks: [] };
   }
 
-  const formattedTasks = tasks.map((task) => ({
-    task_id: task.id,
-    task_status: task.status,
-    task_amount: task.ammount,
-    post_count: task.post_count,
-    post_type: task.post_type,
-    created_at: task.created_at,
-    due_date: task.due_date,
-    note: task.note,
-    assignees: task.assignees.map((a) => ({
-      reseller_id: a.reseller_id,
-      full_name: a.full_name,
-      email: a.user_email,
-    })),
-    order_details: {
-      order_id: task.order.id,
-      order_status: task.order.order_status,
-      client_name: task.order.user_name,
-      client_email: task.order.user_email,
-      package_name: task.order.pakage_name,
-    },
-  }));
+  const formattedTasks = tasks.map((task) => {
+    const orderDetails = task.order
+      ? {
+          order_id: task.order.id,
+          order_status: task.order.order_status,
+          client_name: task.order.user_name,
+          client_email: task.order.user_email,
+          package_name: task.order.pakage_name,
+        }
+      : null; 
+
+    return {
+      task_id: task.id,
+      task_status: task.status,
+      task_amount: task.ammount,
+      post_count: task.post_count,
+      post_type: task.post_type,
+      created_at: task.created_at,
+      due_date: task.due_date,
+      note: task.note,
+      assignees: task.assignees.map((a) => ({
+        reseller_id: a.reseller_id,
+        full_name: a.full_name,
+        email: a.user_email,
+      })),
+      order_details: orderDetails,
+    };
+  });
 
   return {
     message: 'Tasks fetched successfully',
@@ -296,5 +302,6 @@ export class TaskManagementService {
     },
   };
 }
+
 
 }

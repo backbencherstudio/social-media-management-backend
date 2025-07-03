@@ -182,17 +182,27 @@ case 'payment_intent.succeeded': {
     order_items: orderItems,
     ammount: totalAmount,
     user_id: user.id,
-    service_id: CreateOrderDto.service_id, // Ensure this is passed correctly
+    service_id: CreateOrderDto.service_id, 
   };
 
   const orderCreationResult = await this.orderService.createOrder(user, orderDto);
-  console.log('✅ Order created:', orderCreationResult);
+  console.log('Order created:', orderCreationResult);
 
   // Update user type
   await this.prisma.user.update({
     where: { id: user.id },
     data: { type: 'client' },
   });
+  
+    await this.prisma.paymentTransaction.create({
+      data: {
+        user_id: user.id,
+        amount: totalAmount,
+        currency: 'usd',
+        status: 'success',
+        type: 'payment',
+      },
+    });
 
   // Save transaction
   await TransactionRepository.updateTransaction({
@@ -203,7 +213,7 @@ case 'payment_intent.succeeded': {
     raw_status: paymentIntent.status,
   });
 
-  console.log('✅ Order created and subscription activated.');
+  console.log('Order created and subscription activated.');
   break;
 }
 //    //-------------paymnet-fail---------------- 

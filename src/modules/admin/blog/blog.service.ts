@@ -144,6 +144,7 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
         orderBy: { created_at: 'desc' },
         select: {
           id: true,
+          status:true,
           title: true,
           hashtags: true,
           blog_blog_categories: {
@@ -175,6 +176,7 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
       return blogs.map(blog => {
         const categories = blog.blog_blog_categories.map(({ blog_category }) => ({
           id: blog_category.id,
+        status:blog.status,
           name: blog_category.name,
         }));
 
@@ -190,6 +192,7 @@ async create(dto: CreateBlogDto, files: Express.Multer.File[]) {
         return {
           message: 'Fetched successfully',
           blog_id: blog.id,
+          status: blog.status,
           title: blog.title,
           hashtags: blog.hashtags,
           categories,
@@ -257,7 +260,7 @@ async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
       throw new NotFoundException(`Blog with ID ${id} not found`);
     }
 
-    // ✅ 1. Update title / hashtags (if provided)
+    // 1. Update title / hashtags (if provided)
     if (title || hashtags) {
       await this.prisma.blog.update({
         where: { id },
@@ -268,7 +271,7 @@ async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
       });
     }
 
-    // ✅ 2. Update categories (if provided)
+    //  2. Update categories (if provided)
     if (Array.isArray(categoryIds)) {
       await this.prisma.blogBlogCategory.deleteMany({ where: { blog_id: id } });
 
@@ -282,7 +285,7 @@ async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
       }
     }
 
-    // ✅ 3. Update contents (if provided)
+    //  3. Update contents (if provided)
     if (Array.isArray(contents)) {
       await this.prisma.blogContent.deleteMany({ where: { blog_id: id } });
 
@@ -299,7 +302,7 @@ async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
           include: { blog_files: true },
         });
 
-        // 🔁 Upload file if content is media
+        // Upload file if content is media
         if (c.contentType === 'media' && files[fileIndex]) {
           const file = files[fileIndex];
           const blogFile = content.blog_files[0];
@@ -328,7 +331,7 @@ async update(id: string, dto: UpdateBlogDto, files: Express.Multer.File[]) {
       }
     }
 
-    // ✅ 4. Final response
+    //4. Final response
     const updated = await this.prisma.blog.findUnique({
       where: { id },
       include: {
@@ -411,8 +414,34 @@ async findDrafts() {
     });
 
   } catch (error) {
-    console.error('[❌ Fetch Draft Blogs Error]', error);
+    console.error('[Fetch Draft Blogs Error]', error);
     throw new InternalServerErrorException(error.message || 'Failed to fetch drafts');
+  }
+}
+
+//publish 
+async publishPost(id: string) {
+  try {
+    const blog = await this.prisma.blog.findUnique({ where: { id } });
+
+    if (!blog) {
+      throw new NotFoundException('Blog not found or already deleted');
+    }
+
+    // Update the status to true (published)
+    await this.prisma.blog.update({
+      where: { id },
+      data: { status: true },
+    });
+
+    return {
+      message: 'Published successfully',
+      blog_id: id,
+      status: true,
+    };
+  } catch (error) {
+    console.error('Error publishing blog:', error);
+    throw new InternalServerErrorException(error.message || 'Failed to publish blog');
   }
 }
 
