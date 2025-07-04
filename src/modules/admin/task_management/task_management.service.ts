@@ -12,14 +12,14 @@ import { MessageGateway } from 'src/modules/chat/message/message.gateway';
 export class TaskManagementService {
 
   constructor(private readonly prisma: PrismaService, private readonly messageGateway: MessageGateway) { }
-// Create a new task management entry
+  // Create a new task management entry
   create(createTaskManagementDto: CreateTaskManagementDto) {
     return 'This action adds a new taskManagement';
   }
   // ---------------------assign order to the reseller--------------------\\
   async assignUserToOrder(
-   orderId: string, dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }  ) {
-   const { res_id, note, roleId, ammount, post_count, post_type } = dto;   
+    orderId: string, dto: { res_id: string; note: string; roleId: string; ammount: number; post_count: number; post_type: string; }) {
+    const { res_id, note, roleId, ammount, post_count, post_type } = dto;
 
 
     const reseller = await this.prisma.reseller.findUnique({
@@ -169,8 +169,8 @@ export class TaskManagementService {
         package_name: order.pakage_name,
       },
     };
-  } 
- //---------------unassginging orders to the resellers-----------------\\
+  }
+  //---------------unassginging orders to the resellers-----------------\\
   async unassignUserFromOrder(
     orderId: string,
     dto: { taskId: string; res_id: string; note: string }
@@ -213,23 +213,23 @@ export class TaskManagementService {
         where: { id: taskId },
       });
 
-       const adminUser = await this.prisma.user.findFirst({
-      where: { type: 'admin' },
-      select: { id: true, name: true },
-    });
+      const adminUser = await this.prisma.user.findFirst({
+        where: { type: 'admin' },
+        select: { id: true, name: true },
+      });
 
-         // send notification to assined user (reseller)
-    const notificationPayload: any = {
-      sender_id: adminUser.id,
-      receiver_id: res_id,
-      text: 'You have been assigned to this task',
-      type: 'post',
-      entity_id: task.id
-    }
+      // send notification to assined user (reseller)
+      const notificationPayload: any = {
+        sender_id: adminUser.id,
+        receiver_id: res_id,
+        text: 'You have been assigned to this task',
+        type: 'post',
+        entity_id: task.id
+      }
 
-    NotificationRepository.createNotification(notificationPayload);
-    this.messageGateway.server.emit("notification", notificationPayload)
-    // End sending notification
+      NotificationRepository.createNotification(notificationPayload);
+      this.messageGateway.server.emit("notification", notificationPayload)
+      // End sending notification
 
       return {
         message: `User unassigned from task. Task deleted because there are no more assignees. Note: ${note}`,
@@ -244,64 +244,62 @@ export class TaskManagementService {
     };
   }
   // get all tasks      
-async getAllTasks() {
-  const tasks = await this.prisma.taskAssign.findMany({
-    orderBy: {
-      created_at: 'desc',
-    },
-    include: {
-      order: true,
-      assignees: {
-        select: {
-          reseller_id: true,
-          full_name: true,
-          user_email: true,
+  async getAllTasks() {
+    const tasks = await this.prisma.taskAssign.findMany({
+      orderBy: {
+        created_at: 'desc',
+      },
+      include: {
+        order: true,
+        assignees: {
+          select: {
+            reseller_id: true,
+            full_name: true,
+            user_email: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!tasks.length) {
-    return { message: 'No tasks found', tasks: [] };
-  }
+    if (!tasks.length) {
+      return { message: 'No tasks found', tasks: [] };
+    }
 
-  const formattedTasks = tasks.map((task) => {
-    const orderDetails = task.order
-      ? {
+    const formattedTasks = tasks.map((task) => {
+      const orderDetails = task.order
+        ? {
           order_id: task.order.id,
           order_status: task.order.order_status,
           client_name: task.order.user_name,
           client_email: task.order.user_email,
           package_name: task.order.pakage_name,
         }
-      : null; 
+        : null;
+
+      return {
+        task_id: task.id,
+        task_status: task.status,
+        task_amount: task.ammount,
+        post_count: task.post_count,
+        post_type: task.post_type,
+        created_at: task.created_at,
+        due_date: task.due_date,
+        note: task.note,
+        assignees: task.assignees.map((a) => ({
+          reseller_id: a.reseller_id,
+          full_name: a.full_name,
+          email: a.user_email,
+        })),
+        order_details: orderDetails,
+      };
+    });
 
     return {
-      task_id: task.id,
-      task_status: task.status,
-      task_amount: task.ammount,
-      post_count: task.post_count,
-      post_type: task.post_type,
-      created_at: task.created_at,
-      due_date: task.due_date,
-      note: task.note,
-      assignees: task.assignees.map((a) => ({
-        reseller_id: a.reseller_id,
-        full_name: a.full_name,
-        email: a.user_email,
-      })),
-      order_details: orderDetails,
+      message: 'Tasks fetched successfully',
+      data: {
+        total: formattedTasks.length,
+        tasks: formattedTasks,
+      },
     };
-  });
-
-  return {
-    message: 'Tasks fetched successfully',
-    data: {
-      total: formattedTasks.length,
-      tasks: formattedTasks,
-    },
-  };
-}
-
-
+  }
 }
