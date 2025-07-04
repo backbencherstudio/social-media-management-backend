@@ -95,11 +95,13 @@ export class DashboardService {
 
   async findAllClients(userId: string) {
     try {
+
       const reseller = await this.prisma.reseller.findFirst({
         where: {
           user_id: userId
         }
       })
+
       const tasks = await this.prisma.taskAssign.findMany({
         where: {
           reseller_id: reseller.reseller_id
@@ -234,8 +236,9 @@ export class DashboardService {
           },
           orders: {
             select: {
-              Order_Details:true,
-             order_status: true,           },
+              Order_Details: true,
+              order_status: true,
+            },
           },
         },
       });

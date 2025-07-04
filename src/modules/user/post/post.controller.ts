@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, UseGuards, HttpCode } from '@nestjs/common';
 import { PostService } from './post.service';
 import { PostService as ResellerPostService } from '../../reseller/post/post.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { CreateClientQuestionnaireDto } from './dto/create-client-questionnaire.dto';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user/posts')
@@ -65,4 +67,38 @@ export class PostController {
     if (!post) return { success: false, message: 'Post not found or not allowed' };
     return this.postService.reviewPost(userId, id, status, feedback);
   }
+
+  @ApiOperation({ summary: 'Create or update a client questionnaire' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('questionnaire')
+  async createOrUpdateClientQuestionnaire(
+    @Req() req: any,
+    @Body() createData: CreateClientQuestionnaireDto,
+  ) {
+    const userId = req.user.userId;
+    return this.postService.createOrUpdateClientQuestionnaire(userId, createData);
+  }
+
+
+  // controller.ts
+  @ApiOperation({ summary: 'Get specific client questionnaire' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('questionnaire/:userId')
+  async getClientQuestionnaire(
+    @Req() req: any, // Get the userId from JWT
+    @Param('userId') clientUserId: string, 
+  ) {
+    const userId = req.user.userId; 
+    try {
+      return await this.postService.getClientQuestionnaire(userId, clientUserId);
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
 }

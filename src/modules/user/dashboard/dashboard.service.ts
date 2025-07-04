@@ -47,6 +47,49 @@ export class DashboardService {
         };
     }
 
+    async getAllServices(userId: string) {
+        const activeServices = await this.prisma.subscription.findMany({
+            where: {
+                user_id: userId,
+                // status: SubscriptionStatus.active,
+            },
+            include: {
+                order: {
+                    select: {
+                        id: true,
+                        pakage_name: true,
+                        order_status: true,
+                        Order_Details: {
+                            select: {
+                                id: true,
+                                service_name: true,
+                                service_amount_name: true,
+                                service_count: true,
+                                service_price: true,
+                                service_tier_id: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                created_at: 'desc',
+            },
+        });
+
+        return {
+            total: activeServices.length,
+            data: activeServices.map((subscription) => ({
+                id: subscription.id,
+                service: subscription.order.Order_Details?.[0]?.service_name || 'Unknown Service',
+                started: subscription.created_at,
+                order_status: subscription.order.order_status,
+                status: subscription.status,
+                nextPayment: subscription.end_at,
+            })),
+        };
+    }
+
     async getRecentActivity(userId: string) {
         const recentPosts = await this.prisma.post.findMany({
             where: {

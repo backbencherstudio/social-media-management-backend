@@ -39,6 +39,7 @@ import { AssetsModule as UserAssetsModule } from './modules/user/assets/assets.m
 import { OrderModule } from './modules/order/order.module';
 import { DashboardModule as UserDashboardModule } from './modules/user/dashboard/dashboard.module';
 import { ServiceModule } from './modules/user/service/service.module';
+import { NotificationModule } from './modules/reseller/notification/notification.module';
 
 
 @Module({
@@ -81,6 +82,7 @@ import { ServiceModule } from './modules/user/service/service.module';
     OrderModule,
     UserDashboardModule,
     ServiceModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

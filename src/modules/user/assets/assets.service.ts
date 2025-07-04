@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { SojebStorage } from '../../../common/lib/Disk/SojebStorage';
+import appConfig from '../../../config/app.config';
 
 @Injectable()
 export class AssetsService {
@@ -20,7 +22,14 @@ export class AssetsService {
             },
             orderBy: { created_at: 'desc' },
         });
-        return { success: true, data: files };
+        // Add file_url to each file
+        const filesWithUrl = files.map(file => ({
+            ...file,
+            file_url: SojebStorage.url(
+                appConfig().storageUrl.assets + '/' + file.file_path
+            ),
+        }));
+        return { success: true, data: filesWithUrl };
     }
 
     async getContentQueue(userId: string, status?: string, date?: string) {
@@ -83,7 +92,12 @@ export class AssetsService {
             platforms: [],
             status: file.design_file?.status,
             preview: null,
-            files: [file],
+            files: [{
+                ...file,
+                file_url: SojebStorage.url(
+                    appConfig().storageUrl.assets + '/' + file.file_path
+                ),
+            }],
             postType: 'Design File',
             submittedAt: file.created_at,
         }));

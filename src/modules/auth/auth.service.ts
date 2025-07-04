@@ -344,6 +344,8 @@ export class AuthService {
 
         // Send verification email with full URL
         const verificationLink = `${process.env.APP_URL}/api/auth/verify-registration?token=${token}`;
+        // console.log(verificationLink);
+
         this.mailService.sendVerificationLink({
           email,
           link: verificationLink,
@@ -1304,8 +1306,8 @@ export class AuthService {
       };
     }
   }
-//  -------------------get you order details ------------------
 
+  //  -------------------get you order details ------------------
 
   // Method to fetch order by user ID
   async getOrderByUserId(userId: string) {
