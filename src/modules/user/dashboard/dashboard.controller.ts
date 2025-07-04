@@ -14,6 +14,13 @@ export class DashboardController {
     return this.dashboardService.getActiveServices(userId);
   }
 
+  @Get('all-services')
+  @UseGuards(JwtAuthGuard)
+  async getAllServices(@Req() req) {
+    const userId = req?.user?.userId
+    return this.dashboardService.getAllServices(userId);
+  }
+
   @Get('recent-activity')
   @UseGuards(JwtAuthGuard)
   async getRecentActivity(@Req() req) {

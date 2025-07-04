@@ -105,9 +105,10 @@ model User {
   ResellerApplication ResellerApplication[]
   Reseller            Reseller[]
   TaskAssign          TaskAssign[]
+  Conversation_List   Conversation_List[]
+  ClientQuestionnaire ClientQuestionnaire[]
 
   @@map("users")
-  Conversation_List Conversation_List[]
 }
 
 model Ucode {
@@ -272,9 +273,9 @@ model PaymentTransaction {
   currency         String?
   paid_amount      Decimal?
   paid_currency    String?
+  Subscription     Subscription[]
 
   @@map("payment_transactions")
-  Subscription Subscription[]
 }
 
 model Conversation {
@@ -290,14 +291,14 @@ model Conversation {
   Conversation_List Conversation_List[]
 }
 
-model Conversation_List{
-  id             String    @id @default(cuid())
-  user_id        String
+model Conversation_List {
+  id              String       @id @default(cuid())
+  user_id         String
   conversation_id String
-  user           User      @relation(fields: [user_id], references: [id])
-  conversation   Conversation @relation(fields: [conversation_id], references: [id])
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @default(now())
+  user            User         @relation(fields: [user_id], references: [id])
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now())
 }
 
 enum MessageStatus {
@@ -498,9 +499,9 @@ model Service {
   service_tiers      ServiceTier[]
   service_features   ServiceFeature[]
   addons             Addon[]
+  Order_Details      Order_Details[]
 
   @@map("services")
-  Order_Details Order_Details[]
 }
 
 // this table stores features
@@ -550,7 +551,6 @@ model ServiceTier {
   price Float?
 
   max_post Int?
-
 
   orders        Order[]
   Order_Details Order_Details[]
@@ -625,10 +625,10 @@ model Subscription {
   payment_transactions  PaymentTransaction[]
   subscription_addons   SubscriptionAddon[]
   subscription_channels SubscriptionChannel[]
-  orders                Order[] @relation("OrderSubscriptions")
+  orders                Order[]               @relation("OrderSubscriptions")
+  PaymentTransaction    PaymentTransaction[]  @relation("OrderSubscriptions")
 
   @@map("subscriptions")
-  PaymentTransaction PaymentTransaction[] @relation("OrderSubscriptions")
 }
 
 // this table stores Subscription and Addon relation
@@ -708,6 +708,55 @@ model PostChannel {
   channel    Channel? @relation(fields: [channel_id], references: [id], onDelete: Cascade)
 
   @@map("post_channels")
+}
+
+model SocialMediaGoal {
+  id          String   @id @default(cuid())
+  name_id     String   @unique
+  description String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  clientQuestionnaires ClientQuestionnaire[] @relation("ClientSocialMediaGoals")
+}
+
+model ClientQuestionnaire {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  business_name                 String
+  business_website              String
+  business_industry_type        String
+  business_person_email         String
+  business_email                String
+  business_phone                String
+  business_description          String
+  social_media_challenges       String
+  social_media_goals            SocialMediaGoal[] @relation("ClientSocialMediaGoals")
+  targeted_audience             String
+  instagram                     String
+  twitter_x                     String
+  facebook                      String
+  tiktok                        String
+  linkedin                      String
+  youtube                       String
+  brand_personality_preferences String
+  primary_typography            String
+  secondary_typography          String
+  tertiary_typography           String
+  heading_font                  String
+  sub_heading_font              String
+  body_font                     String
+  hashtags                      String
+  keywords_phrases              String
+  preferences_special_request   String
+  preferences_campaign_upcoming String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("client_questionnaires")
 }
 
 // this table stores post media
@@ -975,28 +1024,27 @@ enum paymentStatus {
 }
 
 model Order_Details {
-  id                  String       @id @default(uuid())
-  order_id            String
-  order               Order        @relation(fields: [order_id], references: [id])
+  id       String @id @default(uuid())
+  order_id String
+  order    Order  @relation(fields: [order_id], references: [id])
 
-  service_id          String
-  service             Service      @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  service_id String
+  service    Service @relation(fields: [service_id], references: [id], onDelete: Cascade)
 
-  service_tier_id     String
-  serviceTier         ServiceTier  @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
+  service_tier_id String
+  serviceTier     ServiceTier @relation(fields: [service_tier_id], references: [id], onDelete: Cascade)
 
   service_name        String
   service_amount_name String
   service_count       Float
   service_price       Float
 
-  order_assigns       TaskAssign[]
+  order_assigns TaskAssign[]
 
-  created_at          DateTime     @default(now())
+  created_at DateTime @default(now())
 
   @@map("order_details")
 }
-
 
 model Order {
   id         String   @id @default(uuid())
@@ -1022,9 +1070,9 @@ model Order {
   payment_status paymentStatus   @default(pending)
   order_assigns  TaskAssign[]
   Order_Details  Order_Details[]
+  Subscription   Subscription[]  @relation("SubscriptionOrder")
 
   @@map("orders")
-  Subscription Subscription[] @relation("SubscriptionOrder")
 }
 
 //admisn_dashboard_assign_tasks and Task management

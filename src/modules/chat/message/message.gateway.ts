@@ -6,6 +6,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { use } from 'passport';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -19,16 +20,10 @@ export class MessageGateway
 {
   @WebSocketServer()
   server: Server;
-  public users: Record<string, string> = {}; // socketId -> userId
-  public adminSocketId: string | null = null;
-  public readonly adminId =   this.prisma.user.findFirst({
-    where: { type: 'admin' },
-    select: { id: true },
-  }).then(user => user?.id || null).catch(() => {
-    console.error('Failed to fetch admin ID');
-    return null;
-  });
-  public readonly ADMIN_ID = this.adminId;
+  public users: Record<string, string> = {}; // Store user socketId -> userId
+  public adminSocketIds: string[] = []; // Store all active admin socketIds
+  public readonly ADMIN_ID: string | null = null;
+
   constructor(private readonly prisma: PrismaService) {}
   async afterInit(server: Server) {
     console.log('WebSocket Gateway initialized');
@@ -39,32 +34,30 @@ export class MessageGateway
   async handleDisconnect(socket: Socket) {
     console.log(`Client disconnected: ${socket.id}`);
     const userId = this.users[socket.id];
-
+    // Handle user disconnection
     if (userId) {
       delete this.users[socket.id];
       console.log(`User ${userId} disconnected`);
 
-      // Notify admin if a user disconnected
-      if (userId !== await this.ADMIN_ID && this.adminSocketId) {
-        this.server.to(this.adminSocketId).emit('user_disconnected', userId);
+      // Notify all connected admins about the user disconnecting
+      if (this.adminSocketIds.length > 0) {
+        this.adminSocketIds.forEach(adminSocketId => {
+          this.server.to(adminSocketId).emit('user_disconnected', userId);
+        });
       }
     }
-
-    if (socket.id === this.adminSocketId) {
-      this.adminSocketId = null;
+    // Remove admin socketId from the list if an admin disconnects
+    if (this.adminSocketIds.includes(socket.id)) {
+      this.adminSocketIds = this.adminSocketIds.filter(id => id !== socket.id);
       console.log('Admin disconnected');
     }
   }
+  // Register an admin and add their socketId to adminSocketIds
   @SubscribeMessage('register_admin')
   async handleAdminRegister(socket: Socket, adminId: string) {
     console.log(`Admin registration attempt: ${adminId}`);
-    
-    try {
-      if (adminId !== await this.ADMIN_ID) {
-        socket.emit('registration_error', 'Invalid admin credentials');
-        return;
-      }
 
+    try {
       const existingAdmin = await this.prisma.user.findUnique({
         where: { id: adminId, type: 'admin' },
       });
@@ -74,40 +67,32 @@ export class MessageGateway
         return;
       }
 
-      // Register admin
-      this.adminSocketId = socket.id;
+      // Add admin socketId to the list of active admins
+      if (!this.adminSocketIds.includes(socket.id)) {
+        this.adminSocketIds.push(socket.id);
+      }
+
       this.users[socket.id] = adminId;
-      
+
       socket.emit('admin_registered', {
         success: true,
-        message: 'Admin successfully registered'
+        message: 'Admin successfully registered',
       });
-      
-      console.log(`Admin ${adminId} registered with socket ID: ${socket.id}`);
 
+      console.log(`Admin ${adminId} registered with socket ID: ${socket.id}`);
     } catch (error) {
       console.error(`Admin registration error: ${error.message}`);
       socket.emit('registration_error', 'Admin registration failed');
     }
   }
-
-
-    @SubscribeMessage('joinRoom')
-  handleRoomJoin(client: Socket, body: { room_id: string }) {
-    const roomId = body.room_id;
-
-    client.join(roomId); // join the room using user_id
-    client.emit('joinedRoom', { room_id: roomId });
-  }
-  
-
+  // Handle user registration
   @SubscribeMessage('register_user')
   async handleUserRegister(socket: Socket, userId: string) {
-    console.log(`User registration attempt: ${userId}`);
-    
+    console.log(`Reseller registration attempt: ${userId}`);
+
     try {
       const existingUser = await this.prisma.user.findUnique({
-        where: { id: userId },
+        where: { id: userId, type: 'reseller' }, // Ensure user is not an admin
       });
 
       if (!existingUser) {
@@ -122,72 +107,112 @@ export class MessageGateway
 
       // Register user
       this.users[socket.id] = userId;
-      
+
       socket.emit('user_registered', {
         success: true,
         userId: existingUser.id,
-        conversationId: 'default-conversation-id'
+        conversationId: 'default-conversation-id',
       });
-      
-      console.log(`User ${userId} registered with socket ID: ${socket.id}`);
 
-      // Notify admin if connected
-      if (this.adminSocketId) {
-        this.server.to(this.adminSocketId).emit('new_conversation', {
-          userId: existingUser.id,
-          socketId: socket.id
+      console.log(`Reseller ${userId} registered with socket ID: ${socket.id}`);
+
+      // Notify all admins about the new user registration
+      if (this.adminSocketIds.length > 0) {
+        this.adminSocketIds.forEach(adminSocketId => {
+          this.server.to(adminSocketId).emit('new_conversation', {
+            userId: existingUser.id,
+            socketId: socket.id,
+            username : existingUser.name || 'Unknown User',
+          });
         });
       }
-
     } catch (error) {
       console.error(`User registration error: ${error.message}`);
       socket.emit('registration_error', 'User registration failed');
     }
   }
-  @SubscribeMessage('message_to_admin')
-  async handleMessageToAdmin(socket: Socket, message: string) {
-    const userId = this.users[socket.id];
+  // Handle message from user to all admins
+ @SubscribeMessage('message_to_admin')
+async handleMessageToAdmin(socket: Socket, message: string) {
+  const userId = this.users[socket.id];
 
-    if (!userId) {
-      socket.emit('error', 'User not registered.');
-      return;
-    }
+  if (!userId) {
+    socket.emit('error', 'User not registered.');
+    return;
+  }
 
-    if (!this.adminSocketId) {
-      socket.emit('error', 'Admin is not available.');
-      return;
-    }
+  if (this.adminSocketIds.length === 0) {
+    socket.emit('error', 'No admins are currently online.');
+    return;
+  }
 
-    this.server.to(this.adminSocketId).emit('message_from_user', {
+  // Fetch the admin's ID dynamically within the method (instead of using this.ADMIN_ID)
+  const admin = await this.prisma.user.findFirst({
+    where: {
+      type: 'admin', // Ensure the receiver is an admin
+    },
+    select: { id: true }, // Only select the id of the admin
+  });
+
+  if (!admin) {
+    socket.emit('error', 'No admin found.');
+    return;
+  }
+
+  // Send the message to all connected admins
+  this.adminSocketIds.forEach(adminSocketId => {
+    this.server.to(adminSocketId).emit('message_from_user', {
       userId,
       message,
-      socketId: socket.id
+      socketId: socket.id,
+      receiver_id: admin.id, 
     });
+  });
 
-    console.log(`Message from ${userId} to admin: ${message}`);
+  console.log(`Message from ${userId} to all admins: ${message}`);
+}
+// Handle message from admin to a user
+@SubscribeMessage('message_to_user')
+async handleMessageToUser(socket: Socket, data: { userId: string; message: string }) {
+  // Verify sender is admin dynamically by checking the socket's associated userId
+  const senderId = this.users[socket.id];
+  const sender = await this.prisma.user.findUnique({
+    where: { id: senderId },
+  });
+
+  if (!sender || sender.type !== 'admin') {
+    socket.emit('error', 'Only admin can send messages to users.');
+    return;
   }
-  @SubscribeMessage('message_to_user')
-  async handleMessageToUser(socket: Socket, data: { userId: string; message: string }) {
-    // Verify sender is admin
-    if (this.users[socket.id] !== await this.ADMIN_ID) {
-      socket.emit('error', 'Only admin can send messages to users.');
-      return;
-    }
 
-    const userSocketId = this.getSocketIdByUserId(data.userId);
+  const userSocketId = this.getSocketIdByUserId(data.userId);
 
-    if (!userSocketId) {
-      socket.emit('error', `User ${data.userId} not online.`);
-      return;
-    }
-
-    this.server.to(userSocketId).emit('message_from_admin', {
-      message: data.message,
-      timestamp: new Date().toISOString()
-    });
-
-    console.log(`Message from admin to ${data.userId}: ${data.message}`);
+  if (!userSocketId) {
+    socket.emit('error', `User ${data.userId} not online.`);
+    return;
   }
+
+  // Emit the message to the specific user
+  this.server.to(userSocketId).emit('message_from_admin', {
+    message: data.message,
+    timestamp: new Date().toISOString(),
+  });
+
+  console.log(`Message from admin to ${data.userId}: ${data.message}`);
+
+  // Broadcast this message to all admins, so all admins can see the message in real-time
+  this.adminSocketIds.forEach(adminSocketId => {
+    if (adminSocketId !== socket.id) { // Don't send to the sender admin
+      this.server.to(adminSocketId).emit('admin_message_received', {
+        message: data.message,
+        userId: data.userId,
+        timestamp: new Date().toISOString(),
+        senderId: this.users[socket.id],  // The sender admin's ID
+      });
+    }
+  });
+}
+// Helper method to get a user's socketId based on userId
   public getSocketIdByUserId(userId: string): string | undefined {
     return Object.keys(this.users).find(socketId => this.users[socketId] === userId);
   }

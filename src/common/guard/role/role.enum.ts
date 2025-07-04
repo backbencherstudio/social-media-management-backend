@@ -7,5 +7,6 @@ export enum Role {
   LOGISTIC_AGENT = 'logistic_agent',
   SUPPORT_TEAM = 'support_team',
   TECHNICAL_TEAM = 'technical_team',
+  CLIENT = 'client',
   USER = 'user',
 }
