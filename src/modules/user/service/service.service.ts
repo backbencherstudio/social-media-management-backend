@@ -84,7 +84,6 @@ export class ServiceService {
                 where: {
                     id,
                     deleted_at: null,
-                    status: 1
                 },
                 include: {
                     service_tiers: {
@@ -195,103 +194,82 @@ export class ServiceService {
         }
     }
 
-    // Get services for a specific user
-    async getServicesByUserId(userId: string) {
-        try {
-            const services = await this.prisma.service.findMany({
-                where: {
+    async getPurchasedServicesByUserId(userId: string) {
+        // 1. Services via direct orders
+        const orderServices = await this.prisma.order_Details.findMany({
+            where: {
+                order: {
                     user_id: userId,
-                    deleted_at: null,
-                    status: 1
                 },
-                include: {
-                    service_tiers: {
-                        where: { status: 1 },
-                        orderBy: { price: 'asc' },
-                    },
-                    category: true,
-                    service_features: {
-                        include: { feature: true },
-                    },
-                    addons: {
-                        where: { status: 1 },
-                    },
-                    subscriptions: {
-                        where: { status: 'active' },
-                        include: {
-                            user: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    email: true,
-                                }
-                            }
-                        }
-                    },
-                    _count: {
-                        select: {
-                            subscriptions: {
-                                where: { status: 'active' }
-                            }
+            },
+            select: {
+                service: {
+                    include: {
+                        service_tiers: {
+                            where: { status: 1 },
+                            orderBy: { price: 'asc' },
+                        },
+                        category: true,
+                        service_features: {
+                            include: { feature: true },
+                        },
+                        addons: {
+                            where: { status: 1 },
                         }
                     }
                 },
-                orderBy: { created_at: 'desc' },
-            });
+            },
+        });
 
-            // Format the response
-            const formattedServices = services.map((service) => ({
-                id: service.id,
-                name: service.name,
-                description: service.description,
-                category: service.category?.name ?? '—',
-                category_id: service.category_id,
-                price_range: service.service_tiers.length > 0
-                    ? {
-                        min: Math.min(...service.service_tiers.map(tier => tier.price || 0)),
-                        max: Math.max(...service.service_tiers.map(tier => tier.price || 0)),
-                        currency: 'USD'
-                    }
-                    : null,
-                starting_price: service.service_tiers[0]?.price
-                    ? `$${service.service_tiers[0].price.toFixed(2)}/mo`
-                    : 'N/A',
-                features: service.service_features.map((sf) => sf.feature?.name).filter(Boolean),
-                addons: service.addons.map(addon => ({
-                    id: addon.id,
-                    name: addon.name,
-                    description: addon.description,
-                    price: addon.price,
-                    max_count: addon.max_count
-                })),
-                tiers: service.service_tiers.map(tier => ({
-                    id: tier.id,
-                    name: tier.name,
-                    price: tier.price,
-                    max_post: tier.max_post
-                })),
-                active_subscribers: service._count.subscriptions,
-                subscriptions: service.subscriptions.map(sub => ({
-                    id: sub.id,
-                    user: sub.user,
-                    start_at: sub.start_at,
-                    end_at: sub.end_at,
-                    posts_used: sub.posts_used
-                })),
-                created_at: service.created_at,
-                updated_at: service.updated_at,
-            }));
+        // Flatten and deduplicate services
+        const services = orderServices
+            .map(od => od.service)
+            .filter(Boolean);
 
-            return {
-                success: true,
-                data: formattedServices,
-                total: formattedServices.length
-            };
-        } catch (error) {
-            return {
-                success: false,
-                message: error.message,
-            };
-        }
+        // Deduplicate by service id
+        const uniqueServices = Array.from(
+            new Map(services.map(s => [s.id, s])).values()
+        );
+
+        // Format the response (reuse your formatting logic)
+        const formattedServices = uniqueServices.map((service) => ({
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            category: service.category?.name ?? '—',
+            category_id: service.category_id,
+            price_range: service.service_tiers.length > 0
+                ? {
+                    min: Math.min(...service.service_tiers.map(tier => tier.price || 0)),
+                    max: Math.max(...service.service_tiers.map(tier => tier.price || 0)),
+                    currency: 'USD'
+                }
+                : null,
+            starting_price: service.service_tiers[0]?.price
+                ? `$${service.service_tiers[0].price.toFixed(2)}/mo`
+                : 'N/A',
+            features: service.service_features.map((sf) => sf.feature?.name).filter(Boolean),
+            addons: service.addons.map(addon => ({
+                id: addon.id,
+                name: addon.name,
+                description: addon.description,
+                price: addon.price,
+                max_count: addon.max_count
+            })),
+            tiers: service.service_tiers.map(tier => ({
+                id: tier.id,
+                name: tier.name,
+                price: tier.price,
+                max_post: tier.max_post
+            })),
+            created_at: service.created_at,
+            updated_at: service.updated_at,
+        }));
+
+        return {
+            success: true,
+            data: formattedServices,
+            total: formattedServices.length
+        };
     }
 }
