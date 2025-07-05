@@ -78,7 +78,15 @@ async handleResellerApplication(id: string, applicationId: string, action: 'acce
         data: { status: 'accepted' },
       });
 
-      
+      await this.prisma.user.findUnique({
+        where:{id:application.user_id}
+      })
+
+       await this.prisma.user.update({
+        where: { id: application.user_id },
+        data: { type: 'reseller' },
+      });
+
       const newReseller = await this.prisma.reseller.create({
         data: {
           reseller_id: `RES_${createId()}`,  

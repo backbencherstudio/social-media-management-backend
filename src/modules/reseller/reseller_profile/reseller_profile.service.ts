@@ -119,12 +119,12 @@ export class ResellerProfileService {
       task_amount: task.ammount,
       post_type: task.post_type,
       assign_date: task.created_at,
-      client_name: task.order.user_name,
+      client_name: task.order.user_name || 'N/A',
       client_email: task.order.user_email,
       order_status: task.order.order_status,
       package_name: task.order.pakage_name,
     }));
-
+    console.log("http://localhost:4000/api/reseller-profile/completed/:resellerId this route is hiited");
     return {
       message: 'Reseller earnings and completed tasks fetched successfully',
       data: {
