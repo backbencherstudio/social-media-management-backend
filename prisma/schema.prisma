@@ -502,6 +502,7 @@ model Service {
   Order_Details      Order_Details[]
 
   @@map("services")
+  Channel Channel[]
 }
 
 // this table stores features
@@ -583,12 +584,14 @@ model Addon {
 // this table stores Channel
 model Channel {
   id         String    @id @default(cuid())
+  service_id String?
+  service    Service? @relation(fields: [service_id], references: [id], onDelete: Cascade)
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
 
-  name String? @unique // e.g., "Instagram", "Facebook", "TikTok"
+  name String?  // e.g., "Instagram", "Facebook", "TikTok"
 
   subscription_channels SubscriptionChannel[]
   post_channels         PostChannel[]

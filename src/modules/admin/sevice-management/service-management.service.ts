@@ -54,12 +54,13 @@ export class ServiceManagementService {
         ),
       );
 
-      // 4. Set primary platform (upsert channel)
+      // 4. Set primary platform (create channel)
       if (dto.primary_platform) {
-        await this.prisma.channel.upsert({
-          where: { name: dto.primary_platform },
-          update: {},
-          create: { name: dto.primary_platform },
+        await this.prisma.channel.create({
+          data: {
+            name: dto.primary_platform,
+            service_id: service.id,
+          },
         });
       }
 
@@ -80,7 +81,7 @@ export class ServiceManagementService {
         success: true,
         message: 'Service created successfully',
         data: {
-          service_id: service.id,
+          service,
         },
       };
     } catch (error) {
@@ -136,6 +137,7 @@ export class ServiceManagementService {
         include: {
           service_tiers: true,
           addons: true,
+          Channel: true,
           category: true,
           service_features: {
             include: { feature: true },
@@ -225,11 +227,28 @@ export class ServiceManagementService {
 
 
     if (dto.primary_platform) {
-      await this.prisma.channel.upsert({
-        where: { name: dto.primary_platform },
-        update: {},
-        create: { name: dto.primary_platform },
+      // Find if a channel exists for this service and platform
+      const existingChannel = await this.prisma.channel.findFirst({
+        where: {
+          service_id: id,
+          name: dto.primary_platform,
+        },
       });
+
+      if (existingChannel) {
+        // Optionally update the channel if needed
+        await this.prisma.channel.update({
+          where: { id: existingChannel.id },
+          data: { name: dto.primary_platform },
+        });
+      } else {
+        await this.prisma.channel.create({
+          data: {
+            name: dto.primary_platform,
+            service_id: id,
+          },
+        });
+      }
     }
 
     await Promise.all(
