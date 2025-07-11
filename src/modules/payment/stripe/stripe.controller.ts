@@ -25,11 +25,15 @@ export class StripeController {
   ) { }
 
   //---------------create-a-payment-using-webhook-----------------\\
+
   @Post('pay')
+  @UseGuards(JwtAuthGuard)
   async pay(@Body() createOrderDto: CreateOrderDto, @Req() req: Request) {
     try {
       //getting user ID from request or from createOrderDto-------------------
-      const userId = createOrderDto.user_id || req.user?.userId;
+      const userId = req.user.userId;
+      console.log(createOrderDto);
+      
       if (!userId) throw new Error('User ID is missing');
 
       //getting user details from database-------------------
