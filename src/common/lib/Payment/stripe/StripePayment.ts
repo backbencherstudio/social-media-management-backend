@@ -146,88 +146,88 @@ export class StripePayment {
   // }
 
 
-// static async createPaymentIntent({
-//   amount,
-//   currency,
-//   user_id,
-//   customer_id,
-//   service_id,
-//   service_tier_id,
-//   status,
-//   metadata,
-// }: {
-//   amount: number;
-//   currency: string;
-//   user_id: string;
-//   customer_id: string;
-//   service_id: string;
-//   service_tier_id: string;
-//   status: string;
-//   metadata: {
-//     start_date: string;
-//     end_date: string;
-//   };
-// }): Promise<stripe.PaymentIntent> {
-//   if (!amount || amount <= 0) {
-//     throw new Error('Amount must be a positive number');
-//   }
-//   if (!currency) {
-//     throw new Error('Currency is required');
-//   }
-//   if (!user_id || !customer_id || !service_id || !service_tier_id) {
-//     throw new Error('All IDs are required');
-//   }
-//   if (!metadata || !metadata.start_date || !metadata.end_date) {
-//     throw new Error('Metadata with start_date and end_date is required');
-//   }
+  // static async createPaymentIntent({
+  //   amount,
+  //   currency,
+  //   user_id,
+  //   customer_id,
+  //   service_id,
+  //   service_tier_id,
+  //   status,
+  //   metadata,
+  // }: {
+  //   amount: number;
+  //   currency: string;
+  //   user_id: string;
+  //   customer_id: string;
+  //   service_id: string;
+  //   service_tier_id: string;
+  //   status: string;
+  //   metadata: {
+  //     start_date: string;
+  //     end_date: string;
+  //   };
+  // }): Promise<stripe.PaymentIntent> {
+  //   if (!amount || amount <= 0) {
+  //     throw new Error('Amount must be a positive number');
+  //   }
+  //   if (!currency) {
+  //     throw new Error('Currency is required');
+  //   }
+  //   if (!user_id || !customer_id || !service_id || !service_tier_id) {
+  //     throw new Error('All IDs are required');
+  //   }
+  //   if (!metadata || !metadata.start_date || !metadata.end_date) {
+  //     throw new Error('Metadata with start_date and end_date is required');
+  //   }
 
-//   try {
-    
-//     return await Stripe.paymentIntents.create({
-//       amount: Math.round(amount * 100), 
-//       currency: currency.toLowerCase(), 
-//       customer: customer_id,
-//       metadata: { //pushing to meta data----------------\\
-//         user_id,           
-//         service_id,        
-//         service_tier_id,   
-//         status,            
-//         start_date: metadata.start_date, 
-//         end_date: metadata.end_date,     
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Failed to create PaymentIntent:', error);
-//     throw new Error('Failed to create payment intent');
-//   }
-// }
+  //   try {
 
-static async createPaymentIntent(orderDto: CreateOrderDto) {
-  try {
-    const totalAmount = orderDto.order_items.reduce((sum, item) => sum + (item.service_price ?? 0), 0);
-    const orderId = `ORD_${Date.now()}`;
+  //     return await Stripe.paymentIntents.create({
+  //       amount: Math.round(amount * 100), 
+  //       currency: currency.toLowerCase(), 
+  //       customer: customer_id,
+  //       metadata: { //pushing to meta data----------------\\
+  //         user_id,           
+  //         service_id,        
+  //         service_tier_id,   
+  //         status,            
+  //         start_date: metadata.start_date, 
+  //         end_date: metadata.end_date,     
+  //       },
+  //     });
+  //   } catch (error) {
+  //     console.error('Failed to create PaymentIntent:', error);
+  //     throw new Error('Failed to create payment intent');
+  //   }
+  // }
 
-    // Prepare only compact metadata (avoid large strings)
-    const serviceTierIds = orderDto.order_items.map(item => item.service_tier_id).join(',');
-    const serviceIds = orderDto.order_items.map(item => item.service_id).join(',');
+  static async createPaymentIntent(orderDto: CreateOrderDto) {
+    try {
+      const totalAmount = orderDto.order_items.reduce((sum, item) => sum + (item.service_price ?? 0), 0);
+      const orderId = `ORD_${Date.now()}`;
 
-    return await Stripe.paymentIntents.create({
-      amount: totalAmount * 100, // Convert dollars to cents
-      currency: 'usd',
-      metadata: {
-        order_id: orderId,
-        package_name: orderDto.pakage_name,
-        user_id: orderDto.user_id || 'default_user_id',
-        service_tier_ids: serviceTierIds,
-        service_ids: serviceIds,
-        item_count: orderDto.order_items.length.toString()
-      },
-    });
-  } catch (error) {
-    console.error('❌ Error creating PaymentIntent:', error);
-    throw new Error('Failed to create PaymentIntent');
+      // Prepare only compact metadata (avoid large strings)
+      const serviceTierIds = orderDto.order_items.map(item => item.service_tier_id).join(',');
+      const serviceIds = orderDto.order_items.map(item => item.service_id).join(',');
+
+      return await Stripe.paymentIntents.create({
+        amount: totalAmount * 100, // Convert dollars to cents
+        currency: 'usd',
+        metadata: {
+          order_id: orderId,
+          package_name: orderDto.pakage_name,
+          user_id: orderDto.user_id || 'default_user_id',
+          service_tier_ids: serviceTierIds,
+          service_ids: serviceIds,
+          item_count: orderDto.order_items.length.toString()
+        },
+      });
+    } catch (error) {
+      console.error('❌ Error creating PaymentIntent:', error);
+      throw new Error('Failed to create PaymentIntent');
+    }
   }
-}
 
 
   /**
@@ -236,10 +236,9 @@ static async createPaymentIntent(orderDto: CreateOrderDto) {
    * @param price
    * @returns
    */
-  static async createCheckoutSession(customer: string, price: string,duration: string) {
-    const success_url = `${
-      appConfig().app.url
-    }/success?session_id={CHECKOUT_SESSION_ID}`;
+  static async createCheckoutSession(customer: string, price: string, duration: string) {
+    const success_url = `${appConfig().app.url
+      }/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancel_url = `${appConfig().app.url}/failed`;
 
     const session = await Stripe.checkout.sessions.create({
@@ -258,15 +257,15 @@ static async createPaymentIntent(orderDto: CreateOrderDto) {
       success_url: success_url,
       cancel_url: cancel_url,
       //-----------------for dynamic time-------------
-       metadata: { duration: duration.toString() }
+      metadata: { duration: duration.toString() }
       // automatic_tax: { enabled: true },
     });
     return session;
   }
 
   static async setSubscriptionCancelAt(subscriptionId: string, cancelAt: number) {
-  return Stripe.subscriptions.update(subscriptionId, { cancel_at: cancelAt });
-}
+    return Stripe.subscriptions.update(subscriptionId, { cancel_at: cancelAt });
+  }
 
   //  static async createCheckoutSession(customer: string, price: string, duration: string) {
   //   try {
@@ -406,7 +405,7 @@ static async createPaymentIntent(orderDto: CreateOrderDto) {
   // If you are paying users, they need Stripe Connect accounts. You can create Express or Standard accounts.
   static async createConnectedAccount(email: string) {
     const connectedAccount = await Stripe.accounts.create({
-      type: 'express',
+      type: 'custom',
       email: email,
       country: 'US', // change as per user's country
       // business_profile: {
@@ -420,9 +419,9 @@ static async createPaymentIntent(orderDto: CreateOrderDto) {
       //   },
       // },
       capabilities: {
-        // card_payments: {
-        //   enabled: true,
-        // },
+        card_payments: {
+          requested: true,
+        },
         transfers: {
           // enabled: true,
           requested: true,
@@ -447,19 +446,19 @@ static async createPaymentIntent(orderDto: CreateOrderDto) {
 
   // Once the user has an approved Stripe account with a linked bank, you can send them funds.
   //REal
-//   static async createPayout(
-// account_id: string, amount: number, currency: string, metadata: { user_id: string; account_id: string; transaction_id: string; },
-//   ) {
-//     const payout = await Stripe.payouts.create({
-//       amount: amount * 100, // amount in cents
-//       currency: currency,
-//       destination: account_id,
-//     });
+  //   static async createPayout(
+  // account_id: string, amount: number, currency: string, metadata: { user_id: string; account_id: string; transaction_id: string; },
+  //   ) {
+  //     const payout = await Stripe.payouts.create({
+  //       amount: amount * 100, // amount in cents
+  //       currency: currency,
+  //       destination: account_id,
+  //     });
 
-//     return payout;
-//   }
+  //     return payout;
+  //   }
 
-//Testing
+  //Testing
 
 
 

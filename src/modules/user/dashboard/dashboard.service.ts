@@ -81,6 +81,7 @@ export class DashboardService {
             total: activeServices.length,
             data: activeServices.map((subscription) => ({
                 id: subscription.id,
+                order_id: subscription.order_id,
                 service: subscription.order.Order_Details?.[0]?.service_name || 'Unknown Service',
                 started: subscription.created_at,
                 order_status: subscription.order.order_status,
