@@ -27,4 +27,8 @@ export class CreateOrderDetailDto {
   @IsOptional()
   @IsString()
   service_tier_id?: string;
+
+  @IsOptional()
+  @IsString()
+  channel?: string; // Optional channel field, default to 'default' if not provided
 }
