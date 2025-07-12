@@ -33,6 +33,8 @@ export class AuthService {
           id: true,
           name: true,
           email: true,
+          billing_id: true,
+          banking_id: true,
           avatar: true,
           address: true,
           phone_number: true,
@@ -40,6 +42,11 @@ export class AuthService {
           gender: true,
           date_of_birth: true,
           created_at: true,
+          Reseller: {
+            select: {
+              reseller_id: true,
+            },
+          },
         },
       });
 
@@ -56,10 +63,16 @@ export class AuthService {
         );
       }
 
+      const responseData = {
+        ...user,
+        reseller_id: user?.Reseller?.[0]?.reseller_id || null,
+      };
+      delete responseData.Reseller;
+
       if (user) {
         return {
           success: true,
-          data: user,
+          data: responseData,
         };
       } else {
         return {
