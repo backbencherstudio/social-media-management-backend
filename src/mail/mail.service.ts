@@ -81,7 +81,6 @@ export class MailService {
       throw error;
     }
   }
-
   async submitSuccessEmail(params: { email: string; name: string }) {
     try {
       const from = await this.getFromAddress();
@@ -97,7 +96,6 @@ export class MailService {
       console.error(' Failed to queue application submitted email:', error);
     }
   }
-
   async applicationAcceptedEmail(params: { email: string; name: string }) {
     try {
       const from = await this.getFromAddress();
@@ -113,7 +111,6 @@ export class MailService {
       console.error(' Failed to queue application accepted email:', error);
     }
   }
-
   async applicationRejectedEmail(params: { email: string; name: string; reason?: string }) {
     try {
       const from = await this.getFromAddress();
@@ -134,7 +131,6 @@ export class MailService {
       console.error(' Failed to queue application rejected email:', error);
     }
   }
-
   async confirmAdminMail(params: { email: string; name: string; password: string }) {
     try {
       const from = await this.getFromAddress();

@@ -40,9 +40,10 @@ export async function seedChannels() {
 
   for (const channel of channels) {
     await prisma.channel.upsert({
-      where: { name: channel.name },
+      //where: { name: channel.name },
       update: {},
       create: channel,
+      where: undefined
     });
   }
 

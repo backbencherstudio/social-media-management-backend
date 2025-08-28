@@ -217,7 +217,7 @@ export class StripeController {
             receiver_id: user.id,
             text: `Your payment for ${orderDto.pakage_name || 'your order'} was successful.`,
             type: 'payment_transaction' as const,
-            entity_id: orderCreationResult.data.order.id,
+          //  entity_id: orderCreationResult.data.order.id,
           };
           await NotificationRepository.createNotification(notificationPayload);
 
