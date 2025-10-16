@@ -19,7 +19,9 @@ import { PrismaService } from 'src/prisma/prisma.service';
         console.log(emailSettings);
 
         if (!emailSettings) {
-          throw new Error('Email settings not found in the database.');
+          return {
+            message: "Email settings not found in the database.",
+          }
         }
 
         console.log("emailSettings.smtpHost", emailSettings.smtpHost);

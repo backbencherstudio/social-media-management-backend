@@ -16,27 +16,27 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 @Roles(Role.ADMIN_LITE)
 @Controller('admin/emailSettings')
 export class EmailSettingsController {
-  constructor(private readonly emailSettingsService: EmailSettingsService) {}
+  constructor(private readonly emailSettingsService: EmailSettingsService) { }
 
   // Create email settings
-  // @Post()
-  // async create(
-  //   @Body() createEmailSettingsDto: CreateEmailSettingsDto,
-  // ): Promise<EmailSettings> {
-  //   return this.emailSettingsService.create(createEmailSettingsDto);
-  // }
-    // Get all email settings
-@Get()
-async findAll(): Promise<any> {
-  try {
-    return await this.emailSettingsService.getEmailSettings();
-  } catch (error) {
-    return {
-      message: "No data available",
-      data: []
-    };
+  @Post()
+  async create(
+    @Body() createEmailSettingsDto: CreateEmailSettingsDto,
+  ): Promise<EmailSettings> {
+    return this.emailSettingsService.create(createEmailSettingsDto);
   }
-}
+  // Get all email settings
+  @Get()
+  async findAll(): Promise<any> {
+    try {
+      return await this.emailSettingsService.getEmailSettings();
+    } catch (error) {
+      return {
+        message: "No data available",
+        data: []
+      };
+    }
+  }
 
   // Get email settings by ID
   // @Get(':id')
