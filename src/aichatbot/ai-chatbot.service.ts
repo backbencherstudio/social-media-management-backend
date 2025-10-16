@@ -8,16 +8,16 @@ export class AiChatbotService {
 
   constructor(private readonly prisma: PrismaService) {
     this.openai = new OpenAI({
-        apiKey: '6529bc1a46c73816988e60c31a88ca117155ab159671cd911d352ee3bb0e9d85',
-        baseURL: 'https://api.together.xyz/v1',
+      apiKey: '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',
+      baseURL: 'https://api.together.xyz/v1',
     });
   }
 
   async handleChat(message: string): Promise<string> {
     try {
 
-          const systemPrompt = 
-          `You are tag-growth's AI assistant. Your role is to help users with any questions related to the tag-growth platform **only**.
+      const systemPrompt =
+        `You are tag-growth's AI assistant. Your role is to help users with any questions related to the tag-growth platform **only**.
 
           🧠 What is tag-growth?
           Tag-growth is a powerful social media content creation and scheduling tool that provides:
@@ -62,7 +62,7 @@ export class AiChatbotService {
           - Technical issues or bugs
           - Accessing support
           - Explaining features`
-          ;
+        ;
       const completion = await this.openai.chat.completions.create({
         model: 'mistralai/Mistral-7B-Instruct-v0.1',
         messages: [
