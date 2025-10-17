@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import OpenAI from 'openai';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class AiChatbotService {
@@ -8,14 +9,14 @@ export class AiChatbotService {
 
   constructor(private readonly prisma: PrismaService) {
     this.openai = new OpenAI({
-      apiKey: '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',
-      baseURL: 'https://api.together.xyz/v1',
+      apiKey: appConfig().openai.api_key,
+      baseURL: 'https://api.openai.com/v1/chat/completions',
     });
   }
 
   async handleChat(message: string): Promise<string> {
     try {
-
+      console.log(appConfig().openai.api_key);
       const systemPrompt =
         `You are tag-growth's AI assistant. Your role is to help users with any questions related to the tag-growth platform **only**.
 

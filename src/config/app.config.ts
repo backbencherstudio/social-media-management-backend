@@ -43,6 +43,11 @@ export default () => ({
     secret: process.env.SESSION_SECRET,
   },
 
+  openai: {
+    api_key: process.env.OPENAI_API_KEY,
+    base_url: process.env.OPENAI_BASE_URL,
+  },
+
   auth: {
     google: {
       app_id: process.env.GOOGLE_APP_ID,
