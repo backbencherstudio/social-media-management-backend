@@ -31,17 +31,21 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   // Configure CORS
-  app.enableCors({
-    origin: "https://taggrowth.io , https://taggrowth.io , http://localhost:3000 , http://taggrowth.io",
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-    ],
-  });
+app.enableCors({
+  origin: [
+    "https://taggrowth.io",
+    "http://localhost:3000"
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+  ],
+});
+
   app.use(
     helmet({
       crossOriginResourcePolicy: false,
