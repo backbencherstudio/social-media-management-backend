@@ -32,7 +32,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   // Configure CORS
   app.enableCors({
-    origin: true, // Add your frontend URL
+    origin: "https://taggrowth.io", 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: [
